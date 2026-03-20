@@ -25,7 +25,7 @@ program test_config.aleo {
 
     // Duration exactly at minimum — should pass.
     @test
-    script test_assert_config_min_duration_exact() {
+    script test_cfg_min_duration_exact() {
         let f: Future = fairdrop_config.aleo/assert_config(
             250u16,
             10_000u128,
@@ -40,7 +40,7 @@ program test_config.aleo {
     // Duration below minimum — should revert with clear assert, not u32 underflow.
     @test
     @should_fail
-    script test_assert_config_duration_too_short() {
+    script test_cfg_duration_too_short() {
         let f: Future = fairdrop_config.aleo/assert_config(
             250u16,
             10_000u128,
@@ -56,7 +56,7 @@ program test_config.aleo {
     // not panic with a u32 underflow.
     @test
     @should_fail
-    script test_assert_config_reversed_blocks() {
+    script test_cfg_reversed_blocks() {
         let f: Future = fairdrop_config.aleo/assert_config(
             250u16,
             10_000u128,
@@ -86,7 +86,7 @@ program test_config.aleo {
     // Wrong fee_bps snapshot — should revert.
     @test
     @should_fail
-    script test_assert_config_wrong_fee_bps() {
+    script test_cfg_wrong_fee_bps() {
         let f: Future = fairdrop_config.aleo/assert_config(
             300u16,       // wrong — stored is 250
             10_000u128,
@@ -101,7 +101,7 @@ program test_config.aleo {
     // Wrong creation_fee snapshot — should revert.
     @test
     @should_fail
-    script test_assert_config_wrong_creation_fee() {
+    script test_cfg_wrong_creation_fee() {
         let f: Future = fairdrop_config.aleo/assert_config(
             250u16,
             5_000u128,    // wrong — stored is 10_000
@@ -147,5 +147,12 @@ program test_config.aleo {
     script test_check_not_paused_default() {
         let f: Future = fairdrop_config.aleo/check_not_paused();
         f.await();
+    }
+
+    // Leo requires at least one transition per program. Satisfies the requirement.
+    @test
+    @should_fail
+    transition test_never_passes() {
+        assert_eq(1u32, 2u32);
     }
 }
