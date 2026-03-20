@@ -1,9 +1,12 @@
 {
   "program": "fairdrop_ref.aleo",
   "version": "0.1.0",
-  "description": "",
+  "description": "Referral code creation, tracking, and commission distribution.",
   "license": "MIT",
   "leo": "3.5.0",
-  "dependencies": null,
+  "dependencies": [
+    { "name": "fairdrop_config.aleo", "location": "local", "path": "../config" },
+    { "name": "credits.aleo", "location": "network" }
+  ],
   "dev_dependencies": null
 }
