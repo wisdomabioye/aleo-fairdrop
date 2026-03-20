@@ -1,0 +1,8 @@
+packages:
+  - apps/*
+  - contracts/*
+  - docs/*
+  - packages/*
+  - services/*
+
+nodeLinker: hoisted
