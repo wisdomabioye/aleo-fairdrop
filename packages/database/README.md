@@ -1,8 +1,30 @@
 # @fairdrop/database
 
-Drizzle ORM schema and migrations for the PostgreSQL database shared by `services/indexer` and `services/api`.
+Drizzle ORM schema, migrations, and DB client for the PostgreSQL database shared by `services/indexer` and `services/api`.
 
-The column types in `schema/` mirror the row shapes in `@fairdrop/types/db` exactly — if you change a DB column, update both. The types package is the source of truth for shape; this package is the source of truth for the actual schema and migrations.
+## Row types
+
+Row types are inferred directly from the Drizzle schema — they cannot drift:
+
+```ts
+import type { AuctionRow, BidRow, NewBid } from '@fairdrop/database';
+
+// InferSelectModel<typeof table>  → what queries return
+// InferInsertModel<typeof table>  → what db.insert() accepts
+```
+
+`packages/types` has no `./db` sub-path. Import DB types from here, not from `@fairdrop/types`.
+
+## Usage
+
+```ts
+import { createDb } from '@fairdrop/database';
+
+const db = createDb(process.env.DATABASE_URL!);
+// throws at startup if DATABASE_URL is empty
+```
+
+## Commands
 
 ```bash
 pnpm db:generate   # generate migration from schema changes
@@ -10,6 +32,4 @@ pnpm db:migrate    # apply pending migrations
 pnpm db:studio     # open Drizzle Studio
 ```
 
-## Status
-
-Not yet implemented.
+Set `DATABASE_URL` in your environment (see `.env.example` at repo root).
