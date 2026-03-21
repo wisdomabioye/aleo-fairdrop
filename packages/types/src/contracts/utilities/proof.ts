@@ -48,4 +48,3 @@ export interface UpdateReputationInput {
   volume:  U128;
 }
 
-export const PROOF_PROGRAM_ID = 'fairdrop_proof.aleo' as const;

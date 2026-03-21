@@ -19,5 +19,3 @@ export type RaiseBid = BaseBid;
 
 export type { AuctionState };
 
-export const RAISE_PROGRAM_ID   = 'fairdrop_raise.aleo' as const;
-export const RAISE_PROGRAM_SALT = '3field' as const;

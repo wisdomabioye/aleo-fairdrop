@@ -21,5 +21,3 @@ export type LbpBid = BaseBid;
 
 export type { AuctionState };
 
-export const LBP_PROGRAM_ID   = 'fairdrop_lbp.aleo' as const;
-export const LBP_PROGRAM_SALT = '5field' as const;

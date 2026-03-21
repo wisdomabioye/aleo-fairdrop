@@ -21,5 +21,3 @@ export type AscendingBid = BaseBid;
 
 export type { AuctionState };
 
-export const ASCENDING_PROGRAM_ID   = 'fairdrop_ascending.aleo' as const;
-export const ASCENDING_PROGRAM_SALT = '4field' as const;

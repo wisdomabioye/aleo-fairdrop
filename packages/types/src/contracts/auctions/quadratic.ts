@@ -20,5 +20,3 @@ export type QuadraticBid = BaseBid;
 
 export type { AuctionState };
 
-export const QUADRATIC_PROGRAM_ID   = 'fairdrop_quadratic.aleo' as const;
-export const QUADRATIC_PROGRAM_SALT = '6field' as const;

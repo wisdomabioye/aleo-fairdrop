@@ -1,0 +1,22 @@
+{
+  "network": "mainnet",
+  "updatedAt": "2026-03-21T00:00:00Z",
+  "accounts": {
+    "protocolTreasury": "",
+    "feeCollector": "",
+    "opsMultisig": ""
+  },
+  "deployments": {
+    "dutch":     { "status": "planned", "txId": null },
+    "sealed":    { "status": "planned", "txId": null },
+    "raise":     { "status": "planned", "txId": null },
+    "ascending": { "status": "planned", "txId": null },
+    "lbp":       { "status": "planned", "txId": null },
+    "quadratic": { "status": "planned", "txId": null },
+    "config":    { "status": "planned", "txId": null },
+    "gate":      { "status": "planned", "txId": null },
+    "proof":     { "status": "planned", "txId": null },
+    "ref":       { "status": "planned", "txId": null },
+    "vest":      { "status": "planned", "txId": null }
+  }
+}

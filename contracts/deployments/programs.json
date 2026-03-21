@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "$comment": "Single source of truth for all program IDs and deployment salts. Network-specific data lives in testnet/network.json and mainnet/network.json. Validated against contracts/*/program.json by scripts/validate-programs.ts.",
+  "programs": {
+    "dutch": {
+      "programId": "fairdrop_dutch.aleo",
+      "contractPath": "contracts/auctions/dutch",
+      "salt": "1field"
+    },
+    "sealed": {
+      "programId": "fairdrop_sealed.aleo",
+      "contractPath": "contracts/auctions/sealed",
+      "salt": "2field"
+    },
+    "raise": {
+      "programId": "fairdrop_raise.aleo",
+      "contractPath": "contracts/auctions/raise",
+      "salt": "3field"
+    },
+    "ascending": {
+      "programId": "fairdrop_ascending.aleo",
+      "contractPath": "contracts/auctions/ascending",
+      "salt": "4field"
+    },
+    "lbp": {
+      "programId": "fairdrop_lbp.aleo",
+      "contractPath": "contracts/auctions/lbp",
+      "salt": "5field"
+    },
+    "quadratic": {
+      "programId": "fairdrop_quadratic.aleo",
+      "contractPath": "contracts/auctions/quadratic",
+      "salt": "6field"
+    },
+    "config": {
+      "programId": "fairdrop_config.aleo",
+      "contractPath": "contracts/utilities/config"
+    },
+    "gate": {
+      "programId": "fairdrop_gate.aleo",
+      "contractPath": "contracts/utilities/gate"
+    },
+    "proof": {
+      "programId": "fairdrop_proof.aleo",
+      "contractPath": "contracts/utilities/proof"
+    },
+    "ref": {
+      "programId": "fairdrop_ref.aleo",
+      "contractPath": "contracts/utilities/ref"
+    },
+    "vest": {
+      "programId": "fairdrop_vest.aleo",
+      "contractPath": "contracts/utilities/vest"
+    }
+  }
+}

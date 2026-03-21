@@ -7,9 +7,12 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",
+    "validate:programs": "tsx scripts/validate-programs.ts",
     "clean": "turbo run clean && find . \\( -type d \\( -name node_modules -o -name dist -o -name build -o -name .next -o -name coverage \\) -prune \\) -exec rm -rf '{}' + && rm -rf .turbo"
   },
   "devDependencies": {
+    "@types/node": "^25.5.0",
+    "tsx": "^4.19.3",
     "turbo": "^2.7.5"
   },
   "packageManager": "pnpm@10.22.0",

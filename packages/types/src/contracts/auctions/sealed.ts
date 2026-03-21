@@ -27,5 +27,3 @@ export interface SealedBid extends BaseBid {
 
 export type { AuctionState };
 
-export const SEALED_PROGRAM_ID   = 'fairdrop_sealed.aleo' as const;
-export const SEALED_PROGRAM_SALT = '2field' as const;

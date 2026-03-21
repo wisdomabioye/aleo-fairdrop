@@ -49,4 +49,3 @@ export interface CreditCommissionInput {
 /** `reserve_funded` mapping value — one-time guard per auction_id. */
 export type ReserveFunded = Bool;
 
-export const REF_PROGRAM_ID = 'fairdrop_ref.aleo' as const;

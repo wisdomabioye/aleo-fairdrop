@@ -1,0 +1,22 @@
+{
+  "network": "testnet",
+  "updatedAt": "2026-03-21T00:00:00Z",
+  "accounts": {
+    "protocolTreasury": "aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r",
+    "feeCollector": "aleo1sn8ns4htf8ryj0dergclrg82fuuztzr67fqc3sakrktcxzc3dqxqm6utkv",
+    "opsMultisig": ""
+  },
+  "deployments": {
+    "dutch":     { "status": "deployed", "txId": null, "notes": "live dutch auction" },
+    "sealed":    { "status": "planned",  "txId": null },
+    "raise":     { "status": "planned",  "txId": null },
+    "ascending": { "status": "planned",  "txId": null },
+    "lbp":       { "status": "planned",  "txId": null },
+    "quadratic": { "status": "planned",  "txId": null },
+    "config":    { "status": "planned",  "txId": null },
+    "gate":      { "status": "planned",  "txId": null },
+    "proof":     { "status": "planned",  "txId": null },
+    "ref":       { "status": "planned",  "txId": null },
+    "vest":      { "status": "planned",  "txId": null }
+  }
+}

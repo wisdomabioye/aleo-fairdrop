@@ -162,8 +162,3 @@ export interface CancelAuctionInput {
   supply:        U128;  // D11: config.supply
 }
 
-// ── Program constants (informational) ────────────────────────────────────────
-
-export const DUTCH_PROGRAM_ID   = 'fairdrop_dutch.aleo' as const;
-export const DUTCH_PROGRAM_SALT = '1field' as const;   // AuctionKey.program_salt
-export const DUTCH_REFERRAL_SHARE_BPS = 2000 as const; // 20% of protocol_fee

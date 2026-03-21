@@ -44,4 +44,3 @@ export interface CheckAdmissionInput {
 /** `verified` mapping value — BHP256(bidder, auction_id) => bool. */
 export type VerifiedState = Bool;
 
-export const GATE_PROGRAM_ID = 'fairdrop_gate.aleo' as const;

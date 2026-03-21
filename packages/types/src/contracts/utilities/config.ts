@@ -33,4 +33,3 @@ export interface AssertConfigInput {
 /** `paused` mapping value — keyed by 0field. */
 export type PausedState = Bool;
 
-export const CONFIG_PROGRAM_ID = 'fairdrop_config.aleo' as const;

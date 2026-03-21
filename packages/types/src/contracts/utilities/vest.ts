@@ -46,4 +46,3 @@ export interface ReleaseInput {
   amount: U128; // amount of tokens to release this call (partial releases ok)
 }
 
-export const VEST_PROGRAM_ID = 'fairdrop_vest.aleo' as const;
