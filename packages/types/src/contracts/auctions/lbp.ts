@@ -1,0 +1,25 @@
+/**
+ * fairdrop_lbp.aleo — TypeScript types.
+ *
+ * Liquidity Bootstrapping Pool: token weight shifts over time from high to low,
+ * naturally driving price discovery downward and discouraging front-running bots.
+ *
+ * @todo Define fully when fairdrop_lbp.aleo is implemented.
+ */
+
+import type { U128, U32, U16 } from '../../primitives/scalars.js';
+import type { BaseAuctionConfig, AuctionState, BaseBid } from './common.js';
+
+export interface LbpAuctionConfig extends BaseAuctionConfig {
+  start_weight:   U16;  // initial sale-token weight in bps (e.g. 9000 = 90%)
+  end_weight:     U16;  // final sale-token weight in bps   (e.g. 1000 = 10%)
+  swap_fee_bps:   U16;
+  initial_price:  U128;
+}
+
+export type LbpBid = BaseBid;
+
+export type { AuctionState };
+
+export const LBP_PROGRAM_ID   = 'fairdrop_lbp.aleo' as const;
+export const LBP_PROGRAM_SALT = '5field' as const;
