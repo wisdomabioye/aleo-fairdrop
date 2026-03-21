@@ -28,6 +28,7 @@ program test_proof.aleo {
     // test_proof.aleo is not in allowed_callers.
     // finalize_issue_receipt asserts allowed_callers.get_or_use(caller, false).
     // caller = test_proof.aleo program address → not registered → assert(false).
+    // bidder_key is dummy in all cases — D12 guard fires before it is used.
 
     // Non-sealed auction call (commitment_hash = 0field) — fails on caller guard.
     @test
@@ -37,6 +38,7 @@ program test_proof.aleo {
             fairdrop_proof.aleo/issue_receipt(
                 1field,   // auction_id
                 0field,   // commitment_hash (non-sealed auction style)
+                0field,   // bidder_key — dummy; D12 guard fires before it is used
             );
         f.await();
     }
@@ -49,6 +51,7 @@ program test_proof.aleo {
             fairdrop_proof.aleo/issue_receipt(
                 2field,
                 12345field,  // dummy commitment_hash
+                99field,     // bidder_key — dummy; D12 guard fires before it is used
             );
         f.await();
     }
@@ -58,7 +61,7 @@ program test_proof.aleo {
     @should_fail
     script test_receipt_unauth_zero_id() {
         let (receipt, f): (fairdrop_proof.aleo/ParticipationReceipt, Future) =
-            fairdrop_proof.aleo/issue_receipt(0field, 0field);
+            fairdrop_proof.aleo/issue_receipt(0field, 0field, 0field);
         f.await();
     }
 

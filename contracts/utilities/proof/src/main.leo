@@ -14,12 +14,13 @@
 //   because no user address is in allowed_callers.
 //
 // Privacy note on `participated` mapping:
-//   participated[BHP256(bidder, auction_id)] = true is a PUBLIC mapping update.
-//   The bidder's address and auction_id become publicly observable when this is set.
-//   This is consistent with the auction type privacy models:
-//     - Dutch / Ascending / LBP / Raise: bid quantity is already public.
-//     - Sealed: the commit transaction itself is on-chain and bidder-linkable.
-//   See DESIGN.md Section 12 (Privacy Threat Model).
+//   participated[bidder_key] = true where bidder_key = BHP256(bidder, auction_id).
+//   bidder_key is computed by the AUCTION's transition body (where self.signer is
+//   private) and passed as a public field to issue_receipt. Only the pseudonymous
+//   hash reaches any finalize — the bidder's raw address never appears on-chain.
+//   An observer sees that *some* address participated in an auction, but cannot
+//   identify which address without reversing BHP256 (computationally infeasible).
+//   This is consistent with the pseudonymous model used in fairdrop_ref.aleo.
 //
 // `participated` semantics:
 //   participated = true means "at least one bid or commitment was submitted."
@@ -131,23 +132,25 @@ program fairdrop_proof.aleo {
     async transition issue_receipt(
         public auction_id:      field,
         public commitment_hash: field,
+        public bidder_key:      field,  // BHP256(BidderKey{bidder,auction_id}), pre-computed by caller
     ) -> (ParticipationReceipt, Future) {
         let receipt: ParticipationReceipt = ParticipationReceipt {
             owner:           self.signer,
             auction_id:      auction_id,
             commitment_hash: commitment_hash,
         };
-        return (receipt, finalize_issue_receipt(self.caller, self.signer, auction_id));
+        return (receipt, finalize_issue_receipt(self.caller, auction_id, bidder_key));
     }
     async function finalize_issue_receipt(
         caller:     address,
-        bidder:     address,
         auction_id: field,
+        bidder_key: field,
     ) {
         // D12: only registered auction programs may issue receipts
         assert(allowed_callers.get_or_use(caller, false));
-        let key: field = BHP256::hash_to_field(BidderKey { bidder, auction_id });
-        participated.set(key, true);
+        // bidder_key = BHP256(BidderKey{bidder, auction_id}) — pre-computed in the auction's
+        // transition body where self.signer is private. Raw bidder address never reaches finalize.
+        participated.set(bidder_key, true);
     }
 
     // =========================================================================
