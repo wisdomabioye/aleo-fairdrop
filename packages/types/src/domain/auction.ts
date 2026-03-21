@@ -37,6 +37,21 @@ export enum GateMode {
   Credential = 'credential',
 }
 
+/** Off-chain metadata pinned to IPFS and hashed on-chain via BHP256. */
+export interface AuctionMetadata {
+  /** Field hex — matches on-chain metadata_hash in AuctionConfig. */
+  hash:        string;
+  /** IPFS CID for fetching / verification. */
+  ipfsCid:     string;
+  name:        string;
+  description: string;
+  website:     string | null;
+  /** IPFS CID of logo image. */
+  logoIpfs:    string | null;
+  twitter:     string | null;
+  discord:     string | null;
+}
+
 /** Full auction view — used on detail pages. */
 export interface AuctionView {
   /** Hex-encoded auction_id field. */
@@ -47,6 +62,10 @@ export interface AuctionView {
 
   // Participants
   creator:         string;
+
+  // Metadata
+  metadataHash:    string | null;   // raw field — always present if on-chain
+  metadata:        AuctionMetadata | null;  // null if no metadata pinned / 0field hash
 
   // Token
   saleTokenId:     string;
@@ -93,6 +112,9 @@ export interface AuctionListItem {
   type:           AuctionType;
   status:         AuctionStatus;
   creator:        string;
+  name:           string | null;    // from metadata.name
+  logoIpfs:       string | null;    // from metadata.logoIpfs
+  metadataHash:   string | null;
   saleTokenId:    string;
   saleTokenSymbol: string | null;
   supply:         bigint;

@@ -111,6 +111,7 @@ program fairdrop_dutch.aleo {
         fee_bps:             u16,      // D16: snapshotted from fairdrop_config at create
         closer_reward:       u128,     // D16: snapshotted from fairdrop_config at create
         referral_pool_bps:   u16,      // D16: snapshotted from fairdrop_config at create
+        metadata_hash:       field,    // BHP256 of off-chain metadata JSON (IPFS). 0field = no metadata.
     }
 
     // Mutable auction lifecycle state.
@@ -256,6 +257,7 @@ program fairdrop_dutch.aleo {
         public min_bid_amount: u128,
         public sale_scale:    u128,
         public nonce:         u64,     // D11: creator_nonces[creator]
+        public metadata_hash: field,   // BHP256 of off-chain metadata JSON. 0field = no metadata.
         public dutch:         DutchParams,
         public gate:          GateParams,
         public vest:          VestParams,
@@ -324,6 +326,7 @@ program fairdrop_dutch.aleo {
             fee_bps:            snapshot.fee_bps,
             closer_reward:      snapshot.closer_reward,
             referral_pool_bps:  snapshot.referral_pool_bps,
+            metadata_hash:      metadata_hash,
         };
 
         return (remainder, finalize_create_auction(

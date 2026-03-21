@@ -1,4 +1,5 @@
 export { auctions } from './auctions.js';
+export { auctionMetadata } from './metadata.js';
 export { bids, vesting } from './bids.js';
 export { userReputation, creatorNonces } from './users.js';
 export { referralCodes, referralAttributions } from './referrals.js';

@@ -8,6 +8,7 @@
 import { type InferSelectModel, type InferInsertModel } from 'drizzle-orm';
 import type {
   auctions,
+  auctionMetadata,
   bids,
   vesting,
   userReputation,
@@ -21,6 +22,10 @@ import type {
 // Auctions
 export type AuctionRow    = InferSelectModel<typeof auctions>;
 export type NewAuction    = InferInsertModel<typeof auctions>;
+
+// Auction metadata
+export type AuctionMetadataRow = InferSelectModel<typeof auctionMetadata>;
+export type NewAuctionMetadata = InferInsertModel<typeof auctionMetadata>;
 
 // Bids & vesting
 export type BidRow        = InferSelectModel<typeof bids>;

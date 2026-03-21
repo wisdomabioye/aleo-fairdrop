@@ -7,6 +7,9 @@ export const auctions = pgTable('auctions', {
   programId:       text('program_id').notNull(),
   creator:         text('creator').notNull(),
 
+  // Metadata — links to the metadata table for human-readable name/description/logo
+  metadataHash:    text('metadata_hash'),
+
   // Token
   saleTokenId:     text('sale_token_id').notNull(),
   paymentTokenId:  text('payment_token_id').notNull(),
@@ -17,15 +20,28 @@ export const auctions = pgTable('auctions', {
   totalPayments:   text('total_payments').notNull().default('0'),
 
   // Status — denormalised for query performance
-  status:          text('status').notNull().default('open'),
+  // Values: 'live' | 'cleared' | 'voided'
+  // ('ended' = time-expired, not-yet-closed — computed by API from end_block vs current block)
+  status:          text('status').notNull().default('live'),
   supplyMet:       boolean('supply_met').notNull().default(false),
   cleared:         boolean('cleared').notNull().default(false),
   voided:          boolean('voided').notNull().default(false),
 
-  // Price — null for non-Dutch types before clearing
+  // Price — u128 as decimal strings; null for auction types without Dutch pricing
   startPrice:      text('start_price'),
   floorPrice:      text('floor_price'),
   clearingPrice:   text('clearing_price'),
+
+  // Dutch / Ascending price schedule — null for auction types that don't use it
+  priceDecayBlocks: integer('price_decay_blocks'),
+  priceDecayAmount: text('price_decay_amount'),   // u128
+
+  // Bid constraints — u128 as decimal strings
+  minBidAmount:    text('min_bid_amount'),
+  maxBidAmount:    text('max_bid_amount'),
+
+  // Sale token decimal scale (10^decimals) — used for payment math, avoids registry reads
+  saleScale:       text('sale_scale'),             // u128
 
   // Timing
   startBlock:      integer('start_block').notNull(),
@@ -37,7 +53,7 @@ export const auctions = pgTable('auctions', {
   protocolFee:     text('protocol_fee'),
   referralBudget:  text('referral_budget'),
 
-  // Full on-chain config + state snapshots
+  // Full on-chain config + state snapshots (authoritative — contains all fields)
   configJson:      jsonb('config_json').notNull().default({}),
   stateJson:       jsonb('state_json').notNull().default({}),
 
@@ -58,4 +74,5 @@ export const auctions = pgTable('auctions', {
   index('auctions_creator_idx').on(t.creator),
   index('auctions_status_idx').on(t.status),
   index('auctions_program_id_idx').on(t.programId),
+  index('auctions_metadata_hash_idx').on(t.metadataHash),
 ]);

@@ -58,6 +58,7 @@ export interface CreateAuctionInput {
   min_bid_amount: U128;
   sale_scale:     U128;
   nonce:          U64;   // D11: creator_nonces[creator] read off-chain
+  metadata_hash:  Field; // BHP256 of off-chain metadata JSON. 0field = no metadata.
   dutch:          DutchParams;
   gate:           GateParams;
   vest:           VestParams;

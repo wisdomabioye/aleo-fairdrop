@@ -49,6 +49,7 @@ export interface BaseAuctionConfig {
   fee_bps:            U16;   // D16: snapshotted from fairdrop_config at create
   closer_reward:      U128;  // D16: snapshotted from fairdrop_config at create
   referral_pool_bps:  U16;   // D16: snapshotted from fairdrop_config at create
+  metadata_hash:      Field; // BHP256 of off-chain metadata JSON (IPFS). 0field = no metadata.
 }
 
 /**

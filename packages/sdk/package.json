@@ -1,0 +1,14 @@
+{
+  "name": "@fairdrop/sdk",
+  "version": "0.1.0",
+  "private": true,
+  "exports": {
+    "./parse": "./src/parse/index.ts"
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3"
+  }
+}
