@@ -7,4 +7,4 @@
 | `backend/` | Service architecture, DB schema decisions, indexer design |
 | `runbooks/` | Operational playbooks (deploy, incident response, key rotation) |
 
-Start with [`architecture/DESIGN.md`](architecture/DESIGN.md).
+Start with [`architecture/DESIGN.md`](architecture/DESIGN.md) for protocol design, and [`architecture/IMPLEMENTATION_ORDER.md`](architecture/IMPLEMENTATION_ORDER.md) for build sequence.

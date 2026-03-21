@@ -71,8 +71,9 @@ program fairdrop_dutch.aleo {
     // All auction types must use distinct PROGRAM_SALT values.
     const PROGRAM_SALT: field = 1field;
 
-    // Share of protocol_fee allocated to the referral reserve. 20% of fee.
-    const REFERRAL_SHARE_BPS: u16 = 2000u16;
+    // referral_pool_bps is no longer a hardcoded constant.
+    // It is snapshotted from fairdrop_config.aleo at create_auction (D16 pattern)
+    // and stored in AuctionConfig for use at close_auction.
 
     // =========================================================================
     // Structs
@@ -107,8 +108,9 @@ program fairdrop_dutch.aleo {
         vest_enabled:       bool,     // true → claim_vested required; claim blocked
         vest_cliff_blocks:  u32,      // blocks after ended_at_block before release
         vest_end_blocks:    u32,      // blocks after ended_at_block for full vest
-        fee_bps:            u16,      // D16: snapshotted from fairdrop_config at create
-        closer_reward:      u128,     // D16: snapshotted from fairdrop_config at create
+        fee_bps:             u16,      // D16: snapshotted from fairdrop_config at create
+        closer_reward:       u128,     // D16: snapshotted from fairdrop_config at create
+        referral_pool_bps:   u16,      // D16: snapshotted from fairdrop_config at create
     }
 
     // Mutable auction lifecycle state.
@@ -156,12 +158,14 @@ program fairdrop_dutch.aleo {
     }
 
     // D16 snapshot of protocol-level configuration parameters.
-    // Validated by assert_config CPI; fee_bps and closer_reward stored in AuctionConfig.
+    // Validated by assert_config CPI; fee_bps, closer_reward, and referral_pool_bps
+    // are stored in AuctionConfig for use at close_auction.
     struct ConfigSnapshot {
-        fee_bps:          u16,
-        creation_fee:     u128,
-        closer_reward:    u128,
-        slash_reward_bps: u16,
+        fee_bps:            u16,
+        creation_fee:       u128,
+        closer_reward:      u128,
+        slash_reward_bps:   u16,
+        referral_pool_bps:  u16,  // D16: share of protocol_fee for referral budget
     }
 
     // =========================================================================
@@ -283,6 +287,7 @@ program fairdrop_dutch.aleo {
             snapshot.creation_fee,
             snapshot.closer_reward,
             snapshot.slash_reward_bps,
+            snapshot.referral_pool_bps,
             start_block,
             end_block,
         );
@@ -318,6 +323,7 @@ program fairdrop_dutch.aleo {
             vest_end_blocks:    vest.vest_end_blocks,
             fee_bps:            snapshot.fee_bps,
             closer_reward:      snapshot.closer_reward,
+            referral_pool_bps:  snapshot.referral_pool_bps,
         };
 
         return (remainder, finalize_create_auction(
@@ -1008,7 +1014,7 @@ program fairdrop_dutch.aleo {
         let total_cost: u128      = state.total_committed * clearing_price / config.sale_scale;
         let protocol_fee: u128    = total_cost * (config.fee_bps as u128) / 10000u128;
         let creator_revenue: u128 = total_cost - protocol_fee;
-        let referral_budget: u128 = protocol_fee * (REFERRAL_SHARE_BPS as u128) / 10000u128;
+        let referral_budget: u128 = protocol_fee * (config.referral_pool_bps as u128) / 10000u128;
 
         // Update treasury: credit net protocol fee, debit closer reward.
         // net_fee = protocol_fee - referral_budget (>= 0, referral share <= 100%)

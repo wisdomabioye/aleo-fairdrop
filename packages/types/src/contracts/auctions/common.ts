@@ -46,8 +46,9 @@ export interface BaseAuctionConfig {
   vest_enabled:     Bool;
   vest_cliff_blocks: U32;
   vest_end_blocks:  U32;
-  fee_bps:          U16;     // D16: snapshotted from fairdrop_config at create
-  closer_reward:    U128;    // D16: snapshotted from fairdrop_config at create
+  fee_bps:            U16;   // D16: snapshotted from fairdrop_config at create
+  closer_reward:      U128;  // D16: snapshotted from fairdrop_config at create
+  referral_pool_bps:  U16;   // D16: snapshotted from fairdrop_config at create
 }
 
 /**
@@ -75,10 +76,11 @@ export interface AuctionStats {
  * Shared across all auction create transitions.
  */
 export interface ConfigSnapshot {
-  fee_bps:          U16;
-  creation_fee:     U128;
-  closer_reward:    U128;
-  slash_reward_bps: U16;
+  fee_bps:             U16;
+  creation_fee:        U128;
+  closer_reward:       U128;
+  slash_reward_bps:    U16;
+  referral_pool_bps:   U16;  // D16: share of protocol_fee for referral budget
 }
 
 /**

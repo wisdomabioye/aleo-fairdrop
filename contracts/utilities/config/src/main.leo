@@ -69,10 +69,17 @@ program fairdrop_config.aleo {
     // Hard ceiling: slasher cannot receive more than 50% of the forfeited payment.
     const MAX_SLASH_REWARD_BPS: u16 = 5000u16;
 
-    // Maximum commission_bps allowed on a ReferralCode. 2000 = 20% of fee.
+    // Maximum commission_bps allowed on a ReferralCode. 2000 = 20% of referral pool.
     const DEFAULT_MAX_REFERRAL_BPS: u16 = 2000u16;
-    // Hard ceiling: referral share cannot exceed 100% of the protocol fee.
-    const MAX_REFERRAL_BPS_CAP: u16 = 10000u16;
+    // Hard ceiling: no single referrer code can claim more than 50% of the pool.
+    // Prevents a single code from dominating referral rewards.
+    const MAX_REFERRAL_BPS_CAP: u16 = 5000u16;
+
+    // Share of protocol_fee allocated as the auction-level referral budget at close_auction.
+    // 500 bps = 5% of protocol_fee. Conservative default — increase once referral
+    // programme proves volume uplift. Hard ceiling: 20%.
+    const DEFAULT_REFERRAL_POOL_BPS: u16 = 500u16;
+    const MAX_REFERRAL_POOL_BPS: u16 = 2000u16;
 
     // Minimum end_block - start_block enforced at create_auction.
     // 360 blocks ≈ 1 hour at ~10 s/block. Set to 0 to disable (e.g. testnet).
@@ -100,8 +107,14 @@ program fairdrop_config.aleo {
     // Slasher reward share in bps. Default: 2000 (20%). Hard cap: 5000 (50%).
     mapping slash_reward_bps: field => u16;
 
-    // Max referral commission in bps. Default: 2000. Hard cap: 10000 (100% of fee).
+    // Max referral commission in bps a single code may claim from the pool.
+    // Default: 2000 (20% of pool). Hard cap: 5000 (50% of pool).
     mapping max_referral_bps: field => u16;
+
+    // Share of protocol_fee reserved as referral budget at close_auction.
+    // Default: 500 (5% of protocol_fee). Hard cap: 2000 (20%).
+    // Snapshotted into AuctionConfig at create_auction (D16 pattern).
+    mapping referral_pool_bps: field => u16;
 
     // Minimum auction duration in blocks. Default: 360. 0 = no minimum (testnet).
     mapping min_auction_duration: field => u32;
@@ -165,8 +178,17 @@ program fairdrop_config.aleo {
     }
     async function finalize_set_max_referral_bps(caller: address, new_value: u16) {
         assert_eq(caller, protocol_admin.get_or_use(CONFIG_KEY, INITIAL_ADMIN));
-        assert(new_value <= MAX_REFERRAL_BPS_CAP); // hard ceiling: 100% of fee
+        assert(new_value <= MAX_REFERRAL_BPS_CAP); // hard ceiling: 50% of pool
         max_referral_bps.set(CONFIG_KEY, new_value);
+    }
+
+    async transition set_referral_pool_bps(public new_value: u16) -> Future {
+        return finalize_set_referral_pool_bps(self.signer, new_value);
+    }
+    async function finalize_set_referral_pool_bps(caller: address, new_value: u16) {
+        assert_eq(caller, protocol_admin.get_or_use(CONFIG_KEY, INITIAL_ADMIN));
+        assert(new_value <= MAX_REFERRAL_POOL_BPS); // hard ceiling: 20% of protocol_fee
+        referral_pool_bps.set(CONFIG_KEY, new_value);
     }
 
     async transition set_min_auction_duration(public new_value: u32) -> Future {
@@ -204,34 +226,38 @@ program fairdrop_config.aleo {
     //   f_cfg.await();
 
     async transition assert_config(
-        public snapshot_fee_bps: u16,
-        public snapshot_creation_fee: u128,
-        public snapshot_closer_reward: u128,
+        public snapshot_fee_bps:          u16,
+        public snapshot_creation_fee:     u128,
+        public snapshot_closer_reward:    u128,
         public snapshot_slash_reward_bps: u16,
+        public snapshot_referral_pool_bps: u16,
         public start_block: u32,
-        public end_block: u32,
+        public end_block:   u32,
     ) -> Future {
         return finalize_assert_config(
             snapshot_fee_bps,
             snapshot_creation_fee,
             snapshot_closer_reward,
             snapshot_slash_reward_bps,
+            snapshot_referral_pool_bps,
             start_block,
             end_block,
         );
     }
     async function finalize_assert_config(
-        snapshot_fee_bps: u16,
-        snapshot_creation_fee: u128,
-        snapshot_closer_reward: u128,
+        snapshot_fee_bps:          u16,
+        snapshot_creation_fee:     u128,
+        snapshot_closer_reward:    u128,
         snapshot_slash_reward_bps: u16,
+        snapshot_referral_pool_bps: u16,
         start_block: u32,
-        end_block: u32,
+        end_block:   u32,
     ) {
-        assert_eq(snapshot_fee_bps,          fee_bps.get_or_use(CONFIG_KEY, DEFAULT_FEE_BPS));
-        assert_eq(snapshot_creation_fee,     creation_fee.get_or_use(CONFIG_KEY, DEFAULT_CREATION_FEE));
-        assert_eq(snapshot_closer_reward,    closer_reward.get_or_use(CONFIG_KEY, DEFAULT_CLOSER_REWARD));
-        assert_eq(snapshot_slash_reward_bps, slash_reward_bps.get_or_use(CONFIG_KEY, DEFAULT_SLASH_REWARD_BPS));
+        assert_eq(snapshot_fee_bps,           fee_bps.get_or_use(CONFIG_KEY, DEFAULT_FEE_BPS));
+        assert_eq(snapshot_creation_fee,      creation_fee.get_or_use(CONFIG_KEY, DEFAULT_CREATION_FEE));
+        assert_eq(snapshot_closer_reward,     closer_reward.get_or_use(CONFIG_KEY, DEFAULT_CLOSER_REWARD));
+        assert_eq(snapshot_slash_reward_bps,  slash_reward_bps.get_or_use(CONFIG_KEY, DEFAULT_SLASH_REWARD_BPS));
+        assert_eq(snapshot_referral_pool_bps, referral_pool_bps.get_or_use(CONFIG_KEY, DEFAULT_REFERRAL_POOL_BPS));
         // Safe duration check: assert ordering first, then subtract.
         // A reversed range produces a clear assertion failure, not a u32 underflow.
         assert(end_block > start_block);
