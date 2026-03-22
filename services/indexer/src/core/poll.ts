@@ -3,7 +3,8 @@
  *
  * Strategy:
  *   - On startup, resume from the last checkpoint (stored in DB).
- *   - Each iteration fetches up to BATCH_SIZE blocks behind the finality buffer.
+ *   - Each iteration fetches up to BATCH_SIZE blocks (≤ 50) in one request
+ *     via getBlockRange, staying behind the finality buffer.
  *   - If fully caught up, waits POLL_INTERVAL_MS before checking again.
  *   - Graceful shutdown on SIGTERM / SIGINT.
  */
@@ -12,7 +13,10 @@ import { indexerCheckpoints }   from '@fairdrop/database';
 import type { Db }              from '@fairdrop/database';
 import type { AleoRpcClient }   from '../client/rpc.js';
 import { BlockProcessor }       from './processor.js';
+import { createLogger }         from '../logger.js';
 import { env }                  from '../env.js';
+
+const log = createLogger('poll');
 
 export class PollLoop {
   private running     = false;
@@ -31,13 +35,13 @@ export class PollLoop {
     process.on('SIGTERM', () => this.stop('SIGTERM'));
     process.on('SIGINT',  () => this.stop('SIGINT'));
 
-    console.log('[poll] starting — confirmation depth:', env.confirmationDepth);
+    log.info(`starting — confirmation depth: ${env.confirmationDepth}, start block: ${env.startBlock}`);
 
     while (this.running) {
       try {
         await this.tick();
       } catch (err) {
-        console.error('[poll] tick error:', err);
+        log.error('tick error', err);
       }
 
       if (this.running) {
@@ -45,11 +49,11 @@ export class PollLoop {
       }
     }
 
-    console.log('[poll] stopped');
+    log.info('stopped');
   }
 
   stop(signal: string): void {
-    console.log(`[poll] received ${signal} — stopping after current tick`);
+    log.info(`received ${signal} — stopping after current tick`);
     this.running = false;
   }
 
@@ -63,20 +67,23 @@ export class PollLoop {
     const safeHeight = tipHeight - env.confirmationDepth;
 
     if (fromHeight > safeHeight) {
-      console.log(`[poll] caught up (tip: ${tipHeight}, from: ${fromHeight}, safe: ${safeHeight})`);
+      log.debug(`caught up`, { tip: tipHeight, from: fromHeight, safe: safeHeight });
       return;
     }
 
+    // getBlockRange is capped at 50 by the API; env.batchSize is already clamped to 50.
     const toHeight = Math.min(fromHeight + env.batchSize - 1, safeHeight);
-    console.log(`[poll] processing blocks ${fromHeight}–${toHeight} (tip: ${tipHeight})`);
+    log.info(`processing blocks ${fromHeight}–${toHeight}`, { tip: tipHeight });
 
-    for (let h = fromHeight; h <= toHeight && this.running; h++) {
-      const block = await this.rpc.getBlock(h);
-      await this.processor.processBlock(block);
+    const blocks = await this.rpc.getBlockRange(fromHeight, toHeight);
+
+    for (const block of blocks) {
+      if (!this.running) break;
+      await this.processor.processBlock(block, tipHeight);
     }
   }
 
-  /** Resume from the block after the last processed one, or from block 1. */
+  /** Resume from the block after the last processed one, or from the configured start block. */
   private async getResumeHeight(): Promise<number> {
     const rows = await this.db
       .select()
@@ -84,7 +91,7 @@ export class PollLoop {
       .where(eq(indexerCheckpoints.programId, 'global'))
       .limit(1);
 
-    return rows[0] ? rows[0].lastBlockHeight + 1 : 1;
+    return rows[0] ? rows[0].lastBlockHeight + 1 : env.startBlock;
   }
 }
 

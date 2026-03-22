@@ -22,3 +22,12 @@ export function createDb(connectionString: string) {
 }
 
 export type Db = ReturnType<typeof createDb>;
+
+/**
+ * Drizzle transaction instance — same query API as Db, scoped to a transaction.
+ * Derived from Db so it can never drift from the actual transaction callback type.
+ *
+ * Usage: accept `Db | DbTx` when a function may be called both inside and
+ * outside a transaction (e.g. transition handlers).
+ */
+export type DbTx = Parameters<Parameters<Db['transaction']>[0]>[0];

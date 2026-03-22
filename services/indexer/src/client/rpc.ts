@@ -16,6 +16,9 @@
  * paths (e.g. Promise.all in handlers) cannot burst past the limit.
  */
 import type { AleoBlock } from '../types/aleo.js';
+import { createLogger }  from '../logger.js';
+
+const log = createLogger('rpc');
 
 const MAX_RPS        = 5;
 const MIN_INTERVAL   = Math.ceil(1000 / MAX_RPS); // 200 ms between calls
@@ -45,8 +48,7 @@ export class AleoRpcClient {
       const res = await fetch(url, { headers: { Accept: 'application/json' } });
 
       if (res.status === 429) {
-        // Back off and retry once on rate-limit response.
-        console.warn(`[rpc] 429 rate limited — backing off 2s (${url})`);
+        log.warn(`429 rate limited — backing off 2s`, { url });
         await sleep(2000);
         const retry = await fetch(url, { headers: { Accept: 'application/json' } });
         if (!retry.ok) throw new Error(`[rpc] GET ${url} → ${retry.status} ${retry.statusText}`);
@@ -70,6 +72,18 @@ export class AleoRpcClient {
   /** Single block by height. */
   getBlock(height: number): Promise<AleoBlock> {
     return this.get<AleoBlock>(`/block/${height}`);
+  }
+
+  /**
+   * Fetch a contiguous range of blocks in a single request.
+   * The Aleo REST API caps ranges at 50 blocks — callers must not exceed this.
+   *
+   * Endpoint: GET /blocks?start={start}&end={end}
+   * Returns blocks in ascending height order.
+   * Verify the query param names against the live node if the endpoint changes.
+   */
+  getBlockRange(start: number, end: number): Promise<AleoBlock[]> {
+    return this.get<AleoBlock[]>(`/blocks?start=${start}&end=${end}`);
   }
 
   /**

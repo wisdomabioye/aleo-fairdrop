@@ -12,13 +12,11 @@
     "@fairdrop/config":   "workspace:*",
     "@fairdrop/database": "workspace:*",
     "@fairdrop/sdk":      "workspace:*",
-    "@fairdrop/types":    "workspace:*",
-    "node-cron":          "^3.0.3"
+    "@fairdrop/types":    "workspace:*"
   },
   "devDependencies": {
-    "@types/node":      "^25.5.0",
-    "@types/node-cron": "^3.0.11",
-    "tsx":              "^4.19.3",
-    "typescript":       "~5.9.3"
+    "@types/node": "^25.5.0",
+    "tsx":         "^4.19.3",
+    "typescript":  "~5.9.3"
   }
 }

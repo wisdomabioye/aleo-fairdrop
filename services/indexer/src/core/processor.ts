@@ -10,16 +10,22 @@
  *
  * All writes per block are in a single DB transaction — either the whole block
  * commits or nothing does. The checkpoint is updated inside the same tx.
+ * If any handler throws (e.g. transient mapping read failure), the transaction
+ * rolls back and the block will be retried on the next poll tick.
  *
  * The processor has no knowledge of specific transitions or auction types.
  * Handler dispatch is fully data-driven via the AuctionRegistry.
  */
 import { eq }                                           from 'drizzle-orm';
 import { indexerTransitions, indexerCheckpoints }       from '@fairdrop/database';
-import type { Db }                                      from '@fairdrop/database';
+import type { Db, DbTx }                               from '@fairdrop/database';
 import type { AleoRpcClient }                           from '../client/rpc.js';
 import type { AleoBlock, AleoTransition, FinalizeOperation } from '../types/aleo.js';
 import { buildAuctionRegistry, type AuctionRegistry }  from '../handlers/index.js';
+import { KNOWN_UNHANDLED_TRANSITIONS }                 from '../handlers/auction.js';
+import { createLogger }                                from '../logger.js';
+
+const log = createLogger('processor');
 
 export class BlockProcessor {
   private readonly registry: AuctionRegistry;
@@ -31,7 +37,7 @@ export class BlockProcessor {
     this.registry = buildAuctionRegistry();
   }
 
-  async processBlock(block: AleoBlock): Promise<void> {
+  async processBlock(block: AleoBlock, tipHeight: number): Promise<void> {
     const blockHeight = block.header.metadata.height;
     const timestamp   = new Date(block.header.metadata.timestamp * 1000);
 
@@ -44,7 +50,7 @@ export class BlockProcessor {
 
         for (const transition of confirmed.transaction.execution.transitions) {
           await this.processTransition(
-            tx as unknown as Db,
+            tx,
             transition,
             confirmed.finalize ?? [],
             blockHeight,
@@ -62,7 +68,7 @@ export class BlockProcessor {
           lastBlockHash:   block.block_hash,
           lastProcessedAt: new Date(),
           status:          'syncing',
-          lag:             0,
+          lag:             tipHeight - blockHeight,
         })
         .onConflictDoUpdate({
           target: indexerCheckpoints.programId,
@@ -70,13 +76,14 @@ export class BlockProcessor {
             lastBlockHeight: blockHeight,
             lastBlockHash:   block.block_hash,
             lastProcessedAt: new Date(),
+            lag:             tipHeight - blockHeight,
           },
         });
     });
   }
 
   private async processTransition(
-    db:          Db,
+    db:          DbTx,
     transition:  AleoTransition,
     finalizeOps: FinalizeOperation[],
     blockHeight: number,
@@ -85,7 +92,7 @@ export class BlockProcessor {
   ): Promise<void> {
     const { program: programId, function: fnName, id: transitionId } = transition;
 
-    // Not a fairdrop program — skip without logging (most blocks will hit this).
+    // Not a fairdrop program — skip silently (most blocks).
     const programMap = this.registry[programId];
     if (!programMap) return;
 
@@ -100,8 +107,14 @@ export class BlockProcessor {
 
     const entry = programMap[fnName];
     if (!entry) {
-      // Registered program but unhandled transition (e.g. claim, claim_vested).
-      // Still record it so we don't re-examine on restart.
+      if (KNOWN_UNHANDLED_TRANSITIONS.has(fnName)) {
+        log.debug(`${programId}::${fnName} — intentionally skipped`);
+      } else {
+        log.warn(`${programId}::${fnName} — no handler registered (registry may be out of date)`, {
+          txId,
+          blockHeight,
+        });
+      }
       await db.insert(indexerTransitions).values({
         transitionId,
         programId,
@@ -114,12 +127,10 @@ export class BlockProcessor {
 
     const auctionId = entry.getAuctionId(transition, finalizeOps);
     if (!auctionId) {
-      console.warn(
-        `[processor] ${programId}::${fnName}: could not resolve auction_id ` +
-        `(tx: ${txId}) — skipping handler, recording transition`,
-      );
+      log.warn(`${programId}::${fnName} — could not resolve auction_id`, { txId, blockHeight });
     } else {
-      const ctx = { db, rpc: this.rpc, transition, blockHeight, timestamp, txId };
+      // ctx.db typed as Db | DbTx — DbTx satisfies all query operations needed by handlers.
+      const ctx = { db: db as Db | DbTx, rpc: this.rpc, transition, blockHeight, timestamp, txId };
       await entry.handle(ctx, auctionId);
     }
 

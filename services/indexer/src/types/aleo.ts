@@ -20,15 +20,13 @@ export interface AleoBlock {
 }
 
 export interface ConfirmedTransaction {
-  /** Confirmed transaction ID (wraps the inner transaction + fee). */
-  id:          string;
   status:      'accepted' | 'rejected';
   /** 'execute' | 'deploy' | 'fee' */
   type:        string;
   index:       number;
   transaction: AleoTransaction;
-  /** Finalize (mapping) operations recorded for this transaction. */
-  finalize:    FinalizeOperation[];
+  /** Finalize (mapping) operations recorded for this transaction. May be absent for non-execute txs. */
+  finalize?:   FinalizeOperation[];
 }
 
 export interface AleoTransaction {
@@ -54,6 +52,8 @@ export interface AleoTransition {
   /** Transition public key (ephemeral). */
   tpk:      string;
   tcm:      string;
+  /** Signature commitment. */
+  scm:      string;
 }
 
 export interface TransitionValue {

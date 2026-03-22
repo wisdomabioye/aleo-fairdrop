@@ -2,166 +2,47 @@
  * Generic auction upsert handler — works for any auction program type
  * (dutch, sealed, raise, ascending, lbp, quadratic).
  *
- * Every transition that touches auction state collapses to a single operation:
+ * Every registered transition collapses to a single operation:
  *   1. Fetch current on-chain config + state from mappings.
  *   2. Upsert the auctions row (insert on create, update on subsequent transitions).
  *
  * Bid / claim / vesting tracking is intentionally out of scope.
  * Users see their private Bid records via their connected wallet.
  *
- * programId and auctionType are injected at registry build time via
- * createProgramHandlerMap(). No program IDs are hardcoded here.
+ * Adding a new auction type: call createProgramHandlerMap with the new type
+ * name and programId. No changes needed to the processor.
  */
-import { auctions }                              from '@fairdrop/database';
-import {
-  parseAddress, parseBool, parseField,
-  parseStruct, parseU128, parseU16, parseU32, parseU8,
-} from '@fairdrop/sdk/parse';
-import type { AleoRpcClient }                    from '../client/rpc.js';
-import type { AleoTransition, FinalizeOperation } from '../types/aleo.js';
-import type { TransitionContext }                from './types.js';
+import { auctions }                           from '@fairdrop/database';
+import { AuctionType }                        from '@fairdrop/types/domain';
+import { createLogger }                       from '../logger.js';
+import { fetchConfig, fetchState }            from './mapping.js';
+import { auctionIdFromPublicInput,
+         auctionIdFromFinalizeKey }           from './extractors.js';
+import type {
+  HandlerEntry,
+  ProgramHandlerMap,
+  TransitionContext,
+  TransitionHandlerFn,
+} from './types.js';
 
-// ── Mapping names — must match on-chain program exactly ──────────────────────
+export type { HandlerEntry, ProgramHandlerMap, TransitionHandlerFn };
 
-const MAPPING_CONFIGS = 'auction_configs';
-const MAPPING_STATES  = 'auction_states';
+// ── DB status vocabulary ──────────────────────────────────────────────────────
+//
+// The DB stores the on-chain-derivable status only: 'live' | 'cleared' | 'voided'.
+// The three computed statuses in AuctionStatus ('upcoming', 'clearing', 'ended')
+// are derived by the API from block height vs start_block / end_block / supply_met
+// and never stored on disk.
+//
+//   DB 'live'    → API upcoming | active | clearing  (depends on current block)
+//   DB 'cleared' → API cleared
+//   DB 'voided'  → API voided
 
-// ── Handler types ─────────────────────────────────────────────────────────────
-
-export type TransitionHandlerFn = (ctx: TransitionContext, auctionId: string) => Promise<void>;
-
-export type AuctionIdExtractor = (
-  transition:  AleoTransition,
-  finalizeOps: FinalizeOperation[],
-) => string | null;
-
-export interface HandlerEntry {
-  getAuctionId: AuctionIdExtractor;
-  handle:       TransitionHandlerFn;
-}
-
-/** Flat map of transition name → handler entry. Processor dispatches blindly. */
-export type ProgramHandlerMap = Record<string, HandlerEntry>;
-
-// ── Auction-id extractors ─────────────────────────────────────────────────────
-
-/**
- * Resolve auction_id from finalize mapping operations.
- * Used for create_auction — the auction_id is the key inserted into
- * auction_configs in the finalize block, not a direct public input.
- *
- * NOTE: The Aleo REST API may expose key as plaintext or as a hash ID.
- * If only hash IDs are available this will return null; in that case
- * a getMappingValue fallback would be needed (verify against a live node).
- */
-function auctionIdFromFinalizeOps(
-  _transition: AleoTransition,
-  ops:         FinalizeOperation[],
-): string | null {
-  const op = ops.find((o) => o.key != null && o.mapping_id?.includes(MAPPING_CONFIGS));
-  return op?.key ?? null;
-}
-
-/**
- * Resolve auction_id from writes to `auction_states` in finalize ops.
- * Used for transitions where auction_id is not a public input (e.g. reveal_bid
- * receives the auction_id only via the private Commitment record).
- */
-function auctionIdFromStateFinalizeOps(
-  _transition: AleoTransition,
-  ops:         FinalizeOperation[],
-): string | null {
-  const op = ops.find((o) => o.key != null && o.mapping_id?.includes(MAPPING_STATES));
-  return op?.key ?? null;
-}
-
-/**
- * Resolve auction_id from the first public field-typed input.
- * Scans all inputs and returns the value of the first one whose Leo string
- * ends with the "field" suffix (e.g. "12345field").
- *
- * This handles transitions where the Bid record is inputs[0] (private, no
- * value) and auction_id is a later positional input — e.g. place_bid_private.
- */
-function auctionIdFromPublicInput(
-  transition: AleoTransition,
-  _ops:       FinalizeOperation[],
-): string | null {
-  for (const input of transition.inputs) {
-    if (input.value?.trim().endsWith('field')) {
-      return parseField(input.value);
-    }
-  }
-  return null;
-}
-
-// ── Mapping readers ───────────────────────────────────────────────────────────
-
-async function fetchConfig(rpc: AleoRpcClient, programId: string, auctionId: string) {
-  const raw = await rpc.getMappingValue(programId, MAPPING_CONFIGS, `${auctionId}field`);
-  if (!raw) return null;
-  const f = parseStruct(raw);
-
-  // Helper: parse optional field (absent in stub programs or future auction types)
-  const optField   = (k: string) => f[k] ? parseField(f[k]!)   : null;
-  const optU128    = (k: string) => f[k] ? parseU128(f[k]!)    : null;
-  const optU32     = (k: string) => f[k] ? parseU32(f[k]!)     : null;
-
-  return {
-    auction_id:         parseField(f['auction_id']!),
-    creator:            parseAddress(f['creator']!),
-    sale_token_id:      parseField(f['sale_token_id']!),
-    payment_token_id:   parseField(f['payment_token_id']!),
-    supply:             parseU128(f['supply']!),
-    start_block:        parseU32(f['start_block']!),
-    end_block:          parseU32(f['end_block']!),
-    gate_mode:          parseU8(f['gate_mode']!),
-    vest_enabled:       parseBool(f['vest_enabled']!),
-    vest_cliff_blocks:  parseU32(f['vest_cliff_blocks']!),
-    vest_end_blocks:    parseU32(f['vest_end_blocks']!),
-    fee_bps:            parseU16(f['fee_bps']!),
-    closer_reward:      parseU128(f['closer_reward']!),
-    referral_pool_bps:  parseU16(f['referral_pool_bps']!),
-    // Optional — present in Dutch/Sealed/Ascending, absent in Raise/Quadratic
-    metadata_hash:      optField('metadata_hash'),
-    start_price:        optU128('start_price'),
-    floor_price:        optU128('floor_price'),
-    price_decay_blocks: optU32('price_decay_blocks'),
-    price_decay_amount: optU128('price_decay_amount'),
-    min_bid_amount:     optU128('min_bid_amount'),
-    max_bid_amount:     optU128('max_bid_amount'),
-    sale_scale:         optU128('sale_scale'),
-    // Ascending-specific
-    ceiling_price:      optU128('ceiling_price'),
-    price_rise_blocks:  optU32('price_rise_blocks'),
-    price_rise_amount:  optU128('price_rise_amount'),
-    // Sealed-specific
-    commit_end_block:   optU32('commit_end_block'),
-    slash_reward_bps:   f['slash_reward_bps'] ? parseU16(f['slash_reward_bps']!) : null,
-    // Raise-specific
-    raise_target:       optU128('raise_target'),
-  };
-}
-
-async function fetchState(rpc: AleoRpcClient, programId: string, auctionId: string) {
-  const raw = await rpc.getMappingValue(programId, MAPPING_STATES, `${auctionId}field`);
-  if (!raw) return null;
-  const f = parseStruct(raw);
-  return {
-    total_committed: parseU128(f['total_committed']!),
-    total_payments:  parseU128(f['total_payments']!),
-    supply_met:      parseBool(f['supply_met']!),
-    ended_at_block:  parseU32(f['ended_at_block']!),
-    cleared:         parseBool(f['cleared']!),
-    clearing_price:  parseU128(f['clearing_price']!),
-    creator_revenue: parseU128(f['creator_revenue']!),
-    protocol_fee:    parseU128(f['protocol_fee']!),
-    voided:          parseBool(f['voided']!),
-    referral_budget: parseU128(f['referral_budget']!),
-  };
-}
+type DbStatus = 'live' | 'cleared' | 'voided';
 
 // ── Core upsert ───────────────────────────────────────────────────────────────
+
+const log = createLogger('auction');
 
 async function upsertAuction(
   ctx:         TransitionContext,
@@ -177,17 +58,17 @@ async function upsertAuction(
   ]);
 
   if (!config || !state) {
-    console.error(
-      `[${auctionType}] upsertAuction: mapping read failed for ${auctionId} ` +
-      `(config=${!!config}, state=${!!state}) — skipping`,
+    // Throw so the DB transaction rolls back and the block is retried on the next tick.
+    // A null return from getMappingValue means the mapping key wasn't found — this should
+    // never happen for a transition that just wrote the key in the same block. If it does,
+    // it's a transient RPC error and retrying is correct.
+    throw new Error(
+      `[${auctionType}] mapping read returned null for auction ${auctionId} ` +
+      `(config=${!!config}, state=${!!state}) — will retry`,
     );
-    return;
   }
 
-  // Status vocabulary matches DESIGN.md: 'live' | 'cleared' | 'voided'
-  // 'ended' (time-expired, not-yet-closed) is computed by the API from end_block vs current block.
-  const status = state.voided ? 'voided' : state.cleared ? 'cleared' : 'live';
-  // ended_at_block is 0 when the auction hasn't ended yet; store null.
+  const status: DbStatus = state.voided ? 'voided' : state.cleared ? 'cleared' : 'live';
   const endedAtBlock = state.ended_at_block > 0 ? state.ended_at_block : null;
 
   await db
@@ -236,7 +117,6 @@ async function upsertAuction(
     .onConflictDoUpdate({
       target: auctions.id,
       set: {
-        // State fields — refreshed on every transition.
         totalCommitted:  state.total_committed,
         totalPayments:   state.total_payments,
         status,
@@ -248,9 +128,9 @@ async function upsertAuction(
         creatorRevenue:  state.creator_revenue,
         protocolFee:     state.protocol_fee,
         referralBudget:  state.referral_budget,
-        stateJson:       state as unknown as Record<string, unknown>,
+        stateJson:       state  as unknown as Record<string, unknown>,
         updatedAt:       timestamp,
-        // Config snapshot refreshed on conflict — harmless since config is immutable.
+        // Config is immutable; refresh snapshot is harmless.
         configJson:      config as unknown as Record<string, unknown>,
       },
     });
@@ -259,20 +139,24 @@ async function upsertAuction(
 // ── Handler map factory ───────────────────────────────────────────────────────
 
 /**
- * Builds a flat ProgramHandlerMap for a single auction program.
+ * Transitions intentionally not registered (auction_id unrecoverable from chain):
+ *   claim, claim_vested, claim_voided — consume private Bid records.
  *
- * Only transitions that affect auction-level state are registered:
- *   create_auction     — inserts the auctions row; creator from auction_configs mapping.
- *   close_auction      — refreshes state (cleared, clearing_price, revenue).
- *   cancel_auction     — refreshes state (voided).
- *   place_bid_*        — refreshes state (total_committed) so the UI stays current.
+ * Transitions not registered because they don't change auction-level state:
+ *   push_referral_budget, withdraw_payments, withdraw_unsold.
  *
- * claim / claim_vested / claim_voided are intentionally absent: they operate
- * on private Bid records whose auction_id is not recoverable from on-chain data.
- *
- * Adding a new auction type: call createProgramHandlerMap with the new type
- * name and programId. No changes needed to the processor.
+ * If any of these appear in a known program's block, processor.ts will emit
+ * a debug-level log rather than a warning — they are expected gaps.
  */
+export const KNOWN_UNHANDLED_TRANSITIONS = new Set([
+  'claim',
+  'claim_vested',
+  'claim_voided',
+  'push_referral_budget',
+  'withdraw_payments',
+  'withdraw_unsold',
+]);
+
 export function createProgramHandlerMap(
   auctionType: string,
   programId:   string,
@@ -280,31 +164,27 @@ export function createProgramHandlerMap(
   const upsert: TransitionHandlerFn = (ctx, auctionId) =>
     upsertAuction(ctx, programId, auctionType, auctionId);
 
-  const fromInput    = auctionIdFromPublicInput;
-  const fromFinalize = auctionIdFromFinalizeOps;
-  const fromState    = auctionIdFromStateFinalizeOps;
-
   const base: ProgramHandlerMap = {
-    create_auction:         { getAuctionId: fromFinalize, handle: upsert },
-    close_auction:          { getAuctionId: fromInput,    handle: upsert },
-    cancel_auction:         { getAuctionId: fromInput,    handle: upsert },
-    place_bid_private:      { getAuctionId: fromInput,    handle: upsert },
-    place_bid_public:       { getAuctionId: fromInput,    handle: upsert },
-    place_bid_private_ref:  { getAuctionId: fromInput,    handle: upsert },
-    place_bid_public_ref:   { getAuctionId: fromInput,    handle: upsert },
+    create_auction:         { getAuctionId: auctionIdFromFinalizeKey,   handle: upsert },
+    close_auction:          { getAuctionId: auctionIdFromPublicInput,   handle: upsert },
+    cancel_auction:         { getAuctionId: auctionIdFromPublicInput,   handle: upsert },
+    place_bid_private:      { getAuctionId: auctionIdFromPublicInput,   handle: upsert },
+    place_bid_public:       { getAuctionId: auctionIdFromPublicInput,   handle: upsert },
+    place_bid_private_ref:  { getAuctionId: auctionIdFromPublicInput,   handle: upsert },
+    place_bid_public_ref:   { getAuctionId: auctionIdFromPublicInput,   handle: upsert },
   };
 
   // Sealed auctions replace place_bid_* with commit/reveal transitions.
-  // slash_unrevealed is not registered — it does not modify auction_states.
-  if (auctionType === 'sealed') {
+  // slash_unrevealed does not modify auction_states — not registered.
+  if (auctionType === AuctionType.Sealed) {
     return {
       ...base,
-      commit_bid_private:     { getAuctionId: fromInput, handle: upsert },
-      commit_bid_public:      { getAuctionId: fromInput, handle: upsert },
-      commit_bid_private_ref: { getAuctionId: fromInput, handle: upsert },
-      commit_bid_public_ref:  { getAuctionId: fromInput, handle: upsert },
-      // reveal_bid: auction_id only in private Commitment record; extract from state ops.
-      reveal_bid:             { getAuctionId: fromState, handle: upsert },
+      commit_bid_private:     { getAuctionId: auctionIdFromPublicInput, handle: upsert },
+      commit_bid_public:      { getAuctionId: auctionIdFromPublicInput, handle: upsert },
+      commit_bid_private_ref: { getAuctionId: auctionIdFromPublicInput, handle: upsert },
+      commit_bid_public_ref:  { getAuctionId: auctionIdFromPublicInput, handle: upsert },
+      // reveal_bid: auction_id only in private Commitment record; extract from finalize key.
+      reveal_bid:             { getAuctionId: auctionIdFromFinalizeKey, handle: upsert },
     };
   }
 
