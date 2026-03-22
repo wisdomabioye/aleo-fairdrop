@@ -52,6 +52,25 @@ export function parseField(raw: string): string {
 }
 
 /**
+ * Returns true if s is a valid Leo field literal.
+ * Valid form: one or more decimal digits followed by the "field" suffix.
+ * e.g. "7438291047381943field" → true   "abc" → false   "" → false
+ * Used as a URL-param guard before making RPC calls with untrusted input.
+ */
+export function isValidField(s: string): boolean {
+  return /^\d+field$/.test(s.trim());
+}
+
+/**
+ * Convert a Leo field literal to a 0x-prefixed hex string.
+ * Useful for compact display of auction IDs and other large field values.
+ * e.g. "255field" → "0xff"
+ */
+export function fieldToHex(s: string): string {
+  return '0x' + BigInt(stripSuffix(s)).toString(16);
+}
+
+/**
  * Parse a Leo struct string into a flat Record<string, string>.
  *
  * Input:  "{ a: 1u64, b: aleo1..., c: { x: 2u8 } }"

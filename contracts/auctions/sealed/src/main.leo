@@ -178,11 +178,19 @@ program fairdrop_sealed.aleo {
     // =========================================================================
 
     // Private commitment receipt — single-spend UTXO consumed at reveal_bid.
+    //
+    // quantity and nonce are private copies stored for the owner's use at reveal time.
+    // They are encrypted to the owner's view key on-chain — no observer can read them.
+    // The wallet (AutoDecrypt) surfaces them so the frontend can pre-fill the reveal form
+    // without requiring localStorage or any external persistence.
+    // The on-chain commitment_hash is unaffected — privacy guarantee is unchanged.
     record Commitment {
         owner:          address,
         auction_id:     field,
         commitment:     field,   // BHP256(CommitRevealKey) — verified against pending_commits
         payment_amount: u128,
+        quantity:       u128,   // private — for owner's reveal use only
+        nonce:          field,  // private — for owner's reveal use only
     }
 
     // Private bid receipt — issued at reveal_bid; consumed at claim / claim_vested /
@@ -470,6 +478,8 @@ program fairdrop_sealed.aleo {
             auction_id:     auction_id,
             commitment:     commitment_hash,
             payment_amount: payment_amount as u128,
+            quantity:       quantity,
+            nonce:          nonce,
         };
 
         return (change, commitment, receipt, finalize_commit_bid_private(
@@ -561,6 +571,8 @@ program fairdrop_sealed.aleo {
             auction_id:     auction_id,
             commitment:     commitment_hash,
             payment_amount: payment_amount as u128,
+            quantity:       quantity,
+            nonce:          nonce,
         };
 
         return (commitment, receipt, finalize_commit_bid_public(
@@ -658,6 +670,8 @@ program fairdrop_sealed.aleo {
             auction_id:     auction_id,
             commitment:     commitment_hash,
             payment_amount: payment_amount as u128,
+            quantity:       quantity,
+            nonce:          nonce,
         };
 
         return (change, commitment, receipt, finalize_commit_bid_priv_ref(
@@ -756,6 +770,8 @@ program fairdrop_sealed.aleo {
             auction_id:     auction_id,
             commitment:     commitment_hash,
             payment_amount: payment_amount as u128,
+            quantity:       quantity,
+            nonce:          nonce,
         };
 
         return (commitment, receipt, finalize_commit_bid_pub_ref(

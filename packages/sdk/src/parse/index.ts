@@ -8,4 +8,6 @@ export {
   parseAddress,
   parseField,
   parseStruct,
+  isValidField,
+  fieldToHex,
 } from './leo.js';
