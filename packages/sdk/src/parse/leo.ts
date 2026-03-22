@@ -20,8 +20,8 @@ export function parseBool(raw: string): boolean {
   throw new Error(`[leo/parse] Cannot parse bool: "${raw}"`);
 }
 
-/** Parse u32 / u64 → number. Assumes value ≤ Number.MAX_SAFE_INTEGER. */
-export function parseU32(raw: string): number {
+/** Parse u8 / u16 / u32 → number. Safe only when value ≤ Number.MAX_SAFE_INTEGER. */
+export function parseU8(raw: string): number {
   return parseInt(stripSuffix(raw), 10);
 }
 
@@ -29,16 +29,34 @@ export function parseU16(raw: string): number {
   return parseInt(stripSuffix(raw), 10);
 }
 
-export function parseU8(raw: string): number {
+export function parseU32(raw: string): number {
   return parseInt(stripSuffix(raw), 10);
+}
+
+/**
+ * Parse u64 → bigint.
+ * Use instead of parseU32 when the mapping value is typed u64 in Leo — u64 can exceed
+ * Number.MAX_SAFE_INTEGER (2^53-1) so number is not safe. bigint handles the full range.
+ */
+export function parseU64(raw: string): bigint {
+  return BigInt(stripSuffix(raw));
 }
 
 /**
  * Parse u128 → decimal string.
  * Returned as string to preserve precision — u128 exceeds JS safe integer range.
+ * Use u128ToBigInt() when you need to perform arithmetic or comparisons.
  */
 export function parseU128(raw: string): string {
   return stripSuffix(raw);
+}
+
+/**
+ * Convert a u128 decimal string (as returned by parseU128) to bigint.
+ * Pattern: const amount = u128ToBigInt(parseU128(raw))
+ */
+export function u128ToBigInt(s: string): bigint {
+  return BigInt(s);
 }
 
 /** Return address as-is (aleo1...). */

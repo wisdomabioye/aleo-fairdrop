@@ -98,7 +98,7 @@ The existing frontend lives at `/home/abioye/aleo-guide/fairdrop/` (single-contr
 ```
 packages/sdk/src/
 ├── parse/
-│   ├── leo.ts          — parsers + isValidField() + fieldToHex() (already exists; extend)
+│   ├── leo.ts          — parsers + parseU64 + u128ToBigInt + isValidField() + fieldToHex()
 │   ├── auction.ts      — parseAuctionConfig, parseAuctionState (from auctionParsers.ts)
 │   └── token.ts        — parseTokenMetadata, asciiToU128, u128ToAscii
 ├── registry/
@@ -116,8 +116,36 @@ packages/sdk/src/
 │   ├── token-meta.ts
 │   ├── gate-config.ts
 │   └── protocol-config.ts
+├── constants.ts        — SYSTEM_PROGRAMS (token_registry.aleo, credits.aleo)
 └── client.ts           — AleoNetworkClient singleton
 ```
+
+`PROGRAMS` from `@fairdrop/config` covers all Fairdrop-owned deployments. Aleo protocol programs (`token_registry.aleo`, `credits.aleo`) are canonical constants that never change — they live in `packages/sdk/src/constants.ts` and are imported alongside `PROGRAMS`:
+
+```ts
+// packages/sdk/src/constants.ts
+export const SYSTEM_PROGRAMS = {
+  tokenRegistry: 'token_registry.aleo',
+  credits:       'credits.aleo',
+} as const
+```
+
+Rule: **no program ID string literals anywhere in app code**. All program references go through `PROGRAMS.*` or `SYSTEM_PROGRAMS.*`.
+
+#### Program addresses
+
+`token_registry.aleo/set_role` and `token_registry.aleo/roles` take an `address` argument (the `aleo1...` form), not the program ID string. Every `ProgramEntry` in `@fairdrop/config` carries both:
+
+```ts
+// packages/config/src/types.ts
+interface ProgramEntry {
+  programId:      string;   // e.g. "fairdrop_dutch.aleo"
+  programAddress: string;   // e.g. "aleo1..."  — deterministic, filled in programs.json
+  salt?:          string;
+}
+```
+
+Addresses are pre-computed off-chain (Aleo CLI: `leo account program-address <programId>`) and committed to `contracts/deployments/programs.json`. The wizard authorization step uses `PROGRAMS.dutch.programAddress` — never the `.aleo` name string.
 
 ### 3.2 packages/ui
 
@@ -216,14 +244,22 @@ export const AUCTION_REGISTRY: Record<AuctionType, AuctionTypeSlot> = {
 }
 ```
 
+TypeScript enforces that the registry is exhaustive — a missing `AuctionType` is a compile error. At runtime however, API data can carry an unknown type (e.g. new type before frontend update). Always access the registry through `getRegistrySlot`:
+
+```ts
+// features/auctions/registry.ts
+export function getRegistrySlot(type: AuctionType): AuctionTypeSlot | null {
+  return AUCTION_REGISTRY[type] ?? null
+}
+```
+
 Usage:
 ```tsx
-const slot = AUCTION_REGISTRY[auction.type]
+const slot = getRegistrySlot(auction.type)
+if (!slot) return <UnsupportedAuctionType type={auction.type} />
 <slot.BidForm auction={auction} records={records} blockHeight={blockHeight} />
 <slot.PricePanel auction={auction} blockHeight={blockHeight} />
 ```
-
-TypeScript enforces that the registry is exhaustive — a missing `AuctionType` is a compile error.
 
 ### 4.3 Folder Structure
 
@@ -355,9 +391,10 @@ apps/web/src/
 │
 └── workers/
     ├── worker.ts
-    └── AleoWorker.ts               # expose terminate()
-                                    # Copied as-is from fairdrop/src/workers/
+    └── AleoWorker.ts               # expose terminate(); copied as-is from fairdrop/src/workers/
                                     # No computation changes — wallet handles all ZK proof generation
+                                    # terminate() called in WalletProvider cleanup useEffect:
+                                    #   useEffect(() => () => aleoWorker.terminate(), [])
 ```
 
 ---
@@ -471,8 +508,12 @@ function parseExecutionError(err: unknown): string {
     return 'Protocol config changed while the wizard was open. Review the updated fee and resubmit.'
   if (msg.includes('check_not_paused'))
     return 'Protocol is paused. Check status and try again later.'
+  if (msg.includes('finalize_claim_commission'))
+    return 'Commission amount changed (another credit ran concurrently). Retrying with updated amount...'
   return 'Transaction failed. Check your wallet for details.'
 }
+// claim_commission auto-retry: on finalize_claim_commission revert, re-read earned[code_id]
+// and re-submit once with the fresh value before surfacing the error to the user.
 ```
 
 After any `ACCEPTED` tx, call `queryClient.invalidateQueries` on the affected query keys to trigger re-fetch.
@@ -507,17 +548,26 @@ Some flows require sequential transactions — each step must reach `ACCEPTED` b
 ```ts
 export function useSequentialTx(steps: Array<() => Promise<void>>) {
   const [currentStep, setCurrentStep] = useState(0)
-  const [done, setDone] = useState(false)
+  const [done,        setDone]        = useState(false)
+  const [error,       setError]       = useState<Error | null>(null)
 
   async function advance() {
-    await steps[currentStep]()
-    if (currentStep + 1 >= steps.length) setDone(true)
-    else setCurrentStep(s => s + 1)
+    setError(null)
+    try {
+      await steps[currentStep]()
+      if (currentStep + 1 >= steps.length) setDone(true)
+      else setCurrentStep(s => s + 1)
+    } catch (e) {
+      setError(e instanceof Error ? e : new Error(String(e)))
+      // step index does NOT advance on failure — caller retries via advance()
+    }
   }
 
-  return { currentStep, totalSteps: steps.length, done, advance }
+  return { currentStep, totalSteps: steps.length, done, advance, error }
 }
 ```
+
+`error` is reset to `null` on each `advance()` call. The UI reads `error` to show which step failed and why (via `parseExecutionError`). The failed step button re-enables so the user can retry without restarting the whole flow.
 
 Used in:
 
@@ -967,6 +1017,8 @@ For all types except Sealed: single "Ends in N blocks" while active; "Ended N bl
 
 **Sealed bid nonce — no persistence needed (Option A)**: The `Commitment` record stores `quantity: u128` and `nonce: field` as private fields (encrypted to the bidder's view key on-chain). AutoDecrypt makes them available to the frontend from the wallet at reveal time. The frontend reads the decrypted record and pre-fills both fields — no localStorage, no cross-device fragility. See contract change in `fairdrop_sealed.aleo` `Commitment` record.
 
+**Commitment record filtering**: a user may hold Commitment records for multiple sealed auctions. The hook `useCommitmentRecord(auctionId)` filters `requestRecords(PROGRAMS.sealed.programId)` by `record.auction_id === auctionId` to find the one relevant to the current detail page. Never assume a single record per program.
+
 Other types:
 
 | Type | User inputs | Transition called |
@@ -1002,7 +1054,7 @@ Collapsible card on the right column below the bid panel.
 | **Slash unrevealed** *(Sealed only)* | `blockHeight > endBlock AND commitments exist` | Anyone | `slash_unrevealed(commitment, auction_id)` |
 | **Withdraw revenue** | `status === Cleared` | Creator | `withdraw_payments` |
 | **Withdraw unsold** | `status === Cleared` | Creator | `withdraw_unsold` |
-| **Push referral budget** | `status === Cleared AND referralBudget > 0` | Creator | `push_referral_budget` |
+| **Push referral budget** | `status === Cleared AND referralBudget > 0` | Anyone | `push_referral_budget` |
 
 "Close auction" framing by caller:
 - Creator closing after `supply_met` → "Close Auction"
@@ -1037,6 +1089,7 @@ Shows earning opportunities for this specific auction without bidding:
 |---|---|---|
 | Close auction + earn | `endBlock < currentBlock AND not Cleared/Voided` | "Close & Earn N ALEO" → `close_auction` |
 | Slash unrevealed *(Sealed)* | `blockHeight > endBlock AND commitments exist` | "Slash → Earn N%" → `slash_unrevealed` |
+| Push referral budget | `Cleared AND referralPoolBps > 0 AND NOT reserve_funded[auction_id]` | "Push Referral Budget" → `push_referral_budget` — permissionless |
 | Credit commission | `Cleared AND user has ReferralCode for this auction AND uncredited bidders exist` | "Credit Commission" → `credit_commission(code_id, bidder_key)` per uncredited bidder |
 | Claim commission | `earned[code_id] > 0` | "Claim N ALEO" → `claim_commission(code, earned_amount)` |
 
@@ -1106,7 +1159,9 @@ Flow enforced by contract: `credit_commission` must run for each bidder before `
 
 ```ts
 // Program IDs always from PROGRAMS — never hardcoded strings.
-import { PROGRAMS } from '@fairdrop/config'
+import { PROGRAMS }                               from '@fairdrop/config'
+import { parseU64, parseU128, u128ToBigInt,
+         parseBool, parseStruct }                 from '@fairdrop/sdk/parse'
 
 async function fetchCodeStatus(codeId: string, auctionId: string) {
   const ref = PROGRAMS.ref.programId
@@ -1115,9 +1170,11 @@ async function fetchCodeStatus(codeId: string, auctionId: string) {
     aleoClient.getMappingValue(ref, 'referral_count', codeId),
     aleoClient.getMappingValue(ref, 'reserve_funded', auctionId),
   ])
-  const earnedAmount  = parseU128(earnedRaw) ?? 0n
-  const totalCount    = parseU64(countRaw)   ?? 0n
-  const reserveFunded = parseBool(fundedRaw) ?? false
+  // parseU128 returns string — convert to bigint for arithmetic/comparison.
+  // parseU64 returns bigint — referral_count is u64 in the contract.
+  const earnedAmount  = earnedRaw ? u128ToBigInt(parseU128(earnedRaw)) : 0n
+  const totalCount    = countRaw  ? parseU64(countRaw)                 : 0n
+  const reserveFunded = fundedRaw ? parseBool(fundedRaw)               : false
 
   // ⚠ N serial RPC calls — this should move to GET /referrals/:code_id/status (see below)
   const bidderKeys: string[] = []
@@ -1137,7 +1194,7 @@ async function fetchCodeStatus(codeId: string, auctionId: string) {
   ).then(ks => ks.filter(Boolean) as string[])
 
   return {
-    earnedAmount,
+    earnedAmount,           // bigint
     reserveFunded,
     creditsPending: uncreditedKeys.length > 0,
     uncreditedKeys,
@@ -1188,11 +1245,14 @@ Step 2 — Token & Supply
 
   ── Inline Authorization Check ──
     After token + type selected:
+    auctionProgramAddr = PROGRAMS[selectedType].programAddress  // aleo1... — NOT the .aleo name
     Check: token_registry.aleo/roles[BHP256(TokenOwner{auctionProgramAddr, tokenId})]
     If SUPPLY_MANAGER_ROLE (3) is missing:
       Show blocking callout: "Authorize [auction program] to manage supply"
       "Authorize" button → token_registry.aleo/set_role(auctionProgramAddr, 3)
       Wait for tx confirmation → proceed
+    Note: set_role takes address (aleo1...), not program ID string.
+          programAddress is pre-computed in programs.json / ProgramEntry.
   ─────────────────────────────────
 
   Payment token: ALEO Credits (display only — not selectable)
@@ -1249,6 +1309,11 @@ Step 8 — Review & Submit
     "~N% of total_payments at close (current protocol rate)"
   Re-fetch protocol config immediately before submit.
   If any value changed since wizard opened → show warning banner, require re-review.
+  ── Auction nonce ──
+    Read creator_nonces[wallet.address] from the selected auction program immediately
+    before executeTransaction. Pass as the nonce param to create_auction.
+    This derives the deterministic auction_id on-chain.
+    On revert (nonce collision from concurrent submission): surface error and re-read nonce.
   Submit → calls create_auction on the selected auction program
 ```
 
@@ -1271,9 +1336,10 @@ Step 8 — Review & Submit
 ### 10.4 Token Authorization (Inline, Not a Separate Page)
 
 With 6 auction contracts + `fairdrop_vest.aleo`, token authorization cannot be a one-time step. It must be inline in the wizard:
-- Step 2: check and authorize the selected auction contract
-- Step 5: if vest enabled, check and authorize `fairdrop_vest.aleo`
+- Step 2: check and authorize the selected auction contract using `PROGRAMS[type].programAddress`
+- Step 5: if vest enabled, check and authorize `fairdrop_vest.aleo` using `PROGRAMS.vest.programAddress`
 - Each authorization is a blocking step — wizard cannot advance until the tx confirms
+- `token_registry.aleo/set_role` takes an `address` (aleo1...) — always use `programAddress`, never the `.aleo` program name
 
 This replaces the old TokenLaunchPage "Authorize" step, which only worked for a single program.
 
@@ -1291,9 +1357,27 @@ User holds one of: `Bid` record, `Commitment` record (Sealed only), `VestedAlloc
 | `Bid` | `Cleared`, vest enabled | Get vesting schedule | `claim_vested(bid, auction_id)` → issues `VestedAllocation` |
 | `Bid` | `Voided` | Reclaim payment | `claim_voided(bid, auction_id)` |
 | `Commitment` (Sealed) | `Voided` | Reclaim commitment payment | `claim_commit_voided(commitment, auction_id)` |
-| `VestedAllocation` | `blockHeight >= cliff_block` | Release tokens | `fairdrop_vest.aleo/release(vest, amount)` |
+| `VestedAllocation` | `blockHeight >= cliff_block` | Release tokens | `PROGRAMS.vest.programId/release(vest, amount)` |
 
 Claim page groups by auction, resolves status via API, shows the correct action for each record. "Claim All" where possible.
+
+**Bid records span 6 programs** — `useClaimable` must request records from every auction program:
+
+```ts
+// features/claim/hooks/useClaimable.ts
+const AUCTION_PROGRAMS = [
+  PROGRAMS.dutch, PROGRAMS.sealed, PROGRAMS.raise,
+  PROGRAMS.ascending, PROGRAMS.lbp, PROGRAMS.quadratic,
+]
+
+const allBidRecords = await Promise.all(
+  AUCTION_PROGRAMS.map(p => wallet.requestRecords(p.programId))
+).then(results => results.flat())
+// Each record carries its originating program — use it to determine
+// which program to call for claim/claim_voided/claim_commit_voided.
+```
+
+Commitment records come only from `PROGRAMS.sealed.programId`. `VestedAllocation` records from `PROGRAMS.vest.programId`. Each filtered by `record.auction_id` to associate with the correct auction.
 
 ### 11.2 Vesting Release Display
 
@@ -1378,8 +1462,18 @@ Bidder calls `fairdrop_gate.aleo/verify_credential(auction_id, issuer, sig, expi
 - Explain: "This auction requires a credential from the issuer"
 - Show issuer address (from `credential_issuers[auction_id]` mapping)
 - Credential is obtained from the `credential-signer` service (external; not yet implemented)
-- Input: signature + expiry (from credential service response)
+- Input: signature + expiry block (from credential service response)
 - "Verify Credential" → tx → bid panel unlocks
+
+**Credential expiry UX**: credentials have an `expiry` block after which `verify_credential` will revert.
+
+| Condition | UI |
+|---|---|
+| `currentBlock < expiry - 10` | Show "Expires at block N (~M min)" — green |
+| `expiry - 10 ≤ currentBlock < expiry` | Amber warning: "Credential expires in N blocks — submit soon" |
+| `currentBlock ≥ expiry` | "Credential has expired. Request a new one." — submit button disabled |
+
+Expiry block shown below the input at all times using `estimateDate(expiry, currentBlock)`. When expired, hide the submit button entirely and show a "Get New Credential" link to the credential-signer service. The credential service should issue credentials with sufficient expiry buffer (recommend ≥ 50 blocks from issuance).
 
 ---
 
@@ -1518,6 +1612,18 @@ Only functions listed here should be called from the frontend. Confirmed by read
 | G27 | Untrusted IPFS content rendered without sanitization (XSS/open redirect risk) | High | §6.5 |
 | G28 | No network indicator or indexer liveness state | Medium | §5.7 |
 | G29 | No transaction lifecycle UX (wallet states, error parsing) | High | §5.4/§5.5 |
+| G30 | No `SYSTEM_PROGRAMS` constant — Aleo protocol program IDs (`token_registry.aleo`, `credits.aleo`) hardcoded ad-hoc | Medium | §3.1 |
+| G31 | `finalize_claim_commission` revert not handled in error parser — no auto-retry for D11 concurrent credit | Medium | §5.4 |
+| G32 | Commitment record filtering not specified — user may hold records across multiple sealed auctions | Medium | §8.5 |
+| G33 | `push_referral_budget` misattributed to Creator only — contract allows anyone to call it | Medium | §8.7/§8.9 |
+| G34 | `useClaimable` fetches records from one program only — Bid records span all 6 auction programs | High | §11.1 |
+| G35 | `creator_nonces` not read before `create_auction` submit — nonce collision unhandled | High | §10.1 |
+| G36 | Credential gate expiry UX missing — no expiry display, warning, or disabled submit | Medium | §14.2 |
+| G37 | `parseU64` missing from SDK — `fetchCodeStatus` references it but it did not exist | High | §3.1/§9.4 |
+| G38 | `parseU128` returns `string` used with BigInt operators — type error in `fetchCodeStatus` | High | §9.4 |
+| G39 | Program address vs program ID — `set_role` takes `address` (aleo1...) not `.aleo` name; `ProgramEntry` had no `programAddress` field | Critical | §3.1/§10.1/§10.4 |
+| G40 | `AUCTION_REGISTRY` direct indexing — no runtime null guard for unknown `AuctionType` from API | Medium | §4.2 |
+| G41 | `useSequentialTx.advance()` does not expose step errors — callers cannot show which step failed or allow retry | Medium | §5.6 |
 
 ---
 
@@ -1597,6 +1703,10 @@ Only functions listed here should be called from the frontend. Confirmed by read
 | D20 | IPFS content treated as untrusted — `sanitizeExternalUrl`, no `dangerouslySetInnerHTML`, letter avatar fallback | Creator-supplied metadata is arbitrary; XSS and open redirect are real risks without sanitization |
 | D21 | Network badge static from `VITE_ALEO_NETWORK`; indexer status polled every 30s | Two independent signals: one confirms environment, one confirms data freshness |
 | D22 | Sequential multi-step flows via `useSequentialTx`; each step waits for `ACCEPTED` before enabling the next | Prevents partial-state bugs where step 2 executes before step 1 finalizes on-chain |
+| D23 | `parseU64` returns `bigint`; `parseU128` returns `string` + `u128ToBigInt()` for arithmetic | u64 fits in Number at low counts but is unsafe at protocol scale; u128 is always unsafe — two distinct return types prevent silent precision loss |
+| D24 | `ProgramEntry` carries `programAddress` (aleo1...) alongside `programId` — pre-computed in `programs.json` | `token_registry` takes address not name; runtime derivation would require Aleo WASM; pre-computed is simpler and has zero runtime cost |
+| D25 | `getRegistrySlot()` wrapper instead of direct `AUCTION_REGISTRY[type]` indexing | TypeScript exhaustiveness is compile-time only; API can return unknown types; null guard prevents runtime crash |
+| D26 | `useSequentialTx` exposes `error` state; `advance()` resets error and keeps step index on failure | Callers show which step failed; user can retry without restarting the whole flow |
 
 ---
 

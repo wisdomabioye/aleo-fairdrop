@@ -1,8 +1,9 @@
 export type Network = 'testnet' | 'mainnet';
 
 export interface ProgramEntry {
-  programId: string;
-  salt?: string;       // present for auction programs; absent for utilities
+  programId:      string;
+  programAddress: string;  // aleo1... address derived from programId — fill in programs.json
+  salt?:          string;  // present for auction programs; absent for utilities
 }
 
 export interface Programs {

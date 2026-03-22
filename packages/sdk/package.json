@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "exports": {
-    "./parse": "./src/parse/index.ts"
+    "./parse": "./src/parse/index.ts",
+    "./constants": "./src/constants.ts"
   },
   "scripts": {
     "type-check": "tsc --noEmit"

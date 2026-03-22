@@ -1,56 +1,67 @@
 {
   "schemaVersion": 1,
-  "$comment": "Single source of truth for all program IDs and deployment salts. Network-specific data lives in testnet/network.json and mainnet/network.json. Validated against contracts/*/program.json by scripts/validate-programs.ts.",
+  "$comment": "Single source of truth for all program IDs, program addresses, and deployment salts. Network-specific data lives in testnet/network.json and mainnet/network.json. Validated against contracts/*/program.json by scripts/validate-programs.ts. programAddress is the aleo1... address derived from programId — fill in after deployment.",
   "programs": {
     "dutch": {
-      "programId": "fairdrop_dutch.aleo",
-      "contractPath": "contracts/auctions/dutch",
-      "salt": "1field"
+      "programId":      "fairdrop_dutch.aleo",
+      "programAddress": "TODO:aleo1_dutch_address",
+      "contractPath":   "contracts/auctions/dutch",
+      "salt":           "1field"
     },
     "sealed": {
-      "programId": "fairdrop_sealed.aleo",
-      "contractPath": "contracts/auctions/sealed",
-      "salt": "2field"
+      "programId":      "fairdrop_sealed.aleo",
+      "programAddress": "TODO:aleo1_sealed_address",
+      "contractPath":   "contracts/auctions/sealed",
+      "salt":           "2field"
     },
     "raise": {
-      "programId": "fairdrop_raise.aleo",
-      "contractPath": "contracts/auctions/raise",
-      "salt": "3field"
+      "programId":      "fairdrop_raise.aleo",
+      "programAddress": "TODO:aleo1_raise_address",
+      "contractPath":   "contracts/auctions/raise",
+      "salt":           "3field"
     },
     "ascending": {
-      "programId": "fairdrop_ascending.aleo",
-      "contractPath": "contracts/auctions/ascending",
-      "salt": "4field"
+      "programId":      "fairdrop_ascending.aleo",
+      "programAddress": "TODO:aleo1_ascending_address",
+      "contractPath":   "contracts/auctions/ascending",
+      "salt":           "4field"
     },
     "lbp": {
-      "programId": "fairdrop_lbp.aleo",
-      "contractPath": "contracts/auctions/lbp",
-      "salt": "5field"
+      "programId":      "fairdrop_lbp.aleo",
+      "programAddress": "TODO:aleo1_lbp_address",
+      "contractPath":   "contracts/auctions/lbp",
+      "salt":           "5field"
     },
     "quadratic": {
-      "programId": "fairdrop_quadratic.aleo",
-      "contractPath": "contracts/auctions/quadratic",
-      "salt": "6field"
+      "programId":      "fairdrop_quadratic.aleo",
+      "programAddress": "TODO:aleo1_quadratic_address",
+      "contractPath":   "contracts/auctions/quadratic",
+      "salt":           "6field"
     },
     "config": {
-      "programId": "fairdrop_config.aleo",
-      "contractPath": "contracts/utilities/config"
+      "programId":      "fairdrop_config.aleo",
+      "programAddress": "TODO:aleo1_config_address",
+      "contractPath":   "contracts/utilities/config"
     },
     "gate": {
-      "programId": "fairdrop_gate.aleo",
-      "contractPath": "contracts/utilities/gate"
+      "programId":      "fairdrop_gate.aleo",
+      "programAddress": "TODO:aleo1_gate_address",
+      "contractPath":   "contracts/utilities/gate"
     },
     "proof": {
-      "programId": "fairdrop_proof.aleo",
-      "contractPath": "contracts/utilities/proof"
+      "programId":      "fairdrop_proof.aleo",
+      "programAddress": "TODO:aleo1_proof_address",
+      "contractPath":   "contracts/utilities/proof"
     },
     "ref": {
-      "programId": "fairdrop_ref.aleo",
-      "contractPath": "contracts/utilities/ref"
+      "programId":      "fairdrop_ref.aleo",
+      "programAddress": "TODO:aleo1_ref_address",
+      "contractPath":   "contracts/utilities/ref"
     },
     "vest": {
-      "programId": "fairdrop_vest.aleo",
-      "contractPath": "contracts/utilities/vest"
+      "programId":      "fairdrop_vest.aleo",
+      "programAddress": "TODO:aleo1_vest_address",
+      "contractPath":   "contracts/utilities/vest"
     }
   }
 }
