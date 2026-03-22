@@ -7,6 +7,9 @@ export type {
   BidRequest,
   BidResponse,
   AuctionFilterOptions,
+  MetadataCreateRequest,
+  MetadataCreateResponse,
+  MetadataResponse,
 } from './auction.js';
 
 export type { TokenSearchParams, TokenListResponse, TokenDetailResponse } from './token.js';

@@ -1,0 +1,23 @@
+{
+  "name": "@fairdrop/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev":        "tsx watch src/index.ts",
+    "start":      "tsx src/index.ts",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fairdrop/database": "workspace:*",
+    "@fairdrop/sdk":      "workspace:*",
+    "@fairdrop/types":    "workspace:*",
+    "@hono/node-server":  "^1.13.8",
+    "hono":               "^4.7.10"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "tsx":         "^4.19.3",
+    "typescript":  "~5.9.3"
+  }
+}

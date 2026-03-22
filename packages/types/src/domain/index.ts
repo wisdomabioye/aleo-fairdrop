@@ -1,4 +1,4 @@
-export type { AuctionView, AuctionListItem } from './auction.js';
+export type { AuctionView, AuctionListItem, AuctionMetadata } from './auction.js';
 export { AuctionType, AuctionStatus, GateMode } from './auction.js';
 
 export type { BidView, ReleasableAmount } from './bid.js';
