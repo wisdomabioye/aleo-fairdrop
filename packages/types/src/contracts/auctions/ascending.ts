@@ -6,7 +6,7 @@
  * No uniform clearing price — no refund at claim.
  */
 
-import type { Field, Address, U128, U64, U32, U16, U8, Bool } from '../../primitives/scalars.js';
+import type { Field, Address, U128, U64, U32, Bool } from '../../primitives/scalars.js';
 import type {
   BaseAuctionConfig,
   AuctionState,
@@ -48,7 +48,7 @@ export type { AuctionState, GateParams, VestParams, ConfigSnapshot };
 
 // ── Transition inputs ─────────────────────────────────────────────────────────
 
-export interface CreateAuctionInput {
+export interface AscendingCreateAuctionInput {
   sale_token_id:  Field;
   supply:         U128;
   start_block:    U32;
@@ -65,21 +65,21 @@ export interface CreateAuctionInput {
 }
 
 /** Input to `place_bid_public`. */
-export interface PlaceBidPublicInput {
+export interface AscendingPlaceBidPublicInput {
   auction_id:     Field;
   quantity:       U128;
   payment_amount: U64;
 }
 
 /** Input to `place_bid_private`. */
-export interface PlaceBidPrivateInput {
+export interface AscendingPlaceBidPrivateInput {
   auction_id:     Field;
   quantity:       U128;
   payment_amount: U64;
 }
 
 /** Input to `place_bid_public_ref`. */
-export interface PlaceBidPublicRefInput {
+export interface AscendingPlaceBidPublicRefInput {
   auction_id:     Field;
   quantity:       U128;
   payment_amount: U64;
@@ -87,7 +87,7 @@ export interface PlaceBidPublicRefInput {
 }
 
 /** Input to `place_bid_private_ref`. */
-export interface PlaceBidPrivateRefInput {
+export interface AscendingPlaceBidPrivateRefInput {
   auction_id:     Field;
   quantity:       U128;
   payment_amount: U64;
@@ -98,10 +98,10 @@ export interface PlaceBidPrivateRefInput {
  * Input to `close_auction`.
  * `volume` = state.total_payments (serves as revenue base for ascending).
  */
-export interface CloseAuctionInput {
+export interface AscendingCloseAuctionInput {
   auction_id:    Field;
   creator:       Address;
-  filled:        boolean;
+  filled:        Bool;    // D11: state.supply_met
   volume:        U128;
   closer_reward: U128;
 }
@@ -110,12 +110,12 @@ export interface CloseAuctionInput {
  * Input to `claim` (ascending — no clearing price, no refund).
  * Only sale_token_id needed.
  */
-export interface ClaimInput {
+export interface AscendingClaimInput {
   sale_token_id: Field;
 }
 
 /** Input to `claim_vested`. */
-export interface ClaimVestedInput {
+export interface AscendingClaimVestedInput {
   sale_token_id:   Field;
   ended_at_block:  U32;
   cliff_blocks:    U32;
@@ -123,26 +123,26 @@ export interface ClaimVestedInput {
 }
 
 /** Input to `push_referral_budget`. */
-export interface PushReferralBudgetInput {
+export interface AscendingPushReferralBudgetInput {
   auction_id: Field;
   budget:     U128;
 }
 
 /** Input to `withdraw_payments`. */
-export interface WithdrawPaymentsInput {
+export interface AscendingWithdrawPaymentsInput {
   auction_id: Field;
   amount:     U128;
 }
 
 /** Input to `withdraw_unsold`. */
-export interface WithdrawUnsoldInput {
+export interface AscendingWithdrawUnsoldInput {
   auction_id:    Field;
   amount:        U128;
   sale_token_id: Field;
 }
 
 /** Input to `cancel_auction`. */
-export interface CancelAuctionInput {
+export interface AscendingCancelAuctionInput {
   auction_id:    Field;
   sale_token_id: Field;
   supply:        U128;

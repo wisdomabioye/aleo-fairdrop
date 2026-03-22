@@ -96,6 +96,9 @@ export interface AuctionView {
   vestCliffBlocks: number;
   vestEndBlocks:   number;
 
+  // Raise-specific (null for non-raise types)
+  raiseTarget:     bigint | null;
+
   // Revenue (null until cleared)
   creatorRevenue:  bigint | null;
   protocolFee:     bigint | null;
@@ -121,6 +124,7 @@ export interface AuctionListItem {
   progressPct:    number;
   currentPrice:   bigint | null;
   clearingPrice:  bigint | null;
+  raiseTarget:    bigint | null;
   startBlock:     number;
   endBlock:       number;
   estimatedEnd:   Date | null;

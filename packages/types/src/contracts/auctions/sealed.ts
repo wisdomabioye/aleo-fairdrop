@@ -12,7 +12,7 @@
  * All revealed winners pay the same clearing price (uniform clearing).
  */
 
-import type { Field, Address, U128, U64, U32, U16, U8, Bool } from '../../primitives/scalars.js';
+import type { Field, Address, U128, U64, U32, U16, Bool } from '../../primitives/scalars.js';
 import type {
   BaseAuctionConfig,
   AuctionState,
@@ -76,8 +76,8 @@ export interface CommitState {
   auction_id:      Field;
   commitment_hash: Field;
   payment_amount:  U128;
-  revealed:        boolean;
-  slashed:         boolean;
+  revealed:        Bool;
+  slashed:         Bool;
 }
 
 // Re-export shared types.
@@ -85,7 +85,7 @@ export type { AuctionState, GateParams, VestParams, ConfigSnapshot };
 
 // ── Transition inputs ─────────────────────────────────────────────────────────
 
-export interface CreateAuctionInput {
+export interface SealedCreateAuctionInput {
   sale_token_id:  Field;
   supply:         U128;
   start_block:    U32;
@@ -105,7 +105,7 @@ export interface CreateAuctionInput {
  * Input to `commit_bid_private` / `commit_bid_public`.
  * quantity and nonce are private (hidden from on-chain). Frontend stores them locally.
  */
-export interface CommitBidInput {
+export interface SealedCommitBidInput {
   auction_id:     Field;
   quantity:       U128;   // private
   nonce:          Field;  // private — bidder's secret
@@ -113,7 +113,7 @@ export interface CommitBidInput {
 }
 
 /** Input to `commit_bid_private_ref` / `commit_bid_public_ref`. */
-export interface CommitBidRefInput extends CommitBidInput {
+export interface SealedCommitBidRefInput extends SealedCommitBidInput {
   code_id: Field;
 }
 
@@ -122,7 +122,7 @@ export interface CommitBidRefInput extends CommitBidInput {
  * Commitment record passed separately by wallet SDK.
  * quantity and nonce are private (same values used at commit).
  */
-export interface RevealBidInput {
+export interface SealedRevealBidInput {
   quantity:       U128;   // private
   nonce:          Field;  // private
   max_bid_amount: U128;   // D11: config.max_bid_amount
@@ -133,7 +133,7 @@ export interface RevealBidInput {
  * commitment_key = BHP256(BidderKey { bidder, auction_id }) — obtained from
  * indexer events watching commit_bid finalize ops.
  */
-export interface SlashUnrevealedInput {
+export interface SealedSlashUnrevealedInput {
   commitment_key:   Field;
   auction_id:       Field;
   payment_amount:   U128;   // D11: pending_commits[commitment_key].payment_amount
@@ -141,23 +141,23 @@ export interface SlashUnrevealedInput {
 }
 
 /** Input to `close_auction`. */
-export interface CloseAuctionInput {
+export interface SealedCloseAuctionInput {
   auction_id:    Field;
   creator:       Address;
-  filled:        boolean;
+  filled:        Bool;    // D11: state.supply_met
   volume:        U128;
   closer_reward: U128;
 }
 
 /** Input to `claim`. */
-export interface ClaimInput {
+export interface SealedClaimInput {
   clearing_price: U128;
   sale_token_id:  Field;
   sale_scale:     U128;
 }
 
 /** Input to `claim_vested`. */
-export interface ClaimVestedInput {
+export interface SealedClaimVestedInput {
   clearing_price:  U128;
   sale_token_id:   Field;
   sale_scale:      U128;
@@ -167,26 +167,26 @@ export interface ClaimVestedInput {
 }
 
 /** Input to `push_referral_budget`. */
-export interface PushReferralBudgetInput {
+export interface SealedPushReferralBudgetInput {
   auction_id: Field;
   budget:     U128;
 }
 
 /** Input to `withdraw_payments`. */
-export interface WithdrawPaymentsInput {
+export interface SealedWithdrawPaymentsInput {
   auction_id: Field;
   amount:     U128;
 }
 
 /** Input to `withdraw_unsold`. */
-export interface WithdrawUnsoldInput {
+export interface SealedWithdrawUnsoldInput {
   auction_id:    Field;
   amount:        U128;
   sale_token_id: Field;
 }
 
 /** Input to `cancel_auction`. */
-export interface CancelAuctionInput {
+export interface SealedCancelAuctionInput {
   auction_id:    Field;
   sale_token_id: Field;
   supply:        U128;

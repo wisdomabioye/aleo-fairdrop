@@ -5,7 +5,7 @@
  * All fields mirror the Leo structs 1:1; no runtime logic here.
  */
 
-import type { Field, Address, U128, U64, U32, U16, U8 } from '../../primitives/scalars.js';
+import type { Field, Address, U128, U64, U32, Bool } from '../../primitives/scalars.js';
 import type {
   BaseAuctionConfig,
   AuctionState,
@@ -49,7 +49,7 @@ export type { AuctionState, GateParams, VestParams, ConfigSnapshot };
  * token record (burn_private source) is passed separately by the wallet SDK.
  * payment_token_id is hardcoded to CREDITS_RESERVED_TOKEN_ID — not a parameter.
  */
-export interface CreateAuctionInput {
+export interface DutchCreateAuctionInput {
   sale_token_id:  Field;
   supply:         U128;
   start_block:    U32;
@@ -66,7 +66,7 @@ export interface CreateAuctionInput {
 }
 
 /** Input to `place_bid_public`. */
-export interface PlaceBidPublicInput {
+export interface DutchPlaceBidPublicInput {
   auction_id:     Field;
   quantity:       U128;
   payment_amount: U64;
@@ -76,14 +76,14 @@ export interface PlaceBidPublicInput {
  * Input to `place_bid_private`.
  * `payment` credits record is passed separately by the wallet SDK.
  */
-export interface PlaceBidPrivateInput {
+export interface DutchPlaceBidPrivateInput {
   auction_id:     Field;
   quantity:       U128;
   payment_amount: U64;
 }
 
 /** Input to `place_bid_public_ref`. */
-export interface PlaceBidPublicRefInput {
+export interface DutchPlaceBidPublicRefInput {
   auction_id:     Field;
   quantity:       U128;
   payment_amount: U64;
@@ -91,7 +91,7 @@ export interface PlaceBidPublicRefInput {
 }
 
 /** Input to `place_bid_private_ref`. */
-export interface PlaceBidPrivateRefInput {
+export interface DutchPlaceBidPrivateRefInput {
   auction_id:     Field;
   quantity:       U128;
   payment_amount: U64;
@@ -102,16 +102,16 @@ export interface PlaceBidPrivateRefInput {
  * Input to `close_auction`.
  * All fields are D11 params — read from on-chain state before calling.
  */
-export interface CloseAuctionInput {
+export interface DutchCloseAuctionInput {
   auction_id:    Field;
   creator:       Address; // D11: config.creator
-  filled:        boolean; // D11: state.supply_met
+  filled:        Bool;    // D11: state.supply_met
   volume:        U128;    // D11: state.total_payments
   closer_reward: U128;    // D11: config.closer_reward
 }
 
 /** Input to `push_referral_budget`. */
-export interface PushReferralBudgetInput {
+export interface DutchPushReferralBudgetInput {
   auction_id: Field;
   budget:     U128;  // D11: state.referral_budget
 }
@@ -121,7 +121,7 @@ export interface PushReferralBudgetInput {
  * `bid` Bid record is passed separately by the wallet SDK.
  * All public params are D11 — read from on-chain state.
  */
-export interface ClaimInput {
+export interface DutchClaimInput {
   clearing_price: U128;
   sale_token_id:  Field;
   sale_scale:     U128;
@@ -131,7 +131,7 @@ export interface ClaimInput {
  * Input to `claim_vested`.
  * `bid` Bid record is passed separately by the wallet SDK.
  */
-export interface ClaimVestedInput {
+export interface DutchClaimVestedInput {
   clearing_price:  U128;
   sale_token_id:   Field;
   sale_scale:      U128;
@@ -141,13 +141,13 @@ export interface ClaimVestedInput {
 }
 
 /** Input to `withdraw_payments`. Creator only. */
-export interface WithdrawPaymentsInput {
+export interface DutchWithdrawPaymentsInput {
   auction_id: Field;
   amount:     U128;
 }
 
 /** Input to `withdraw_unsold`. Creator only. */
-export interface WithdrawUnsoldInput {
+export interface DutchWithdrawUnsoldInput {
   auction_id:    Field;
   amount:        U128;
   sale_token_id: Field;
@@ -157,9 +157,8 @@ export interface WithdrawUnsoldInput {
  * Input to `cancel_auction`. Creator only.
  * supply is D11 — read from config.supply off-chain.
  */
-export interface CancelAuctionInput {
+export interface DutchCancelAuctionInput {
   auction_id:    Field;
   sale_token_id: Field;
   supply:        U128;  // D11: config.supply
 }
-
