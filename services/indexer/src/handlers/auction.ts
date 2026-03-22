@@ -63,6 +63,19 @@ function auctionIdFromFinalizeOps(
 }
 
 /**
+ * Resolve auction_id from writes to `auction_states` in finalize ops.
+ * Used for transitions where auction_id is not a public input (e.g. reveal_bid
+ * receives the auction_id only via the private Commitment record).
+ */
+function auctionIdFromStateFinalizeOps(
+  _transition: AleoTransition,
+  ops:         FinalizeOperation[],
+): string | null {
+  const op = ops.find((o) => o.key != null && o.mapping_id?.includes(MAPPING_STATES));
+  return op?.key ?? null;
+}
+
+/**
  * Resolve auction_id from the first public field-typed input.
  * Scans all inputs and returns the value of the first one whose Leo string
  * ends with the "field" suffix (e.g. "12345field").
@@ -118,6 +131,13 @@ async function fetchConfig(rpc: AleoRpcClient, programId: string, auctionId: str
     min_bid_amount:     optU128('min_bid_amount'),
     max_bid_amount:     optU128('max_bid_amount'),
     sale_scale:         optU128('sale_scale'),
+    // Ascending-specific
+    ceiling_price:      optU128('ceiling_price'),
+    price_rise_blocks:  optU32('price_rise_blocks'),
+    price_rise_amount:  optU128('price_rise_amount'),
+    // Sealed-specific
+    commit_end_block:   optU32('commit_end_block'),
+    slash_reward_bps:   f['slash_reward_bps'] ? parseU16(f['slash_reward_bps']!) : null,
   };
 }
 
@@ -258,10 +278,11 @@ export function createProgramHandlerMap(
   const upsert: TransitionHandlerFn = (ctx, auctionId) =>
     upsertAuction(ctx, programId, auctionType, auctionId);
 
-  const fromInput  = auctionIdFromPublicInput;
+  const fromInput    = auctionIdFromPublicInput;
   const fromFinalize = auctionIdFromFinalizeOps;
+  const fromState    = auctionIdFromStateFinalizeOps;
 
-  return {
+  const base: ProgramHandlerMap = {
     create_auction:         { getAuctionId: fromFinalize, handle: upsert },
     close_auction:          { getAuctionId: fromInput,    handle: upsert },
     cancel_auction:         { getAuctionId: fromInput,    handle: upsert },
@@ -270,4 +291,20 @@ export function createProgramHandlerMap(
     place_bid_private_ref:  { getAuctionId: fromInput,    handle: upsert },
     place_bid_public_ref:   { getAuctionId: fromInput,    handle: upsert },
   };
+
+  // Sealed auctions replace place_bid_* with commit/reveal transitions.
+  // slash_unrevealed is not registered — it does not modify auction_states.
+  if (auctionType === 'sealed') {
+    return {
+      ...base,
+      commit_bid_private:     { getAuctionId: fromInput, handle: upsert },
+      commit_bid_public:      { getAuctionId: fromInput, handle: upsert },
+      commit_bid_private_ref: { getAuctionId: fromInput, handle: upsert },
+      commit_bid_public_ref:  { getAuctionId: fromInput, handle: upsert },
+      // reveal_bid: auction_id only in private Commitment record; extract from state ops.
+      reveal_bid:             { getAuctionId: fromState, handle: upsert },
+    };
+  }
+
+  return base;
 }

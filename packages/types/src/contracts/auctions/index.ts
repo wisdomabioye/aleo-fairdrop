@@ -29,13 +29,27 @@ export type {
 } from './dutch.js';
 
 // Sealed-bid auction
-export type { SealedAuctionConfig, SealedBid } from './sealed.js';
+export type {
+  SealedParams,
+  SealedAuctionConfig,
+  SealedCommitment,
+  SealedBid,
+  CommitState,
+  CommitBidInput,
+  CommitBidRefInput,
+  RevealBidInput,
+  SlashUnrevealedInput,
+} from './sealed.js';
 
 // Raise auction
 export type { RaiseAuctionConfig, RaiseBid } from './raise.js';
 
 // Ascending auction
-export type { AscendingAuctionConfig, AscendingBid } from './ascending.js';
+export type {
+  AscendingParams,
+  AscendingAuctionConfig,
+  AscendingBid,
+} from './ascending.js';
 
 // LBP auction
 export type { LbpAuctionConfig, LbpBid } from './lbp.js';
