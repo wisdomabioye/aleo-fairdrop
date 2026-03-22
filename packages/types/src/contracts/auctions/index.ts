@@ -42,7 +42,22 @@ export type {
 } from './sealed.js';
 
 // Raise auction
-export type { RaiseAuctionConfig, RaiseBid } from './raise.js';
+export type {
+  RaiseAuctionConfig,
+  RaiseBid,
+  RaiseCreateAuctionInput,
+  RaisePlaceBidPublicInput,
+  RaisePlaceBidPrivateInput,
+  RaisePlaceBidPublicRefInput,
+  RaisePlaceBidPrivateRefInput,
+  RaiseCloseAuctionInput,
+  RaisePushReferralBudgetInput,
+  RaiseClaimInput,
+  RaiseClaimVestedInput,
+  RaiseWithdrawPaymentsInput,
+  RaiseWithdrawUnsoldInput,
+  RaiseCancelAuctionInput,
+} from './raise.js';
 
 // Ascending auction
 export type {

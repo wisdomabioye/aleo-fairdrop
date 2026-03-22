@@ -138,6 +138,8 @@ async function fetchConfig(rpc: AleoRpcClient, programId: string, auctionId: str
     // Sealed-specific
     commit_end_block:   optU32('commit_end_block'),
     slash_reward_bps:   f['slash_reward_bps'] ? parseU16(f['slash_reward_bps']!) : null,
+    // Raise-specific
+    raise_target:       optU128('raise_target'),
   };
 }
 

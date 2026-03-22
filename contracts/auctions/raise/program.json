@@ -1,9 +1,17 @@
 {
   "program": "fairdrop_raise.aleo",
   "version": "0.1.0",
-  "description": "",
+  "description": "Privacy-preserving fixed-price community raise with pro-rata token allocation",
   "license": "MIT",
   "leo": "3.5.0",
-  "dependencies": null,
+  "dependencies": [
+    { "name": "credits.aleo",        "location": "network" },
+    { "name": "token_registry.aleo", "location": "network" },
+    { "name": "fairdrop_config.aleo","location": "local", "path": "../../utilities/config" },
+    { "name": "fairdrop_gate.aleo",  "location": "local", "path": "../../utilities/gate"   },
+    { "name": "fairdrop_proof.aleo", "location": "local", "path": "../../utilities/proof"  },
+    { "name": "fairdrop_ref.aleo",   "location": "local", "path": "../../utilities/ref"    },
+    { "name": "fairdrop_vest.aleo",  "location": "local", "path": "../../utilities/vest"   }
+  ],
   "dev_dependencies": null
 }

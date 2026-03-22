@@ -52,9 +52,9 @@ fairdrop_vest.aleo       ← post-claim token vesting
 **PROGRAM_SALT constants (assigned before any deployment — changing breaks all existing IDs):**
 ```
 fairdrop_dutch.aleo      PROGRAM_SALT = 1field
-fairdrop_sealed.aleo     PROGRAM_SALT = 2field
-fairdrop_raise.aleo      PROGRAM_SALT = 3field
-fairdrop_ascending.aleo  PROGRAM_SALT = 4field
+fairdrop_ascending.aleo  PROGRAM_SALT = 2field
+fairdrop_sealed.aleo     PROGRAM_SALT = 3field
+fairdrop_raise.aleo      PROGRAM_SALT = 4field
 fairdrop_lbp.aleo        PROGRAM_SALT = 5field
 fairdrop_quadratic.aleo  PROGRAM_SALT = 6field
 ```
@@ -64,7 +64,7 @@ fairdrop_quadratic.aleo  PROGRAM_SALT = 6field
 - Each contract is small enough to be fully read in a review session.
 - Utility contracts are independently auditable and reusable across auction types.
 - New features don't require touching money-handling code.
-- A 700-line monolith cannot be fully absorbed in a demo review. Four 150-line focused contracts can.
+- A 2000-line monolith cannot be fully absorbed in a demo review. Four 150-line focused contracts can.
 
 **CPI direction:** auction contracts import and call utility contracts. Utility contracts never call auction contracts. One-way dependency.
 
