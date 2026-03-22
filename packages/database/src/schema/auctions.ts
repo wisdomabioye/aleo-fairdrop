@@ -32,9 +32,17 @@ export const auctions = pgTable('auctions', {
   floorPrice:      text('floor_price'),
   clearingPrice:   text('clearing_price'),
 
-  // Dutch / Ascending price schedule — null for auction types that don't use it
+  // Dutch price schedule — null for non-Dutch types
   priceDecayBlocks: integer('price_decay_blocks'),
   priceDecayAmount: text('price_decay_amount'),   // u128
+
+  // Ascending price schedule — null for non-Ascending types
+  ceilingPrice:     text('ceiling_price'),         // u128
+  priceRiseBlocks:  integer('price_rise_blocks'),
+  priceRiseAmount:  text('price_rise_amount'),     // u128
+
+  // Raise-specific — null for all other auction types
+  raiseTarget:     text('raise_target'),
 
   // Bid constraints — u128 as decimal strings
   minBidAmount:    text('min_bid_amount'),

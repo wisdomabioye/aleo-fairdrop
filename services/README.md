@@ -1,18 +1,17 @@
 # services/
 
-Backend processes. Three real services — everything else is a module within them.
+Backend processes.
 
 | Service | Role |
 |---|---|
-| `indexer/` | Polls the Aleo node, processes blocks, writes auction/bid/vesting state to DB. Runs the slasher cron and fires notification webhooks internally. |
+| `indexer/` | Polls the Aleo node, processes blocks, writes auction state to DB. |
 | `api/` | Hono HTTP API consumed by the frontend. Serves auction listings, bid history, token metadata. Read-only from DB; no chain writes. |
-| `credential-signer/` | Isolated process holding the gate credential private key. Issues `GateCredential` records to verified users. Separated by process boundary to limit key exposure. |
+| `credential-signer/` | Isolated process holding the gate credential private key. Issues `GateCredential` records to verified users. Separated by process boundary to limit key exposure. Not yet implemented. |
 
 ## What is NOT a separate service
 
-- **metadata** — routes inside `api/` (`GET /tokens/:id/metadata`)
-- **notifier** — event hooks inside `indexer/`, triggered after processing each block
-- **slasher** — `node-cron` job inside `indexer/`, runs every N blocks
+- **metadata** — routes inside `api/` (`POST /metadata`, `GET /metadata/:hash`)
+- **token info** — routes inside `api/` (`GET /tokens/:id/metadata`) with in-process TTL cache
 
 ## Stack
 

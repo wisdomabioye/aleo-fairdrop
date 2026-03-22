@@ -8,6 +8,7 @@
  * Adding a new auction type: one entry in the pairs array below.
  */
 import { PROGRAMS }                  from '@fairdrop/config';
+import { AuctionType }               from '@fairdrop/types/domain';
 import { createProgramHandlerMap }   from './auction.js';
 import type { ProgramHandlerMap }    from './auction.js';
 
@@ -21,13 +22,13 @@ export type AuctionRegistry = Record<string, ProgramHandlerMap>;
 
 /** Builds the registry at startup. Each entry is cheap (no I/O). */
 export function buildAuctionRegistry(): AuctionRegistry {
-  const pairs: Array<[string, string]> = [
-    ['dutch',     PROGRAMS.dutch.programId],
-    ['sealed',    PROGRAMS.sealed.programId],
-    ['raise',     PROGRAMS.raise.programId],
-    ['ascending', PROGRAMS.ascending.programId],
-    ['lbp',       PROGRAMS.lbp.programId],
-    ['quadratic', PROGRAMS.quadratic.programId],
+  const pairs: Array<[AuctionType, string]> = [
+    [AuctionType.Dutch,     PROGRAMS.dutch.programId],
+    [AuctionType.Sealed,    PROGRAMS.sealed.programId],
+    [AuctionType.Raise,     PROGRAMS.raise.programId],
+    [AuctionType.Ascending, PROGRAMS.ascending.programId],
+    [AuctionType.Lbp,       PROGRAMS.lbp.programId],
+    [AuctionType.Quadratic, PROGRAMS.quadratic.programId],
   ];
 
   return Object.fromEntries(

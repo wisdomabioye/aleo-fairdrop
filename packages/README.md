@@ -14,5 +14,8 @@ Import from sub-paths to keep tree-shaking effective:
 
 ```ts
 import type { DutchAuctionConfig } from '@fairdrop/types/contracts'
-import type { AuctionRow }         from '@fairdrop/types/db'
+import type { AuctionView }        from '@fairdrop/types/domain'
+
+// DB row types come from @fairdrop/database, not @fairdrop/types
+import type { AuctionRow }         from '@fairdrop/database'
 ```

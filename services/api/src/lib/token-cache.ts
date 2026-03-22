@@ -66,6 +66,15 @@ export async function getTokenInfo(
   return data;
 }
 
+/**
+ * Populate the cache directly from an already-fetched value.
+ * Used by routes that independently fetch full token data so they can warm
+ * the cache without triggering a second RPC call inside getTokenInfo.
+ */
+export function setTokenCache(tokenId: string, info: TokenInfo): void {
+  cache.set(tokenId, { data: info, expiry: Date.now() + TOKEN_TTL_MS });
+}
+
 /** Batch-fetch token info for a list of token IDs. Returns a Map keyed by tokenId. */
 export async function getTokenInfoBatch(
   rpcUrl:   string,

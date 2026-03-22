@@ -24,8 +24,9 @@ function gateMode(n: number): GateMode {
 }
 
 function computeStatus(row: AuctionRow, currentBlock: number): AuctionStatus {
-  if (row.voided)                    return AuctionStatus.Voided;
-  if (row.cleared)                   return AuctionStatus.Cleared;
+  // DB status encodes the terminal on-chain states; computed states depend on block height.
+  if (row.status === 'voided')       return AuctionStatus.Voided;
+  if (row.status === 'cleared')      return AuctionStatus.Cleared;
   if (row.startBlock > currentBlock) return AuctionStatus.Upcoming;
   if (row.supplyMet)                 return AuctionStatus.Clearing;
   if (row.endBlock < currentBlock)   return AuctionStatus.Ended;
@@ -49,8 +50,8 @@ function estimateTime(targetBlock: number, ctx: BlockContext): Date | null {
  */
 function computeDutchPrice(row: AuctionRow, currentBlock: number): bigint | null {
   if (
-    !row.startPrice || !row.floorPrice ||
-    row.priceDecayBlocks == null || !row.priceDecayAmount
+    row.startPrice == null || row.floorPrice == null ||
+    row.priceDecayBlocks == null || row.priceDecayAmount == null
   ) return null;
 
   const effectiveBlock = Math.min(currentBlock, row.endBlock);
@@ -62,6 +63,33 @@ function computeDutchPrice(row: AuctionRow, currentBlock: number): bigint | null
   const price   = BigInt(row.startPrice) - decayed;
   const floor   = BigInt(row.floorPrice);
   return price > floor ? price : floor;
+}
+
+/**
+ * Compute the current Ascending auction price at the given block.
+ * Returns null for non-Ascending auctions or before price fields are set.
+ */
+function computeAscendingPrice(row: AuctionRow, currentBlock: number): bigint | null {
+  if (
+    row.startPrice == null || row.ceilingPrice == null ||
+    row.priceRiseBlocks == null || row.priceRiseAmount == null
+  ) return null;
+
+  const effectiveBlock = Math.min(currentBlock, row.endBlock);
+  if (effectiveBlock < row.startBlock) return BigInt(row.startPrice);
+
+  const elapsed  = BigInt(effectiveBlock - row.startBlock);
+  const steps    = elapsed / BigInt(row.priceRiseBlocks);
+  const risen    = steps * BigInt(row.priceRiseAmount);
+  const price    = BigInt(row.startPrice) + risen;
+  const ceiling  = BigInt(row.ceilingPrice);
+  return price < ceiling ? price : ceiling;
+}
+
+/** Dispatch to the correct price function based on auction type. */
+function computeCurrentPrice(row: AuctionRow, currentBlock: number): bigint | null {
+  if (row.type === AuctionType.Ascending) return computeAscendingPrice(row, currentBlock);
+  return computeDutchPrice(row, currentBlock);
 }
 
 function toMetadata(row: AuctionMetadataRow | null): AuctionMetadata | null {
@@ -106,7 +134,7 @@ export function toAuctionView(
     supply:             BigInt(row.supply),
     totalCommitted:     BigInt(row.totalCommitted),
     progressPct:        progressPct(row.totalCommitted, row.supply),
-    currentPrice:       computeDutchPrice(row, ctx.currentBlock),
+    currentPrice:       computeCurrentPrice(row, ctx.currentBlock),
     clearingPrice:      bigOrNull(row.clearingPrice),
     startBlock:         row.startBlock,
     endBlock:           row.endBlock,
@@ -117,6 +145,7 @@ export function toAuctionView(
     vestEnabled:        row.vestEnabled,
     vestCliffBlocks:    row.vestCliffBlocks,
     vestEndBlocks:      row.vestEndBlocks,
+    raiseTarget:        bigOrNull(row.raiseTarget),
     creatorRevenue:     bigOrNull(row.creatorRevenue),
     protocolFee:        bigOrNull(row.protocolFee),
     referralBudget:     bigOrNull(row.referralBudget),
@@ -143,8 +172,9 @@ export function toAuctionListItem(
     saleTokenSymbol: tokenInfo?.symbol      ?? null,
     supply:          BigInt(row.supply),
     progressPct:     progressPct(row.totalCommitted, row.supply),
-    currentPrice:    computeDutchPrice(row, ctx.currentBlock),
+    currentPrice:    computeCurrentPrice(row, ctx.currentBlock),
     clearingPrice:   bigOrNull(row.clearingPrice),
+    raiseTarget:     bigOrNull(row.raiseTarget),
     startBlock:      row.startBlock,
     endBlock:        row.endBlock,
     estimatedEnd:    estimateTime(row.endBlock, ctx),

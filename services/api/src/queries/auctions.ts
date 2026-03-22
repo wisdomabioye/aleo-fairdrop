@@ -3,7 +3,7 @@ import { auctions, indexerCheckpoints } from '@fairdrop/database';
 import type { Db, AuctionRow } from '@fairdrop/database';
 import type { AuctionListParams } from '@fairdrop/types/api';
 import { AuctionStatus } from '@fairdrop/types/domain';
-import { parsePagination } from '../lib/pagination.js';
+import type { RawPagination } from '../lib/pagination.js';
 
 /** Snapshot of the indexer's current position — used by mappers and queries. */
 export interface BlockContext {
@@ -43,6 +43,10 @@ function statusCondition(status: AuctionStatus, currentBlock: number) {
       return eq(auctions.status, 'cleared');
     case AuctionStatus.Voided:
       return eq(auctions.status, 'voided');
+    default: {
+      const _exhaustive: never = status;
+      throw new Error(`[statusCondition] unhandled AuctionStatus: ${_exhaustive}`);
+    }
   }
 }
 
@@ -50,8 +54,9 @@ export async function listAuctions(
   db:           Db,
   params:       AuctionListParams,
   currentBlock: number,
+  pag:          RawPagination,
 ): Promise<{ rows: AuctionRow[]; total: number }> {
-  const { page, pageSize, offset } = parsePagination(params);
+  const { pageSize, offset } = pag;
 
   const conditions = [];
   if (params.type)    conditions.push(eq(auctions.type,        params.type));
@@ -64,8 +69,8 @@ export async function listAuctions(
   const sortCol = (() => {
     switch (params.sort) {
       case 'endBlock':    return auctions.endBlock;
-      case 'volume':
-      case 'progressPct': return sql`CAST(${auctions.totalCommitted} AS NUMERIC)`;
+      case 'volume':      return sql`CAST(${auctions.totalCommitted} AS NUMERIC)`;
+      case 'progressPct': return sql`CAST(${auctions.totalCommitted} AS NUMERIC) / NULLIF(CAST(${auctions.supply} AS NUMERIC), 0)`;
       default:            return auctions.createdAtBlock;
     }
   })();

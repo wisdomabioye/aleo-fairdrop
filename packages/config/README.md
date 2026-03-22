@@ -1,10 +1,23 @@
 # @fairdrop/config
 
-Runtime configuration for all fairdrop consumers. Reads program IDs from `contracts/deployments/programs.json` and protocol accounts from the active network's `network.json` — bundled at compile time, no runtime I/O.
+Two independent exports:
+
+- **`PROGRAMS`** — static program IDs and salts from `contracts/deployments/programs.json`. Bundled at compile time. Use directly with no setup required.
+- **`defineConfig`** — runtime configuration (RPC URL, network, accounts). Call once at entry if your consumer needs these values. Throws on missing env vars.
 
 ## Usage
 
-Call `defineConfig` once at the entry point of each consumer, passing env vars explicitly. It throws immediately on missing or invalid values.
+**`PROGRAMS` only** (e.g. the indexer — needs program IDs, not RPC config):
+```ts
+import { PROGRAMS } from '@fairdrop/config'
+
+PROGRAMS.dutch.programId   // 'fairdrop_dutch.aleo'
+PROGRAMS.raise.programId   // 'fairdrop_raise.aleo'
+```
+
+**`defineConfig`** (e.g. the frontend or a service that needs the RPC URL and accounts):
+
+Call `defineConfig` once at the entry point, passing env vars explicitly. It throws immediately on missing or invalid values.
 
 **`apps/web` (Vite):**
 ```ts

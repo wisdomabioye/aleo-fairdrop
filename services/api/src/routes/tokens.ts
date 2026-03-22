@@ -2,8 +2,8 @@ import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import type { Db } from '@fairdrop/database';
 import type { TokenMetadata } from '@fairdrop/types/domain';
-import { parseStruct, parseU128, parseAddress, parseBool } from '@fairdrop/sdk/parse';
-import { decodeTokenString, getTokenInfo } from '../lib/token-cache.js';
+import { parseStruct, parseU8, parseU128, parseAddress, parseBool } from '@fairdrop/sdk/parse';
+import { decodeTokenString, setTokenCache } from '../lib/token-cache.js';
 import { json } from '../lib/respond.js';
 import { env } from '../env.js';
 
@@ -24,14 +24,16 @@ tokensRouter.get('/:id/metadata', async (c) => {
   const raw = (await res.json()) as string;
   const f   = parseStruct(raw);
 
-  // Warm the cache while we have the data
-  const cached = await getTokenInfo(env.aleoRpcUrl, tokenId);
+  // Parse once and warm the cache so getTokenInfoBatch hits on the next auction list request.
+  const symbol   = decodeTokenString(f['symbol']!);
+  const decimals = parseU8(f['decimals']!);
+  setTokenCache(tokenId, { symbol, decimals });
 
   const token: TokenMetadata = {
     tokenId,
     name:                  decodeTokenString(f['name']!),
-    symbol:                cached?.symbol   ?? decodeTokenString(f['symbol']!),
-    decimals:              cached?.decimals ?? parseInt(f['decimals']!.replace(/u\d+$/, ''), 10),
+    symbol,
+    decimals,
     totalSupply:           BigInt(parseU128(f['supply']!)),
     maxSupply:             BigInt(parseU128(f['max_supply']!)),
     admin:                 parseAddress(f['admin']!),

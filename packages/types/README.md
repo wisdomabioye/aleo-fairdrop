@@ -7,10 +7,11 @@ Shared TypeScript types for the entire monorepo. No runtime code — pure type d
 ```ts
 import type { DutchAuctionConfig, CreateAuctionInput } from '@fairdrop/types/contracts'
 import type { AuctionView, BidView }                   from '@fairdrop/types/domain'
-import type { AuctionRow, BidRow }                     from '@fairdrop/types/db'
-import type { TransitionEvent, DutchTransition }       from '@fairdrop/types/indexer'
+import type { TransitionEvent }                        from '@fairdrop/types/indexer'
 import type { Page, AuctionListParams }                from '@fairdrop/types/api'
 import type { Field, U128, Address }                   from '@fairdrop/types/primitives'
+
+// DB row types (AuctionRow, BidRow, etc.) come from @fairdrop/database — not from here
 ```
 
 There is no root `@fairdrop/types` export — sub-paths are mandatory for tree-shaking.
@@ -24,7 +25,6 @@ There is no root `@fairdrop/types` export — sub-paths are mandatory for tree-s
 | `domain/` | Enriched view models with enums, `bigint`, and `Date` for UI/API |
 | `api/` | Request/response shapes, pagination, filter params |
 | `indexer/` | `TransitionEvent`, `MappingUpdateEvent`, `IndexerCheckpoint` |
-| `db/` | Database row shapes (no ORM — just the column types) |
 
 ## Conventions
 
