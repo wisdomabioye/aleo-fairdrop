@@ -6,6 +6,7 @@ import { TxStatusStepper } from '@/shared/components/layout/TxStatusStepper';
 import { ErrorBoundary } from '@/shared/components/layout/ErrorBoundary';
 import { ConnectButton } from '@/shared/components/wallet/ConnectButton';
 import { routes } from '@/config';
+import { CreateAuctionPage } from '@/features/auctions/pages/CreateAuctionPage';
 
 // ── Placeholder pages (replaced by feature pages in Phase 2+) ────────────────
 function Placeholder({ name }: { name: string }) {
@@ -46,7 +47,7 @@ export function App() {
           <Route index                           element={<Placeholder name="Dashboard" />} />
           <Route path={routes.auctions}          element={<Placeholder name="Auctions" />} />
           <Route path={routes.auctionDetail}     element={<Placeholder name="Auction Detail" />} />
-          <Route path={routes.createAuction}     element={<Placeholder name="Create Auction" />} />
+          <Route path={routes.createAuction}     element={<CreateAuctionPage />} />
           <Route path={routes.myAuctions}        element={<Placeholder name="My Auctions" />} />
           <Route path={routes.myBids}            element={<Placeholder name="My Bids" />} />
           <Route path={routes.claim}             element={<Placeholder name="Claim" />} />

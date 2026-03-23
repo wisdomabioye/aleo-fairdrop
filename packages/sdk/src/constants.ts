@@ -13,3 +13,10 @@ export const SYSTEM_PROGRAMS = {
   tokenRegistry: 'token_registry.aleo',
   credits:       'credits.aleo',
 } as const;
+
+/**
+ * The Aleo zero address — all q's, encodes to all-zero bytes.
+ * Used as a placeholder for unused address fields in Leo structs
+ * (e.g. GateParams.issuer when gate_mode != 2).
+ */
+export const ZERO_ADDRESS = 'aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc';

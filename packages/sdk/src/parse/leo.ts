@@ -10,7 +10,7 @@
 
 /** Strip a Leo numeric/field type suffix and return the bare value string. */
 export function stripSuffix(raw: string): string {
-  return raw.trim().replace(/(?:u\d+|i\d+|field|group|scalar)$/, '').trim();
+  return raw.trim().replace(/(?:u\d+|i\d+|field|group|bool|scalar)$/, '').trim();
 }
 
 export function parseBool(raw: string): boolean {
