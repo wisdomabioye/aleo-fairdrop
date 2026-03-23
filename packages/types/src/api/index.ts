@@ -9,6 +9,7 @@ export type {
   AuctionFilterOptions,
   MetadataCreateRequest,
   MetadataCreateResponse,
+  LogoUploadResponse,
   MetadataResponse,
 } from './auction.js';
 

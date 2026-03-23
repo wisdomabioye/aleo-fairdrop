@@ -46,22 +46,30 @@ export interface AuctionFilterOptions {
 // ── Metadata ─────────────────────────────────────────────────────────────────
 
 /**
- * POST /metadata — creator submits auction metadata before calling create_auction.
- * Server pins to IPFS, computes BHP256 hash, returns { metadata_hash, ipfs_cid }.
+ * POST /metadata — creator uploads auction metadata before calling create_auction.
+ * Server pins canonical JSON to IPFS, computes a field-valued hash, returns both.
+ *
+ * No auction_id field — metadata is content-addressed. The auction ↔ metadata
+ * relationship is established on-chain via create_auction's metadata_hash param
+ * and off-chain via auctions.metadata_hash = auction_metadata.hash.
  */
 export interface MetadataCreateRequest {
-  auction_id:  string;        // field — used for pre-registration before tx
   name:        string;
   description: string;
   website?:    string;
-  logo_ipfs?:  string;        // pre-uploaded IPFS CID
+  logo_ipfs?:  string;        // CID returned by POST /metadata/logo
   twitter?:    string;
   discord?:    string;
 }
 
 export interface MetadataCreateResponse {
-  metadata_hash: string;      // field — pass this into create_auction transition
+  metadata_hash: string;      // Nfield literal — pass directly to create_auction
   ipfs_cid:      string;      // IPFS CID where the canonical JSON was pinned
+}
+
+/** POST /metadata/logo — pin a logo image, returns its CID. */
+export interface LogoUploadResponse {
+  ipfs_cid: string;
 }
 
 /** GET /metadata/:hash — enriched metadata by on-chain hash. */

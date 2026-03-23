@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import type { Db } from '@fairdrop/database';
-import type { MetadataCreateRequest, MetadataCreateResponse, MetadataResponse } from '@fairdrop/types/api';
+import type { MetadataCreateRequest, MetadataCreateResponse, LogoUploadResponse, MetadataResponse } from '@fairdrop/types/api';
 import { insertMetadata, getMetadataByHash } from '../queries/metadata.js';
 import { createPinataClient } from '../lib/ipfs.js';
 import { computeMetadataHash, toFieldLiteral } from '../lib/hash.js';
@@ -73,15 +73,15 @@ metadataRouter.post('/', async (c) => {
 
   const name        = assertStr(body.name,        'name',        100);
   const description = assertStr(body.description, 'description', 1000);
-  const auction_id  = assertStr(body.auction_id,  'auction_id',  200);
   const website     = assertUrl(assertOptStr(body.website,   'website',   200), 'website');
   const logo_ipfs   = assertIpfsCid(assertOptStr(body.logo_ipfs, 'logo_ipfs', 100), 'logo_ipfs');
   const twitter     = assertOptStr(body.twitter, 'twitter', 50);
   const discord     = assertOptStr(body.discord, 'discord', 50);
 
   // Canonical object — sorted keys, trimmed values — this exact shape is hashed and pinned.
+  // No auction_id: metadata is content-addressed; the auction→metadata join is done
+  // via auctions.metadata_hash = auction_metadata.hash on-chain and in the database.
   const canonical: Record<string, unknown> = {
-    auction_id,
     name,
     description,
     ...(website   ? { website }   : {}),
@@ -92,7 +92,7 @@ metadataRouter.post('/', async (c) => {
 
   const [hash, ipfsCid] = await Promise.all([
     computeMetadataHash(canonical),
-    ipfs.pin(canonical, `fairdrop-auction-${auction_id}`),
+    ipfs.pin(canonical, `fairdrop-metadata-${name.slice(0, 40)}`),
   ]);
 
   await insertMetadata(db, {
@@ -113,6 +113,36 @@ metadataRouter.post('/', async (c) => {
     ipfs_cid:      ipfsCid,
   };
 
+  return json(c, response, 201);
+});
+
+// ── POST /metadata/logo ───────────────────────────────────────────────────────
+
+metadataRouter.post('/logo', async (c) => {
+  let formData: FormData;
+  try {
+    formData = await c.req.formData();
+  } catch {
+    throw new HTTPException(400, { message: 'Expected multipart/form-data body' });
+  }
+
+  const file = formData.get('logo');
+  if (!(file instanceof File)) {
+    throw new HTTPException(400, { message: '"logo" file field is required' });
+  }
+
+  const MAX_BYTES = 2 * 1024 * 1024; // 2 MB
+  if (file.size > MAX_BYTES) {
+    throw new HTTPException(400, { message: 'Logo must be 2 MB or smaller' });
+  }
+  if (!file.type.startsWith('image/')) {
+    throw new HTTPException(400, { message: 'Logo must be an image file' });
+  }
+
+  const blob   = new Blob([await file.arrayBuffer()], { type: file.type });
+  const ipfsCid = await ipfs.pinFile(blob, file.name || 'logo');
+
+  const response: LogoUploadResponse = { ipfs_cid: ipfsCid };
   return json(c, response, 201);
 });
 

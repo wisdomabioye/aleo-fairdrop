@@ -1,5 +1,8 @@
 import { API_URL } from '@/env';
 import { apiFetch } from './api.client';
+import type { MetadataCreateResponse, LogoUploadResponse } from '@fairdrop/types/api';
+
+// ── Frontend-facing types (camelCase) ─────────────────────────────────────────
 
 export interface MetadataInput {
   name:        string;
@@ -7,18 +10,20 @@ export interface MetadataInput {
   website?:    string;
   twitter?:    string;
   discord?:    string;
-  logoIpfs?:   string;
+  logoIpfs?:   string;  // CID from uploadLogo()
 }
 
 export interface MetadataUploadResult {
-  hash:    string; // BHP256 field hex committed on-chain
+  hash:    string;  // Nfield literal — pass directly to create_auction
   ipfsCid: string;
 }
 
+// ── Service ───────────────────────────────────────────────────────────────────
+
 export const metadataService = {
   /**
-   * Upload logo file to IPFS via the API.
-   * Returns the IPFS CID string, or null on failure.
+   * Upload a logo image to IPFS via POST /metadata/logo.
+   * Returns the IPFS CID, or null on any failure (caller degrades gracefully).
    */
   uploadLogo: async (file: File): Promise<string | null> => {
     const body = new FormData();
@@ -26,20 +31,29 @@ export const metadataService = {
     try {
       const res = await fetch(`${API_URL}/metadata/logo`, { method: 'POST', body });
       if (!res.ok) return null;
-      const data = (await res.json()) as { ipfsCid: string };
-      return data.ipfsCid ?? null;
+      const data = (await res.json()) as LogoUploadResponse;
+      return data.ipfs_cid ?? null;
     } catch {
       return null;
     }
   },
 
   /**
-   * Pin metadata JSON to IPFS and compute its BHP256 on-chain hash.
+   * Pin metadata JSON to IPFS and compute its on-chain hash.
    * Returns { hash, ipfsCid } — hash is committed to create_auction as metadata_hash.
    */
-  upload: (data: MetadataInput): Promise<MetadataUploadResult> =>
-    apiFetch('/metadata', {
+  upload: async (data: MetadataInput): Promise<MetadataUploadResult> => {
+    const raw = await apiFetch<MetadataCreateResponse>('/metadata', {
       method: 'POST',
-      body:   JSON.stringify(data),
-    }),
+      body:   JSON.stringify({
+        name:        data.name,
+        description: data.description,
+        ...(data.website  ? { website:   data.website  } : {}),
+        ...(data.logoIpfs ? { logo_ipfs: data.logoIpfs } : {}),
+        ...(data.twitter  ? { twitter:   data.twitter  } : {}),
+        ...(data.discord  ? { discord:   data.discord  } : {}),
+      }),
+    });
+    return { hash: raw.metadata_hash, ipfsCid: raw.ipfs_cid };
+  },
 };
