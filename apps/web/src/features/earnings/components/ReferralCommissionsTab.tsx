@@ -3,9 +3,12 @@ import { useWallet }          from '@provablehq/aleo-wallet-adaptor-react';
 import { Button, Spinner, Badge } from '@fairdrop/ui';
 import { getAleoClient }      from '@fairdrop/sdk/client';
 import { formatMicrocredits } from '@fairdrop/sdk/credits';
-import { stripSuffix }        from '@fairdrop/sdk/parse';
+import { recStr, recField, recU128, stripSuffix } from '@fairdrop/sdk/parse';
 import { computeRefListKey }  from '@fairdrop/sdk/hash';
 import { config }             from '@/env';
+import { 
+  ConnectWalletPrompt
+} from '@/shared/components/wallet/ConnectWalletPrompt';
 import { parseExecutionError } from '@/shared/utils/errors';
 import { useTransactionStore } from '@/stores/transaction.store';
 
@@ -44,18 +47,6 @@ async function fetchUncreditedKeys(codeId: string, count: bigint): Promise<strin
     } catch { /* skip */ }
   }
   return keys;
-}
-
-// ── record helpers ─────────────────────────────────────────────────────────────
-
-function recStr(rec: Record<string, unknown>, key: string): string {
-  const data = (rec.data ?? rec) as Record<string, string>;
-  return String(data[key] ?? '');
-}
-
-function recField(rec: Record<string, unknown>, key: string): string {
-  const raw = stripSuffix(recStr(rec, key));
-  return raw.endsWith('field') ? raw : `${raw}field`;
 }
 
 // ── types ─────────────────────────────────────────────────────────────────────
@@ -199,9 +190,7 @@ export function ReferralCommissionsTab() {
 
   if (!connected) {
     return (
-      <p className="text-sm text-muted-foreground text-center py-8">
-        Connect your wallet to see your referral codes.
-      </p>
+      <ConnectWalletPrompt message="Connect your wallet to see your referral codes." />
     );
   }
 

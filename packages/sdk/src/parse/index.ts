@@ -12,6 +12,11 @@ export {
   parseStruct,
   isValidField,
   fieldToHex,
+  recStr,
+  recField,
+  recU128,
+  recU32,
+  hasRecordKey,
 } from './leo.js';
 
 export { parseBaseAuctionConfig, parseAuctionState, parseAuctionStats } from './auction.js';

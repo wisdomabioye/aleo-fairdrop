@@ -2,31 +2,18 @@ import { useState, useEffect, useCallback } from 'react';
 import { useWallet }           from '@provablehq/aleo-wallet-adaptor-react';
 import { Button, Spinner }     from '@fairdrop/ui';
 import { formatMicrocredits }  from '@fairdrop/sdk/credits';
-import { stripSuffix }         from '@fairdrop/sdk/parse';
+import { recField, recU128 }         from '@fairdrop/sdk/parse';
 import { computeBidderKey }    from '@fairdrop/sdk/hash';
 import { AuctionType }         from '@fairdrop/types/domain';
 import type { AuctionView }    from '@fairdrop/types/domain';
 import { config }              from '@/env';
 import { parseExecutionError } from '@/shared/utils/errors';
+import { 
+  ConnectWalletPrompt
+} from '@/shared/components/wallet/ConnectWalletPrompt';
 import { useTransactionStore } from '@/stores/transaction.store';
 import { useBlockHeight }      from '@/hooks/useBlockHeight';
 import { auctionsService }     from '@/services/auctions.service';
-
-// ── record helpers ─────────────────────────────────────────────────────────────
-
-function recStr(rec: Record<string, unknown>, key: string): string {
-  const data = (rec.data ?? rec) as Record<string, string>;
-  return String(data[key] ?? '');
-}
-
-function recField(rec: Record<string, unknown>, key: string): string {
-  const raw = stripSuffix(recStr(rec, key));
-  return raw.endsWith('field') ? raw : `${raw}field`;
-}
-
-function recU128(rec: Record<string, unknown>, key: string): bigint {
-  try { return BigInt(stripSuffix(recStr(rec, key))); } catch { return 0n; }
-}
 
 // ── types ─────────────────────────────────────────────────────────────────────
 
@@ -119,9 +106,7 @@ export function SlashBidsTab() {
 
   if (!connected) {
     return (
-      <p className="text-sm text-muted-foreground text-center py-8">
-        Connect your wallet to see slashable commitments.
-      </p>
+      <ConnectWalletPrompt message="Connect your wallet to see slashable commitments." />
     );
   }
 

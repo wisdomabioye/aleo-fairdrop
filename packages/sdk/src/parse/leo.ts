@@ -89,6 +89,52 @@ export function fieldToHex(s: string): string {
 }
 
 /**
+ * ── Private-record field accessors ────────────────────────────────────────────
+ *
+ * Aleo wallet adapters return private records as plain JS objects whose shape
+ * is one of:
+ *   { data: { field_name: "value", … }, … }   (most adapters)
+ *   { field_name: "value", … }                 (some adapters / shimmed records)
+ *
+ * These helpers normalise both shapes so callers don't need to know which
+ * adapter is in use.  They are intentionally simple — if a field is absent or
+ * cannot be parsed the helpers return a safe zero value instead of throwing,
+ * matching the "skip on error" pattern used throughout the transaction flows.
+ */
+
+/** Return the string value of a named field from a record object. */
+export function recStr(rec: Record<string, unknown>, key: string): string {
+  const data = (rec.data ?? rec) as Record<string, string>;
+  return String(data[key] ?? '');
+}
+
+/**
+ * Return a Leo field literal for a named field.
+ * Ensures the value always ends with the "field" suffix.
+ */
+export function recField(rec: Record<string, unknown>, key: string): string {
+  const raw = stripSuffix(recStr(rec, key));
+  return raw ? (raw.endsWith('field') ? raw : `${raw}field`) : '';
+}
+
+/** Return a u128 field parsed to bigint (0n on failure). */
+export function recU128(rec: Record<string, unknown>, key: string): bigint {
+  try { return BigInt(stripSuffix(recStr(rec, key))); } catch { return 0n; }
+}
+
+/** Return a u32 / u64 field parsed to number (0 on failure). */
+export function recU32(rec: Record<string, unknown>, key: string): number {
+  const n = parseInt(stripSuffix(recStr(rec, key)), 10);
+  return isNaN(n) ? 0 : n;
+}
+
+/** Return true if the record's data object contains the given key. */
+export function hasRecordKey(rec: Record<string, unknown>, key: string): boolean {
+  const data = (rec.data ?? rec) as Record<string, unknown>;
+  return key in data && data[key] !== undefined && data[key] !== null;
+}
+
+/**
  * Parse a Leo struct string into a flat Record<string, string>.
  *
  * Input:  "{ a: 1u64, b: aleo1..., c: { x: 2u8 } }"
