@@ -9,7 +9,8 @@
     "./cache":     "./src/cache/index.ts",
     "./client":    "./src/client.ts",
     "./registry":  "./src/registry/index.ts",
-    "./constants": "./src/constants.ts"
+    "./constants": "./src/constants.ts",
+    "./hash":      "./src/hash.ts"
   },
   "scripts": {
     "type-check": "tsc --noEmit"
