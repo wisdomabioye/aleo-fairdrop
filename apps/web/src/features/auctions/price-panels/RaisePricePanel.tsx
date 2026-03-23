@@ -3,7 +3,7 @@ import { formatMicrocredits } from '@fairdrop/sdk/credits';
 import type { PricePanelProps } from './types';
 
 export function RaisePricePanel({ auction }: PricePanelProps) {
-  const target    = auction.raiseTarget ?? 0n;
+  const target    = auction.params.type === 'raise' ? BigInt(auction.params.raise_target) : 0n;
   const committed = auction.totalCommitted;
   const pct       = target > 0n
     ? Math.min(100, Number((committed * 100n) / target))

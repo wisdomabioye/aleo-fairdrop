@@ -4,6 +4,14 @@
  * human-readable values, and wall-clock timestamps derived from block heights.
  */
 
+import type { DutchParams }        from '../contracts/auctions/dutch.js';
+import type { SealedParams }       from '../contracts/auctions/sealed.js';
+import type { RaiseAuctionConfig } from '../contracts/auctions/raise.js';
+import type { AscendingParams }    from '../contracts/auctions/ascending.js';
+import type { LbpAuctionConfig }   from '../contracts/auctions/lbp.js';
+import type { QuadraticAuctionConfig } from '../contracts/auctions/quadratic.js';
+import type { U16 }                from '../primitives/scalars.js';
+
 /** All supported auction mechanisms. Matches PROGRAM_SALT constants. */
 export enum AuctionType {
   Dutch     = 'dutch',
@@ -52,6 +60,24 @@ export interface AuctionMetadata {
   discord:     string | null;
 }
 
+/**
+ * Mechanism-specific config params surfaced on AuctionView.
+ *
+ * Each member reuses the corresponding contract params type (snake_case scalar strings)
+ * plus a `type` discriminant so callers can narrow via `auction.params.type`.
+ *
+ * - Dutch/Ascending/Sealed: use existing *Params interfaces from contracts/auctions/
+ * - Sealed adds `slash_reward_bps` (snapshotted at create, not in SealedParams)
+ * - Raise/LBP/Quadratic: Pick only the mechanism-specific fields from their configs
+ */
+export type AuctionParams =
+  | (DutchParams     & { type: AuctionType.Dutch })
+  | (SealedParams    & { slash_reward_bps: U16; type: AuctionType.Sealed })
+  | (Pick<RaiseAuctionConfig, 'raise_target'> & { type: AuctionType.Raise })
+  | (AscendingParams & { type: AuctionType.Ascending })
+  | (Pick<LbpAuctionConfig,   'start_weight' | 'end_weight' | 'swap_fee_bps' | 'initial_price'> & { type: AuctionType.Lbp })
+  | (Pick<QuadraticAuctionConfig, 'matching_pool' | 'contribution_cap' | 'matching_deadline'>    & { type: AuctionType.Quadratic });
+
 /** Full auction view — used on detail pages. */
 export interface AuctionView {
   /** Hex-encoded auction_id field. */
@@ -68,9 +94,11 @@ export interface AuctionView {
   metadata:        AuctionMetadata | null;  // null if no metadata pinned / 0field hash
 
   // Token
-  saleTokenId:     string;
-  saleTokenSymbol: string | null;
+  saleTokenId:       string;
+  saleTokenSymbol:   string | null;
   saleTokenDecimals: number | null;
+  /** sale_scale from BaseAuctionConfig — 10^decimals. Pass verbatim to transitions. */
+  saleScale:         bigint;
 
   // Supply
   supply:          bigint;
@@ -96,9 +124,6 @@ export interface AuctionView {
   vestCliffBlocks: number;
   vestEndBlocks:   number;
 
-  // Raise-specific (null for non-raise types)
-  raiseTarget:     bigint | null;
-
   // Revenue (null until cleared)
   creatorRevenue:  bigint | null;
   protocolFee:     bigint | null;
@@ -107,6 +132,12 @@ export interface AuctionView {
   // Protocol config (snapshotted at create)
   feeBps:          number;
   closerReward:    bigint;
+
+  /**
+   * Mechanism-specific config. Narrow via `params.type` (equals `this.type`).
+   * Field names and scalar types mirror the on-chain contract structs.
+   */
+  params:          AuctionParams;
 }
 
 /** Lightweight auction summary — used in lists and cards. */

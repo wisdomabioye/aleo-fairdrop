@@ -11,28 +11,27 @@ import type { BidFormProps } from './types';
 /**
  * Sealed bid form.
  *
- * COMMIT phase  (blockHeight ≤ commitEndBlock):
+ * COMMIT phase  (blockHeight ≤ params.commit_end_block):
  *   - Enter quantity + a secret nonce
  *   - Payment (collateral) locked; BHP256(qty, nonce, bidder) sent on-chain
  *
- * REVEAL phase  (commitEndBlock < blockHeight ≤ endBlock):
+ * REVEAL phase  (params.commit_end_block < blockHeight ≤ endBlock):
  *   - Enter the same quantity + nonce used at commit
  *   - Wallet uses the Commitment record (AutoDecrypt) to reveal
- *
- * commitEndBlock is not yet in AuctionView — defaulting to reveal phase detection
- * via auction status until the field is added to the API response.
  */
 export function SealedBidForm({ auction, blockHeight, protocolConfig, lagBlocks }: BidFormProps) {
   const { connected, executeTransaction } = useWallet();
   const { setTx } = useTransactionStore();
   const [searchParams] = useSearchParams();
 
-  const decimals     = auction.saleTokenDecimals ?? 0;
-  const saleScale    = 10n ** BigInt(decimals);
+  const saleScale    = auction.saleScale;
   const currentPrice = auction.currentPrice ?? 0n;
 
-  // Phase: if auction is Active we're in commit; if Ended/Clearing we're in reveal
-  const isRevealPhase = auction.status === 'ended' || auction.status === 'clearing';
+  // Phase detection: use commit_end_block from params when available
+  const commitEndBlock = auction.params.type === 'sealed' ? auction.params.commit_end_block : null;
+  const isRevealPhase  = commitEndBlock != null
+    ? blockHeight > commitEndBlock
+    : auction.status === 'ended' || auction.status === 'clearing';
 
   const [qtyInput,   setQtyInput]   = useState('');
   const [nonce,      setNonce]      = useState('');
@@ -42,6 +41,7 @@ export function SealedBidForm({ auction, blockHeight, protocolConfig, lagBlocks 
   const [txError,    setTxError]    = useState<string | null>(null);
   const [loading,    setLoading]    = useState(false);
 
+  const decimals       = auction.saleTokenDecimals ?? 0;
   const qtyRaw         = parseTokenAmount(qtyInput, decimals);
   const qtyHuman       = saleScale > 0n ? qtyRaw / saleScale : 0n;
   const paymentMicro   = aleoToMicro(payInput) ?? (qtyHuman * currentPrice);
