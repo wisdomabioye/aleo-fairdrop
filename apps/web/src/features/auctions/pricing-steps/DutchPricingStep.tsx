@@ -1,0 +1,67 @@
+import { Input, Label, TokenAmountInput } from '@fairdrop/ui';
+import { parseTokenAmount } from '@fairdrop/sdk/format';
+import { formatMicrocredits } from '@fairdrop/sdk/credits';
+import type { PricingStepProps, DutchPricingValues } from './types';
+
+export function DutchPricingStep({ value, onChange }: PricingStepProps<DutchPricingValues>) {
+  const set = (k: keyof DutchPricingValues) =>
+    (v: string) => onChange({ ...value, [k]: v });
+
+  const startMicro  = parseTokenAmount(value.startPrice, 6);
+  const floorMicro  = parseTokenAmount(value.floorPrice, 6);
+  const decayAmt    = parseTokenAmount(value.priceDecayAmount, 6);
+  const decayBlocks = parseInt(value.priceDecayBlocks) || 0;
+
+  const steps = decayAmt > 0n && startMicro > floorMicro
+    ? Number((startMicro - floorMicro) / decayAmt)
+    : null;
+  const blocksToFloor = steps != null && decayBlocks > 0 ? steps * decayBlocks : null;
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        Price steps down every N blocks until supply is met or the floor is reached.
+        All winners pay the same clearing price.
+      </p>
+      <div className="grid grid-cols-2 gap-4">
+        <TokenAmountInput
+          label="Start price" value={value.startPrice}
+          onChange={set('startPrice')} decimals={6} symbol="ALEO"
+          placeholder="0.5" hint="Highest price bidders see."
+        />
+        <TokenAmountInput
+          label="Floor price" value={value.floorPrice}
+          onChange={set('floorPrice')} decimals={6} symbol="ALEO"
+          placeholder="0.1" hint="Minimum clearing price."
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label>Decay interval (blocks)</Label>
+          <Input
+            inputMode="numeric" value={value.priceDecayBlocks}
+            onChange={(e) => set('priceDecayBlocks')(e.target.value.replace(/\D/g, ''))}
+            placeholder="100"
+          />
+          <p className="text-xs text-muted-foreground">
+            Price drops every {decayBlocks || 'N'} blocks
+            {decayBlocks > 0 ? ` (~${Math.round(decayBlocks * 10 / 60)} min)` : ''}.
+          </p>
+        </div>
+        <TokenAmountInput
+          label="Decay amount" value={value.priceDecayAmount}
+          onChange={set('priceDecayAmount')} decimals={6} symbol="ALEO"
+          placeholder="0.01" hint="Price drop per step."
+        />
+      </div>
+      {blocksToFloor != null && (
+        <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+          Reaches floor in ~{steps!.toLocaleString()} steps × {decayBlocks} blocks
+          {' '}= <strong>{blocksToFloor.toLocaleString()} blocks</strong>
+          {' '}(~{Math.round(blocksToFloor * 10 / 60)} min).
+          Clearing price range: {formatMicrocredits(floorMicro)} – {formatMicrocredits(startMicro)}.
+        </div>
+      )}
+    </div>
+  );
+}
