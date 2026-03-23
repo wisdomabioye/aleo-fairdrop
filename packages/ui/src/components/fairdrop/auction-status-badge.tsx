@@ -1,29 +1,18 @@
 import * as React from "react"
 import {
   CheckCircle2,
-  CircleDashed,
   Clock3,
   Gavel,
   LoaderCircle,
   PlayCircle,
-  TimerReset,
   TriangleAlert,
-  WalletCards,
 } from "lucide-react"
+import type { AuctionStatus } from "@fairdrop/types/domain"
 
 import { cn } from "../../lib/utils"
 import { Badge } from "../ui/badge"
 
-export type AuctionStatus =
-  | "draft"
-  | "upcoming"
-  | "live"
-  | "commit"
-  | "reveal"
-  | "closing"
-  | "closed"
-  | "settled"
-  | "cancelled"
+export type { AuctionStatus }
 
 export type AuctionStatusBadgeProps = {
   status: AuctionStatus
@@ -40,50 +29,35 @@ const statusConfig: Record<
     className: string
   }
 > = {
-  draft: {
-    label: "Draft",
-    icon: CircleDashed,
-    className: "border-border bg-muted text-muted-foreground",
-  },
   upcoming: {
     label: "Upcoming",
     icon: Clock3,
     className: "border-sky-500/20 bg-sky-500/10 text-sky-300",
   },
-  live: {
-    label: "Live",
+  active: {
+    label: "Active",
     icon: PlayCircle,
     className: "border-emerald-500/20 bg-emerald-500/10 text-emerald-300",
   },
-  commit: {
-    label: "Commit",
-    icon: WalletCards,
-    className: "border-violet-500/20 bg-violet-500/10 text-violet-300",
-  },
-  reveal: {
-    label: "Reveal",
-    icon: TimerReset,
-    className: "border-amber-500/20 bg-amber-500/10 text-amber-300",
-  },
-  closing: {
-    label: "Closing",
+  clearing: {
+    label: "Clearing",
     icon: LoaderCircle,
     className: "border-orange-500/20 bg-orange-500/10 text-orange-300",
   },
-  closed: {
-    label: "Closed",
-    icon: Gavel,
-    className: "border-slate-500/20 bg-slate-500/10 text-slate-300",
-  },
-  settled: {
-    label: "Settled",
+  cleared: {
+    label: "Cleared",
     icon: CheckCircle2,
     className: "border-emerald-500/20 bg-emerald-500/10 text-emerald-300",
   },
-  cancelled: {
-    label: "Cancelled",
+  voided: {
+    label: "Voided",
     icon: TriangleAlert,
     className: "border-rose-500/20 bg-rose-500/10 text-rose-300",
+  },
+  ended: {
+    label: "Ended",
+    icon: Gavel,
+    className: "border-slate-500/20 bg-slate-500/10 text-slate-300",
   },
 }
 

@@ -215,6 +215,9 @@ importers:
 
   packages/ui:
     dependencies:
+      '@fairdrop/types':
+        specifier: workspace:*
+        version: link:../types
       '@fontsource-variable/manrope':
         specifier: ^5.2.8
         version: 5.2.8
