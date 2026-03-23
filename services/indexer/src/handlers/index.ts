@@ -10,6 +10,7 @@
 import { PROGRAMS }                  from '@fairdrop/config';
 import { AuctionType }               from '@fairdrop/types/domain';
 import { createProgramHandlerMap }   from './auction.js';
+import { buildConfigHandlerMap }     from './config.js';
 import type { ProgramHandlerMap }    from './auction.js';
 
 export type { TransitionContext }    from './types.js';
@@ -31,7 +32,10 @@ export function buildAuctionRegistry(): AuctionRegistry {
     [AuctionType.Quadratic, PROGRAMS.quadratic.programId],
   ];
 
-  return Object.fromEntries(
-    pairs.map(([type, programId]) => [programId, createProgramHandlerMap(type, programId)]),
-  );
+  return {
+    ...Object.fromEntries(
+      pairs.map(([type, programId]) => [programId, createProgramHandlerMap(type, programId)]),
+    ),
+    [PROGRAMS.config.programId]: buildConfigHandlerMap(),
+  };
 }

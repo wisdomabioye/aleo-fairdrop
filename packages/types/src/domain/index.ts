@@ -13,3 +13,5 @@ export type { ReferralView, CommissionEstimate } from './referral.js';
 
 export type { VestingSchedule } from './vesting.js';
 export { VestingStatus } from './vesting.js';
+
+export type { ProtocolConfig } from './config.js';

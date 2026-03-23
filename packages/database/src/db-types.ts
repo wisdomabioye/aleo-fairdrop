@@ -17,6 +17,7 @@ import type {
   referralAttributions,
   indexerCheckpoints,
   indexerTransitions,
+  protocolConfig,
 } from './schema/index.js';
 
 // Auctions
@@ -50,3 +51,7 @@ export type IndexerCheckpointRow = InferSelectModel<typeof indexerCheckpoints>;
 export type NewIndexerCheckpoint = InferInsertModel<typeof indexerCheckpoints>;
 export type IndexerTransitionRow = InferSelectModel<typeof indexerTransitions>;
 export type NewIndexerTransition = InferInsertModel<typeof indexerTransitions>;
+
+// Protocol config (single-row; indexed from fairdrop_config.aleo)
+export type ProtocolConfigRow = InferSelectModel<typeof protocolConfig>;
+export type NewProtocolConfig  = InferInsertModel<typeof protocolConfig>;

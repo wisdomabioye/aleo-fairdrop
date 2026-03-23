@@ -159,6 +159,10 @@ export const KNOWN_UNHANDLED_TRANSITIONS = new Set([
   'push_referral_budget',
   'withdraw_payments',
   'withdraw_unsold',
+  // fairdrop_config.aleo CPI transitions called by auction programs:
+  'assert_config',
+  'assert_ref_bps',
+  'check_not_paused',
 ]);
 
 export function createProgramHandlerMap(

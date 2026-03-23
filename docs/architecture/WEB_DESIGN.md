@@ -667,14 +667,12 @@ export const auctionsService = {
 
 ### 6.2 Protocol Config Fetch
 
-`fairdrop_config.aleo` exposes all fee/reward params as public mappings. Read directly on the chain client before the Create Auction wizard:
+Protocol config is served by `GET /config` on `services/api`. The indexer writes the row whenever a `set_*` transition is indexed; the API serves the DB row with a 5-minute server-side TTL, falling back to contract defaults when the row is absent (i.e. before any `set_*` has been called on-chain).
 
 ```ts
-async function fetchProtocolConfig() {
-  const CONFIG_KEY = '0field'
-  // Reads: fee_bps, creation_fee, closer_reward, slash_reward_bps,
-  //        max_referral_bps, referral_pool_bps, min_auction_duration, paused
-  // Uses get_or_use defaults from contract constants if mapping entry not set yet
+// shared/services/config.service.ts
+export const configService = {
+  get: (): Promise<ProtocolConfig> => apiFetch('/config'),
 }
 ```
 
@@ -683,6 +681,8 @@ This is required for:
 - Client-side validation of `minDuration` for `endBlock - startBlock`
 - Showing `closerReward` in the Actions panel
 - Validating referral `commission_bps` against `maxReferralBps` in the referral page
+
+**No chain reads from the client for config.** 100 simultaneous users each hitting the same 9 mappings would be 900 RPC calls. With `GET /config`, that collapses to one request per 5-minute window regardless of concurrent users.
 
 ### 6.3 Hybrid Data Strategy
 
@@ -701,7 +701,7 @@ This is required for:
 | `auction_configs[id]` | Chain RPC (direct mapping read) | localStorage (no expiry) + TanStack Query (`staleTime: Infinity`) |
 | `auction_index[n]` | Chain RPC | localStorage (no expiry) + TanStack Query (`staleTime: Infinity`) |
 | Gate config per auction | Chain RPC (`gate_modes`, `allowlists`, `credential_issuers`) | localStorage (no expiry) + TanStack Query (`staleTime: Infinity`) |
-| Protocol config | Chain RPC (`PROGRAMS.config.programId` mappings) | localStorage (TTL 1hr) + TanStack Query (staleTime 5min) |
+| Protocol config | API (`GET /config`) | TanStack Query — 5 min staleTime |
 | Creator reputation | Chain RPC (`PROGRAMS.proof.programId/reputation`) | TanStack Query — 60s staleTime |
 | Referral chain state | Chain RPC (`PROGRAMS.ref.programId` mappings) | TanStack Query — on demand |
 | Block height | Chain RPC | TanStack Query — 5s staleTime |
@@ -718,7 +718,7 @@ TanStack Query is an **in-memory cache** — it resets on every page reload. For
 |---|---|---|
 | **Immutable** — no on-chain setter exists | `auction_configs`, `auction_index` entries, token metadata, gate config per auction | localStorage, **no expiry ever** |
 | **Write-once then immutable** | `fairdrop_ref/registrations[code_id]`, `fairdrop_proof/participated[key]` | localStorage, no expiry |
-| **Admin-only, changes rarely** | All `fairdrop_config.aleo` params (`fee_bps`, `creation_fee`, etc.) | localStorage with TTL (1hr); always re-fetch before `create_auction` |
+| **Admin-only, changes rarely** | All `fairdrop_config.aleo` params (`fee_bps`, `creation_fee`, etc.) | API-served with 5-min server TTL; TanStack Query `staleTime: 5min` client-side. Always re-fetch before `create_auction`. |
 | **Changes per auction activity** | `auction_states`, `earned[code_id]`, `referral_reserve`, `reputation` | TanStack Query only — no persistence |
 | **Real-time** | Block height | TanStack Query only — 5s staleTime |
 
@@ -730,9 +730,9 @@ packages/sdk/src/cache/
 ├── auction-config.ts     # getPersistedAuctionConfig, setPersistedAuctionConfig
 ├── auction-index.ts      # getPersistedAuctionIndex, setPersistedAuctionIndex
 ├── token-meta.ts         # getPersistedTokenMeta, setPersistedTokenMeta
-├── gate-config.ts        # getPersistedGateConfig, setPersistedGateConfig
-└── protocol-config.ts    # getPersistedProtocolConfig (with TTL), setPersistedProtocolConfig
+└── gate-config.ts        # getPersistedGateConfig, setPersistedGateConfig
 ```
+Protocol config is **not** persisted in localStorage — the API already caches it server-side for 5 minutes and returns defaults when the row is absent.
 
 Lives in `packages/sdk` (not `apps/web`) — no React dependency, reusable by any consumer, consistent with where the parsers and registry helpers live.
 
@@ -762,12 +762,6 @@ export function setPersisted<T>(key: string, value: T): void {
   catch { /* quota exceeded — silent fail, TanStack Query still works */ }
 }
 
-// TTL variant for mutable-but-rare data (protocol config)
-export function getPersistedWithTTL<T>(key: string, ttlMs: number): T | null {
-  const entry = getPersisted<{ data: T; writtenAt: number }>(key)
-  if (!entry) return null
-  return Date.now() - entry.writtenAt < ttlMs ? entry.data : null
-}
 ```
 
 #### Integration with TanStack Query
@@ -793,19 +787,11 @@ function useAuctionConfig(id: string) {
 }
 
 // features/auctions/hooks/useProtocolConfig.ts
-const PROTOCOL_CONFIG_TTL = 60 * 60 * 1000  // 1 hour
-
 function useProtocolConfig() {
   return useQuery({
     queryKey: ['protocolConfig'],
-    queryFn:  async () => {
-      const config = await fetchProtocolConfig()
-      setPersistedProtocolConfig(config)              // write-through with timestamp
-      return config
-    },
-    initialData: () =>
-      getPersistedProtocolConfigWithTTL(PROTOCOL_CONFIG_TTL) ?? undefined,
-    staleTime: 5 * 60 * 1000,   // 5 minutes in-session
+    queryFn:  () => configService.get(),  // GET /config — API-cached, never hits chain
+    staleTime: 5 * 60 * 1000,            // 5 minutes in-session; server TTL is also 5 min
   })
 }
 ```
@@ -818,7 +804,7 @@ The API already has `token-cache.ts`. Extend it to align with the same immutabil
 |---|---|---|
 | Token metadata | TTL-based | **No expiry** — immutable after registration |
 | Auction configs | Not cached | **No expiry** — immutable; indexer already wrote to DB |
-| Protocol config | Not cached | 5-minute TTL — reduces chain reads for high-traffic listing requests |
+| Protocol config | 5-minute TTL ✓ | Implemented — `services/api/src/lib/config-cache.ts` |
 | Auction list (DB query result) | Not cached | 15s TTL — short; DB is already fast, this smooths burst traffic |
 
 The DB is the authoritative cache for all indexed data — the indexer writes it, the API reads it. No additional server caching is needed for `auction_states` or referral state; those are served directly from the DB.
@@ -1320,7 +1306,7 @@ Step 8 — Review & Submit
 ### 10.2 Creation Fee — No Obscurity
 
 - Always shown in Step 8; never hidden or deemphasized
-- Fetched fresh from `fairdrop_config.aleo/creation_fee` before wizard opens and before submit
+- Fetched from `GET /config` before wizard opens and re-fetched immediately before submit (invalidates TanStack Query cache)
 - Displayed as "Creation Fee: N ALEO (N µcredits)" with credit record selector below
 - Warning text: "This fee is deducted at auction creation and is non-refundable"
 - `assert_config` in the contract will revert the tx if fee drifted between read and execute — warn user if values changed
