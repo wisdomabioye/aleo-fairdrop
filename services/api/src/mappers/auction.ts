@@ -1,7 +1,8 @@
 import {
   AuctionType, AuctionStatus, GateMode,
-  type AuctionView, type AuctionListItem, type AuctionMetadata,
+  type AuctionView, type AuctionListItem, type AuctionMetadata, type AuctionParams,
 } from '@fairdrop/types/domain';
+import { asU128, asField } from '@fairdrop/types/primitives';
 import type { AuctionRow, AuctionMetadataRow } from '@fairdrop/database';
 import type { BlockContext } from '../queries/auctions.js';
 import type { TokenInfo } from '../lib/token-cache.js';
@@ -112,6 +113,76 @@ function progressPct(committed: string, supply: string): number {
   return Math.min(100, Number((BigInt(committed) * 100n) / s));
 }
 
+// ── Params builder ────────────────────────────────────────────────────────────
+
+/**
+ * Build the discriminated AuctionParams from the DB row.
+ * Flat price columns cover Dutch/Ascending/Raise/Sealed.
+ * LBP and Quadratic mechanism fields live only in configJson.
+ */
+function buildParams(row: AuctionRow): AuctionParams {
+  const cfg = (row.configJson ?? {}) as Record<string, unknown>;
+
+  switch (row.type as AuctionType) {
+    case AuctionType.Dutch:
+      return {
+        type:        AuctionType.Dutch,
+        start_price:        asU128(row.startPrice!),
+        floor_price:        asU128(row.floorPrice!),
+        price_decay_blocks: row.priceDecayBlocks!,
+        price_decay_amount: asU128(row.priceDecayAmount!),
+      };
+
+    case AuctionType.Sealed:
+      return {
+        type:             AuctionType.Sealed,
+        start_price:        asU128(row.startPrice!),
+        floor_price:        asU128(row.floorPrice!),
+        price_decay_blocks: row.priceDecayBlocks!,
+        price_decay_amount: asU128(row.priceDecayAmount!),
+        commit_end_block:   Number(cfg.commit_end_block ?? 0),
+        slash_reward_bps:   Number(cfg.slash_reward_bps ?? 0),
+      };
+
+    case AuctionType.Raise:
+      return {
+        type:         AuctionType.Raise,
+        raise_target: asU128(row.raiseTarget ?? '0'),
+      };
+
+    case AuctionType.Ascending:
+      return {
+        type:              AuctionType.Ascending,
+        floor_price:       asU128(row.floorPrice!),
+        ceiling_price:     asU128(row.ceilingPrice!),
+        price_rise_blocks: row.priceRiseBlocks!,
+        price_rise_amount: asU128(row.priceRiseAmount!),
+      };
+
+    case AuctionType.Lbp:
+      return {
+        type:          AuctionType.Lbp,
+        start_weight:  Number(cfg.start_weight ?? 0),
+        end_weight:    Number(cfg.end_weight   ?? 0),
+        swap_fee_bps:  Number(cfg.swap_fee_bps ?? 0),
+        initial_price: asU128(String(cfg.initial_price ?? '0')),
+      };
+
+    case AuctionType.Quadratic:
+      return {
+        type:              AuctionType.Quadratic,
+        matching_pool:     asU128(String(cfg.matching_pool     ?? '0')),
+        contribution_cap:  asU128(String(cfg.contribution_cap  ?? '0')),
+        matching_deadline: Number(cfg.matching_deadline ?? 0),
+      };
+
+    default: {
+      const _exhaustive: never = row.type as never;
+      throw new Error(`[buildParams] unhandled AuctionType: ${_exhaustive}`);
+    }
+  }
+}
+
 // ── Public mappers ────────────────────────────────────────────────────────────
 
 export function toAuctionView(
@@ -131,6 +202,7 @@ export function toAuctionView(
     saleTokenId:        row.saleTokenId,
     saleTokenSymbol:    tokenInfo?.symbol   ?? null,
     saleTokenDecimals:  tokenInfo?.decimals ?? null,
+    saleScale:          BigInt(row.saleScale ?? '1'),
     supply:             BigInt(row.supply),
     totalCommitted:     BigInt(row.totalCommitted),
     progressPct:        progressPct(row.totalCommitted, row.supply),
@@ -145,12 +217,12 @@ export function toAuctionView(
     vestEnabled:        row.vestEnabled,
     vestCliffBlocks:    row.vestCliffBlocks,
     vestEndBlocks:      row.vestEndBlocks,
-    raiseTarget:        bigOrNull(row.raiseTarget),
     creatorRevenue:     bigOrNull(row.creatorRevenue),
     protocolFee:        bigOrNull(row.protocolFee),
     referralBudget:     bigOrNull(row.referralBudget),
     feeBps:             row.feeBps,
     closerReward:       BigInt(row.closerReward),
+    params:             buildParams(row),
   };
 }
 
