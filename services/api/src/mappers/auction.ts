@@ -2,7 +2,7 @@ import {
   AuctionType, AuctionStatus, GateMode,
   type AuctionView, type AuctionListItem, type AuctionMetadata, type AuctionParams,
 } from '@fairdrop/types/domain';
-import { asU128, asField } from '@fairdrop/types/primitives';
+import { asU128 } from '@fairdrop/types/primitives';
 import type { AuctionRow, AuctionMetadataRow } from '@fairdrop/database';
 import type { BlockContext } from '../queries/auctions.js';
 import type { TokenInfo } from '../lib/token-cache.js';
