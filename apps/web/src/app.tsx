@@ -12,6 +12,7 @@ import { ClaimPage }         from '@/features/claim/pages/ClaimPage';
 import { ReferralPage }      from '@/features/referral/pages/ReferralPage';
 import { VestingPage }       from '@/features/vesting/pages/VestingPage';
 import { GatePage }          from '@/features/gate/pages/GatePage';
+import { AdminPage }         from '@/features/admin/pages/AdminPage';
 
 // ── Placeholder pages (replaced by feature pages in Phase 2+) ────────────────
 function Placeholder({ name }: { name: string }) {
@@ -62,7 +63,7 @@ export function App() {
           <Route path={routes.gate}              element={<GatePage />} />
           <Route path={routes.tokenLaunch}       element={<Placeholder name="Token Launch" />} />
           <Route path={routes.tokenManager}      element={<Placeholder name="Token Manager" />} />
-          <Route path={routes.admin}             element={<Placeholder name="Admin" />} />
+          <Route path={routes.admin}             element={<AdminPage />} />
           <Route path={routes.guide}             element={<Placeholder name="Guide" />} />
           <Route path="*"                        element={<Placeholder name="404 — Not Found" />} />
         </Route>
