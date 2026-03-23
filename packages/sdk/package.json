@@ -3,11 +3,25 @@
   "version": "0.1.0",
   "private": true,
   "exports": {
-    "./parse": "./src/parse/index.ts",
+    "./parse":     "./src/parse/index.ts",
+    "./credits":   "./src/credits/index.ts",
+    "./format":    "./src/format/index.ts",
+    "./cache":     "./src/cache/index.ts",
+    "./client":    "./src/client.ts",
+    "./registry":  "./src/registry/index.ts",
     "./constants": "./src/constants.ts"
   },
   "scripts": {
     "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fairdrop/types": "workspace:*"
+  },
+  "peerDependencies": {
+    "@provablehq/sdk": "*"
+  },
+  "peerDependenciesMeta": {
+    "@provablehq/sdk": { "optional": true }
   },
   "devDependencies": {
     "typescript": "~5.9.3"

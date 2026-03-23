@@ -254,3 +254,8 @@ export {
   type TxStep,
   type TxStepStatus,
 } from "./components/fairdrop/tx-status-stepper"
+
+export { InfoRow, type InfoRowProps } from "./components/ui/info-row"
+export { PageHeader, type PageHeaderProps } from "./components/ui/page-header"
+export { TokenAmountInput, type TokenAmountInputProps } from "./components/fairdrop/token-amount-input"
+export { CopyField, type CopyFieldProps } from "./components/fairdrop/copy-field"

@@ -1,0 +1,66 @@
+import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom';
+import { Toaster, SidebarProvider, SidebarInset, SidebarTrigger } from '@fairdrop/ui';
+import { AppSidebar } from '@/shared/components/layout/AppSidebar';
+import { TopBar } from '@/shared/components/layout/TopBar';
+import { TxStatusStepper } from '@/shared/components/layout/TxStatusStepper';
+import { ErrorBoundary } from '@/shared/components/layout/ErrorBoundary';
+import { ConnectButton } from '@/shared/components/wallet/ConnectButton';
+import { routes } from '@/config';
+
+// ── Placeholder pages (replaced by feature pages in Phase 2+) ────────────────
+function Placeholder({ name }: { name: string }) {
+  return (
+    <div className="flex h-full items-center justify-center text-muted-foreground">
+      {name} — coming soon
+    </div>
+  );
+}
+
+// ── Layout ───────────────────────────────────────────────────────────────────
+
+function Layout() {
+  return (
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset>
+        <TopBar trigger={<SidebarTrigger />} actions={<ConnectButton />} />
+        <main className="flex-1 overflow-auto p-4">
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
+        </main>
+      </SidebarInset>
+      <TxStatusStepper />
+      <Toaster />
+    </SidebarProvider>
+  );
+}
+
+// ── App ──────────────────────────────────────────────────────────────────────
+
+export function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route element={<Layout />}>
+          <Route index                           element={<Placeholder name="Dashboard" />} />
+          <Route path={routes.auctions}          element={<Placeholder name="Auctions" />} />
+          <Route path={routes.auctionDetail}     element={<Placeholder name="Auction Detail" />} />
+          <Route path={routes.createAuction}     element={<Placeholder name="Create Auction" />} />
+          <Route path={routes.myAuctions}        element={<Placeholder name="My Auctions" />} />
+          <Route path={routes.myBids}            element={<Placeholder name="My Bids" />} />
+          <Route path={routes.claim}             element={<Placeholder name="Claim" />} />
+          <Route path={routes.earnings}          element={<Placeholder name="Earnings" />} />
+          <Route path={routes.referral}          element={<Placeholder name="Referral" />} />
+          <Route path={routes.vesting}           element={<Placeholder name="Vesting" />} />
+          <Route path={routes.gate}              element={<Placeholder name="Gate" />} />
+          <Route path={routes.tokenLaunch}       element={<Placeholder name="Token Launch" />} />
+          <Route path={routes.tokenManager}      element={<Placeholder name="Token Manager" />} />
+          <Route path={routes.admin}             element={<Placeholder name="Admin" />} />
+          <Route path={routes.guide}             element={<Placeholder name="Guide" />} />
+          <Route path="*"                        element={<Placeholder name="404 — Not Found" />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
+}
