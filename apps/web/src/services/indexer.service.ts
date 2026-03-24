@@ -9,5 +9,5 @@ export interface IndexerStatus {
 }
 
 export const indexerService = {
-  status: (): Promise<IndexerStatus> => apiFetch('/indexer'),
+  status: (): Promise<IndexerStatus> => apiFetch('/indexer/status'),
 };
