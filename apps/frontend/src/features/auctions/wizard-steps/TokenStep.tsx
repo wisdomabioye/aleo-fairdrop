@@ -5,7 +5,7 @@ import { Button, Spinner } from '@/components';
 import { fetchTokenInfo, fetchTokenRole } from '@fairdrop/sdk/registry';
 import { SYSTEM_PROGRAMS } from '@fairdrop/sdk/constants';
 import { config } from '@/env';
-import { AppRoutes } from '@/config/routes';
+import { AppRoutes } from '@/config/app.routes';
 import { parseExecutionError } from '@/shared/utils/errors';
 import type { StepProps } from './types';
 import { stripSuffix } from '@fairdrop/sdk/parse';
