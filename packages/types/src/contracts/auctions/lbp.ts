@@ -7,7 +7,7 @@
  * @todo Define fully when fairdrop_lbp.aleo is implemented.
  */
 
-import type { U128, U32, U16 } from '../../primitives/scalars';
+import type { U128, U16 } from '../../primitives/scalars';
 import type { BaseAuctionConfig, AuctionState, BaseBid } from './common';
 
 export interface LbpAuctionConfig extends BaseAuctionConfig {
