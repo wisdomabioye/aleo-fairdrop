@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import { serve }    from '@hono/node-server';
 import { createDb } from '@fairdrop/database';
 import { env }      from './env.js';

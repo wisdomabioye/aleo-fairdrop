@@ -65,7 +65,7 @@ export class PollLoop {
 
     // Stay behind the finality buffer.
     const safeHeight = tipHeight - env.confirmationDepth;
-
+    
     if (fromHeight > safeHeight) {
       log.debug(`caught up`, { tip: tipHeight, from: fromHeight, safe: safeHeight });
       return;
@@ -77,7 +77,7 @@ export class PollLoop {
 
     const blocks = await this.rpc.getBlockRange(fromHeight, toHeight);
 
-    for (const block of blocks) {
+    for (const block of blocks.blocks) {
       if (!this.running) break;
       await this.processor.processBlock(block, tipHeight);
     }

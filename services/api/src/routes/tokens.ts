@@ -15,7 +15,7 @@ export const tokensRouter = new Hono<{ Variables: Variables }>();
 tokensRouter.get('/:id/metadata', async (c) => {
   const tokenId = c.req.param('id');
 
-  const url = `${env.aleoRpcUrl}/program/token_registry.aleo/mapping/registered_tokens/${tokenId}field`;
+  const url = `${env.aleoRpcUrl}/programs/program/token_registry.aleo/mapping/registered_tokens/${tokenId}field`;
   const res = await fetch(url, { headers: { Accept: 'application/json' } });
 
   if (res.status === 404) throw new HTTPException(404, { message: `Token ${tokenId} not found` });

@@ -65,13 +65,14 @@ export class AleoRpcClient {
   }
 
   /** Latest confirmed block height. */
-  getLatestHeight(): Promise<number> {
-    return this.get<number>('/latest/height');
+  async getLatestHeight(): Promise<number> {
+    const raw = await this.get<{ height: number } | number>('/blocks/latest/height');
+    return typeof raw === 'object' && raw !== null ? (raw as { height: number }).height : Number(raw);
   }
 
   /** Single block by height. */
   getBlock(height: number): Promise<AleoBlock> {
-    return this.get<AleoBlock>(`/block/${height}`);
+    return this.get<AleoBlock>(`/blocks/height/${height}`);
   }
 
   /**
@@ -82,8 +83,8 @@ export class AleoRpcClient {
    * Returns blocks in ascending height order.
    * Verify the query param names against the live node if the endpoint changes.
    */
-  getBlockRange(start: number, end: number): Promise<AleoBlock[]> {
-    return this.get<AleoBlock[]>(`/blocks?start=${start}&end=${end}`);
+  getBlockRange(start: number, end: number): Promise<{blocks: AleoBlock[]}> {
+    return this.get<{blocks: AleoBlock[]}>(`/blocks?start=${start}&end=${end}`);
   }
 
   /**
@@ -96,7 +97,7 @@ export class AleoRpcClient {
     key:         string,
   ): Promise<string | null> {
     try {
-      return await this.get<string>(`/program/${programId}/mapping/${mappingName}/${key}`);
+      return await this.get<string>(`/programs/program/${programId}/mapping/${mappingName}/${key}`);
     } catch (err) {
       if (err instanceof Error && err.message.includes('404')) return null;
       throw err;

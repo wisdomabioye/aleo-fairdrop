@@ -16,10 +16,13 @@ indexerRouter.get('/status', async (c) => {
 
   let chainTip: number | null = null;
   try {
-    const res = await fetch(`${env.aleoRpcUrl}/latest/height`, {
+    const res = await fetch(`${env.aleoRpcUrl}/blocks/latest/height`, {
       headers: { Accept: 'application/json' },
     });
-    if (res.ok) chainTip = (await res.json()) as number;
+    if (res.ok) {
+        const d = (await res.json()) as {height: number}
+        chainTip = d.height
+    }
   } catch {
     // Non-fatal — best-effort chain tip
   }

@@ -4,25 +4,26 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev":        "tsx watch src/index.ts",
-    "start":      "tsx src/index.ts",
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
     "type-check": "tsc --noEmit",
-    "db:generate":  "drizzle-kit generate",
-    "db:migrate":   "drizzle-kit migrate",
-    "db:studio":    "drizzle-kit studio",
-    "db:push":      "drizzle-kit push"
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio",
+    "db:push": "drizzle-kit push"
   },
   "dependencies": {
     "@fairdrop/database": "workspace:*",
-    "@fairdrop/sdk":      "workspace:*",
-    "@fairdrop/types":    "workspace:*",
-    "@hono/node-server":  "^1.13.8",
-    "hono":               "^4.7.10"
+    "@fairdrop/sdk": "workspace:*",
+    "@fairdrop/types": "workspace:*",
+    "@hono/node-server": "^1.13.8",
+    "dotenv": "^17.3.1",
+    "hono": "^4.7.10"
   },
   "devDependencies": {
-    "drizzle-kit": "^0.31.1",
     "@types/node": "^25.5.0",
-    "tsx":         "^4.19.3",
-    "typescript":  "~5.9.3"
+    "drizzle-kit": "^0.31.1",
+    "tsx": "^4.19.3",
+    "typescript": "~5.9.3"
   }
 }
