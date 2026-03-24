@@ -7,7 +7,6 @@ import { LeoWalletAdapter }    from '@provablehq/aleo-wallet-adaptor-leo';
 import { FoxWalletAdapter }    from '@provablehq/aleo-wallet-adaptor-fox';
 import { SoterWalletAdapter }  from '@provablehq/aleo-wallet-adaptor-soter';
 import { DecryptPermission }   from '@provablehq/aleo-wallet-adaptor-core';
-import { AleoWorker } from '@/workers/AleoWorker';
 import { WALLET_NETWORK } from '@/env';
 import '@provablehq/aleo-wallet-adaptor-react-ui/dist/styles.css';
 
@@ -22,9 +21,6 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     ],
     [],
   );
-
-  // Terminate the Aleo web worker when the provider unmounts
-  useEffect(() => () => AleoWorker().terminate(), []);
 
   return (
     <AleoWalletProvider

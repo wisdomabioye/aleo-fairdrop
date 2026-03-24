@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { QueryProvider, WalletProvider } from '@/providers';
 import { ThemeProvider } from '@fairdrop/ui';
 import { App } from '@/app';
-import '@fairdrop/ui/styles.css';
+import './app.css';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('Root element #root not found');

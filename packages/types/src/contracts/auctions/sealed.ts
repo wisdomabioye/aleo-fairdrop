@@ -60,6 +60,8 @@ export interface SealedCommitment {
   auction_id:     Field;
   commitment:     Field;   // hides quantity until reveal
   payment_amount: U128;
+  quantity: U128,
+  nonce: Field
 }
 
 /**

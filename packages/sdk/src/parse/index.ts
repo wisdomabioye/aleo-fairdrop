@@ -1,5 +1,7 @@
 export {
   stripSuffix,
+  stripVisibility,
+  parsePlaintext,
   parseBool,
   parseU8,
   parseU16,

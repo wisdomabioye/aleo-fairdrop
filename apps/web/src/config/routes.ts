@@ -29,6 +29,7 @@ export const routes = {
   // Token tools
   tokenLaunch:  '/token-launch',
   tokenManager: '/token-manager',
+  shield:       '/shield',
 
   // Admin
   admin: '/admin',

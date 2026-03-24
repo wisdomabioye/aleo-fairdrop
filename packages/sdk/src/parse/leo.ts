@@ -13,6 +13,29 @@ export function stripSuffix(raw: string): string {
   return raw.trim().replace(/(?:u\d+|i\d+|field|group|bool|scalar)$/, '').trim();
 }
 
+/** Strip the .private / .public visibility suffix from a Leo record field value. */
+export function stripVisibility(value: string): string {
+  return value.replace(/\.(private|public)$/, '');
+}
+
+/**
+ * Parse a Leo record plaintext string into a flat key → value map.
+ * Values retain their visibility suffix (.private / .public) — use
+ * stripVisibility() before further parsing when needed.
+ *
+ * Works on both single-line and multi-line record plaintexts:
+ *   "{ owner: aleo1..., auction_id: 123field, quantity: 1000u128.private }"
+ */
+export function parsePlaintext(text: string): Record<string, string> {
+  const result: Record<string, string> = {};
+  const pattern = /\b(\w+):\s*([^,}\s]+)/g;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(text)) !== null) {
+    result[match[1]!] = match[2]!;
+  }
+  return result;
+}
+
 export function parseBool(raw: string): boolean {
   const v = raw.trim();
   if (v === 'true')  return true;

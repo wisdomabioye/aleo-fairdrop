@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import {
   LayoutDashboard,
   Gavel,
@@ -12,6 +13,9 @@ import {
   Settings2,
   BookOpen,
   TrendingUp,
+  ShieldCheck,
+  Zap,
+  Wallet,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -26,6 +30,7 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
 } from '@fairdrop/ui';
+import { truncateAddress } from '@fairdrop/sdk/format';
 import { routes } from '@/config';
 
 // ── Nav item definition ──────────────────────────────────────────────────────
@@ -34,7 +39,7 @@ type NavItem = {
   label: string;
   to:    string;
   icon:  React.ComponentType<{ className?: string }>;
-  end?:  boolean; // exact match for NavLink active state
+  end?:  boolean;
 };
 
 // ── Route groups ─────────────────────────────────────────────────────────────
@@ -44,11 +49,11 @@ const OVERVIEW: NavItem[] = [
 ];
 
 const AUCTIONS: NavItem[] = [
-  { label: 'Browse',         to: routes.auctions,     icon: Gavel, end: true },
+  { label: 'Browse',         to: routes.auctions,      icon: Gavel, end: true },
   { label: 'Create',         to: routes.createAuction, icon: PlusCircle },
-  { label: 'My Auctions',    to: routes.myAuctions,   icon: LayoutList },
+  { label: 'My Auctions',    to: routes.myAuctions,    icon: LayoutList },
   { label: 'My Bids',        to: routes.myBids,        icon: Receipt },
-  { label: 'Claim',          to: routes.claim,         icon: BadgeDollarSign },
+  { label: 'Claim',          to: routes.claim,          icon: BadgeDollarSign },
 ];
 
 const FINANCE: NavItem[] = [
@@ -58,15 +63,16 @@ const FINANCE: NavItem[] = [
 ];
 
 const TOOLS: NavItem[] = [
+  { label: 'Shield',         to: routes.shield,        icon: ShieldCheck },
   { label: 'Token Launch',   to: routes.tokenLaunch,   icon: Coins },
   { label: 'Token Manager',  to: routes.tokenManager,  icon: Settings2 },
 ];
 
 const RESOURCES: NavItem[] = [
-  { label: 'Guide',          to: routes.guide,          icon: BookOpen },
+  { label: 'Guide',          to: routes.guide, icon: BookOpen },
 ];
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── NavGroup ──────────────────────────────────────────────────────────────────
 
 function NavGroup({ label, items }: { label: string; items: NavItem[] }) {
   return (
@@ -76,10 +82,15 @@ function NavGroup({ label, items }: { label: string; items: NavItem[] }) {
         <SidebarMenu>
           {items.map(({ label: name, to, icon: Icon, end }) => (
             <SidebarMenuItem key={to}>
-              <NavLink to={to} end={end}>
+              <NavLink to={to} end={end} className="block w-full">
                 {({ isActive }) => (
-                  <SidebarMenuButton isActive={isActive}>
-                    <Icon className="size-4" />
+                  <SidebarMenuButton
+                    isActive={isActive}
+                    className={isActive
+                      ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
+                      : 'hover:bg-sidebar-accent/50'}
+                  >
+                    <Icon className="size-4 shrink-0" />
                     <span>{name}</span>
                   </SidebarMenuButton>
                 )}
@@ -92,13 +103,38 @@ function NavGroup({ label, items }: { label: string; items: NavItem[] }) {
   );
 }
 
+// ── WalletChip ────────────────────────────────────────────────────────────────
+
+function WalletChip() {
+  const { address, connected } = useWallet();
+
+  return (
+    <div className="flex items-center gap-2 rounded-lg border border-sidebar-border bg-sidebar-accent/30 px-3 py-2 text-xs text-sidebar-foreground">
+      <Wallet className="size-3.5 shrink-0 text-sidebar-primary" />
+      {connected && address ? (
+        <span className="font-mono truncate">{truncateAddress(address)}</span>
+      ) : (
+        <span className="text-muted-foreground">Not connected</span>
+      )}
+    </div>
+  );
+}
+
 // ── AppSidebar ────────────────────────────────────────────────────────────────
 
 export function AppSidebar() {
   return (
     <Sidebar>
-      <SidebarHeader className="px-4 py-3">
-        <span className="text-lg font-bold tracking-tight">Fairdrop</span>
+      {/* Branding */}
+      <SidebarHeader className="px-4 py-4">
+        <div className="flex items-center gap-2">
+          <div className="flex size-7 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+            <Zap className="size-4" />
+          </div>
+          <span className="text-base font-bold tracking-tight text-sidebar-foreground">
+            Fairdrop
+          </span>
+        </div>
       </SidebarHeader>
 
       <SidebarContent>
@@ -111,8 +147,9 @@ export function AppSidebar() {
         <NavGroup label="Tools"     items={TOOLS} />
       </SidebarContent>
 
-      <SidebarFooter>
+      <SidebarFooter className="space-y-3 px-3 pb-4">
         <NavGroup label="Resources" items={RESOURCES} />
+        <WalletChip />
       </SidebarFooter>
     </Sidebar>
   );

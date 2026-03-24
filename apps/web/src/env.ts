@@ -31,6 +31,7 @@ export const config: FairdropConfig = defineConfig({
 // Web-app-specific vars not covered by FairdropConfig
 export const API_URL      = requireEnv('VITE_API_URL');
 export const IPFS_GATEWAY = requireEnv('VITE_IPFS_GATEWAY');
+export const TX_DEFAULT_FEE = Number(requireEnv('VITE_FEE'));
 
 // Wallet adapter network constant derived from config
 export const WALLET_NETWORK: Network =
