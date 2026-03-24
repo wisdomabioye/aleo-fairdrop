@@ -11,7 +11,7 @@ interface Options {
 /**
  * Fetches Sealed Commitment records for one auction program owned by the connected wallet.
  *
- * @param programId - Auction program to fetch from (e.g. "fairdrop_sealed.aleo")
+ * @param programId - Auction program to fetch from (e.g. "fairdrop_sealed_v1.aleo")
  */
 export function useSealedCommitment(programId: string, opts: Options = {}) {
   const { entries, loading, fetchRecords } = useWalletRecords(programId, opts);

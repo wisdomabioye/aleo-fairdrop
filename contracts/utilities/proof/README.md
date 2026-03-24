@@ -1,4 +1,4 @@
-# fairdrop_proof.aleo
+# fairdrop_proof_v1.aleo
 
 Participation receipt and reputation tracking. Issues a `ParticipationReceipt` record to each bidder after a successful bid. Maintains a public reputation score per address (auction count, total committed, claim/void history).
 

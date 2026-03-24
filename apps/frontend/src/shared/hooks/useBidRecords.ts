@@ -11,7 +11,7 @@ interface Options {
 /**
  * Fetches Bid records for one auction program owned by the connected wallet.
  *
- * @param programId - Auction program to fetch from (e.g. "fairdrop_dutch.aleo")
+ * @param programId - Auction program to fetch from (e.g. "fairdrop_dutch_v1.aleo")
  */
 export function useBidRecords(programId: string, opts: Options = {}) {
   const { entries, loading, fetchRecords } = useWalletRecords(programId, opts);

@@ -8,15 +8,15 @@
   },
   "deployments": {
     "dutch":     { "status": "deployed", "txId": null, "notes": "live dutch auction" },
-    "sealed":    { "status": "planned",  "txId": null },
-    "raise":     { "status": "planned",  "txId": null },
-    "ascending": { "status": "planned",  "txId": null },
+    "sealed":    { "status": "deployed",  "txId": null },
+    "raise":     { "status": "deployed",  "txId": null },
+    "ascending": { "status": "deployed",  "txId": null },
     "lbp":       { "status": "planned",  "txId": null },
     "quadratic": { "status": "planned",  "txId": null },
-    "config":    { "status": "planned",  "txId": null },
-    "gate":      { "status": "planned",  "txId": null },
-    "proof":     { "status": "planned",  "txId": null },
-    "ref":       { "status": "planned",  "txId": null },
-    "vest":      { "status": "planned",  "txId": null }
+    "config":    { "status": "deployed",  "txId": null },
+    "gate":      { "status": "deployed",  "txId": null },
+    "proof":     { "status": "deployed",  "txId": null },
+    "ref":       { "status": "deployed",  "txId": null },
+    "vest":      { "status": "deployed",  "txId": null }
   }
 }

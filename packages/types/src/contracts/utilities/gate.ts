@@ -1,5 +1,5 @@
 /**
- * fairdrop_gate.aleo — TypeScript types.
+ * fairdrop_gate_v1.aleo — TypeScript types.
  *
  * Access control for auction participation.
  * GATE_OPEN (0): anyone may bid.

@@ -1,4 +1,4 @@
-// fairdrop_dutch.aleo — Privacy-preserving descending-price Dutch auction.
+// fairdrop_dutch_v1.aleo — Privacy-preserving descending-price Dutch auction.
 //
 // Mechanism: price descends from start_price toward floor_price in discrete steps.
 // All winners pay the same clearing price set at close_auction.
@@ -8,8 +8,8 @@
 //                 re-minted at claim/claim_vested. Net supply change = 0.
 //
 // Roles required:
-//   fairdrop_dutch.aleo — SUPPLY_MANAGER_ROLE on sale token (burn + mint).
-//   fairdrop_vest.aleo  — SUPPLY_MANAGER_ROLE on sale token (mint at release),
+//   fairdrop_dutch_v1.aleo — SUPPLY_MANAGER_ROLE on sale token (burn + mint).
+//   fairdrop_vest_v1.aleo  — SUPPLY_MANAGER_ROLE on sale token (mint at release),
 //                         required only when vest_enabled = true.
 //
 // Revenue accounting (set at close_auction):
@@ -46,13 +46,13 @@
 
 import credits.aleo;
 import token_registry.aleo;
-import fairdrop_config.aleo;
-import fairdrop_gate.aleo;
-import fairdrop_proof.aleo;
-import fairdrop_ref.aleo;
-import fairdrop_vest.aleo;
+import fairdrop_config_v1.aleo;
+import fairdrop_gate_v1.aleo;
+import fairdrop_proof_v1.aleo;
+import fairdrop_ref_v1.aleo;
+import fairdrop_vest_v1.aleo;
 
-program fairdrop_dutch.aleo {
+program fairdrop_dutch_v1.aleo {
     @admin(address="aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r")
     async constructor() {}
 
@@ -72,7 +72,7 @@ program fairdrop_dutch.aleo {
     const PROGRAM_SALT: field = 1field;
 
     // referral_pool_bps is no longer a hardcoded constant.
-    // It is snapshotted from fairdrop_config.aleo at create_auction (D16 pattern)
+    // It is snapshotted from fairdrop_config_v1.aleo at create_auction (D16 pattern)
     // and stored in AuctionConfig for use at close_auction.
 
     // =========================================================================
@@ -234,7 +234,7 @@ program fairdrop_dutch.aleo {
     //   burn_private         — consume deposit, return change
     //   transfer_public_as_signer — creator pays creation_fee anti-spam deposit
     //   assert_config        — D16: validate snapshotted protocol params + duration
-    //   register_gate        — set gate mode for this auction in fairdrop_gate.aleo
+    //   register_gate        — set gate mode for this auction in fairdrop_gate_v1.aleo
     //
     // D11 nonce pattern: creator reads creator_nonces[creator] off-chain and passes
     // as `nonce`. Transition body computes auction_id so register_gate CPI can use it.
@@ -284,7 +284,7 @@ program fairdrop_dutch.aleo {
 
         // CPI 3: validate all snapshotted config params AND auction duration.
         //   Reverts if any param drifted since frontend read (race window protection).
-        let f_cfg: Future = fairdrop_config.aleo/assert_config(
+        let f_cfg: Future = fairdrop_config_v1.aleo/assert_config(
             snapshot.fee_bps,
             snapshot.creation_fee,
             snapshot.closer_reward,
@@ -295,7 +295,7 @@ program fairdrop_dutch.aleo {
         );
 
         // CPI 4: register gate mode. GATE_OPEN (0) still registers — explicit is safer.
-        let f_gate: Future = fairdrop_gate.aleo/register_gate(
+        let f_gate: Future = fairdrop_gate_v1.aleo/register_gate(
             auction_id,
             gate.gate_mode,
             gate.merkle_root,
@@ -353,7 +353,7 @@ program fairdrop_dutch.aleo {
         config:       AuctionConfig,
         creation_fee: u128,
     ) {
-        assert(!fairdrop_config.aleo/paused.get_or_use(0field, false));
+        assert(!fairdrop_config_v1.aleo/paused.get_or_use(0field, false));
         f_burn.await();
         f_creation.await();
         f_cfg.await();    // validates params, duration, and asserts end_block > start_block
@@ -385,9 +385,9 @@ program fairdrop_dutch.aleo {
         assert_eq(auction_id, expected_id);
         assert_eq(config.auction_id, auction_id);
 
-        // Verify fairdrop_dutch.aleo has SUPPLY_MANAGER_ROLE on the sale token.
+        // Verify fairdrop_dutch_v1.aleo has SUPPLY_MANAGER_ROLE on the sale token.
         let dutch_role_key: field = BHP256::hash_to_field(TokenOwner {
-            account:  fairdrop_dutch.aleo,
+            account:  fairdrop_dutch_v1.aleo,
             token_id: config.sale_token_id,
         });
         assert_eq(
@@ -395,14 +395,14 @@ program fairdrop_dutch.aleo {
             SUPPLY_MANAGER_ROLE
         );
 
-        // If vest_enabled: validate duration and check fairdrop_vest.aleo has role.
+        // If vest_enabled: validate duration and check fairdrop_vest_v1.aleo has role.
         // Boolean trick avoids conditional assertion (Leo finalize has no branching asserts).
         let vest_duration_ok: bool =
             !config.vest_enabled || config.vest_end_blocks > config.vest_cliff_blocks;
         assert(vest_duration_ok);
 
         let vest_role_key: field = BHP256::hash_to_field(TokenOwner {
-            account:  fairdrop_vest.aleo,
+            account:  fairdrop_vest_v1.aleo,
             token_id: config.sale_token_id,
         });
         let vest_role_ok: bool =
@@ -473,7 +473,7 @@ program fairdrop_dutch.aleo {
         public auction_id:     field,
         public quantity:       u128,
         public payment_amount: u64,
-    ) -> (credits.aleo/credits, Bid, fairdrop_proof.aleo/ParticipationReceipt, Future) {
+    ) -> (credits.aleo/credits, Bid, fairdrop_proof_v1.aleo/ParticipationReceipt, Future) {
         assert(quantity > 0u128);
         assert(payment_amount > 0u64);
 
@@ -486,10 +486,10 @@ program fairdrop_dutch.aleo {
         let (change, f_credits): (credits.aleo/credits, Future) =
             credits.aleo/transfer_private_to_public(payment, self.address, payment_amount);
 
-        let f_gate: Future = fairdrop_gate.aleo/check_admission(auction_id);
+        let f_gate: Future = fairdrop_gate_v1.aleo/check_admission(auction_id);
 
-        let (receipt, f_proof): (fairdrop_proof.aleo/ParticipationReceipt, Future) =
-            fairdrop_proof.aleo/issue_receipt(auction_id, 0field, bidder_key);
+        let (receipt, f_proof): (fairdrop_proof_v1.aleo/ParticipationReceipt, Future) =
+            fairdrop_proof_v1.aleo/issue_receipt(auction_id, 0field, bidder_key);
 
         let bid: Bid = Bid {
             owner:          self.signer,
@@ -518,7 +518,7 @@ program fairdrop_dutch.aleo {
         quantity:       u128,
         payment_amount: u128,
     ) {
-        assert(!fairdrop_config.aleo/paused.get_or_use(0field, false));
+        assert(!fairdrop_config_v1.aleo/paused.get_or_use(0field, false));
         f_credits.await();
         f_gate.await();
         f_proof.await();
@@ -583,7 +583,7 @@ program fairdrop_dutch.aleo {
         public auction_id:     field,
         public quantity:       u128,
         public payment_amount: u64,
-    ) -> (Bid, fairdrop_proof.aleo/ParticipationReceipt, Future) {
+    ) -> (Bid, fairdrop_proof_v1.aleo/ParticipationReceipt, Future) {
         assert(quantity > 0u128);
         assert(payment_amount > 0u64);
 
@@ -595,10 +595,10 @@ program fairdrop_dutch.aleo {
         let f_credits: Future =
             credits.aleo/transfer_public_as_signer(self.address, payment_amount);
 
-        let f_gate: Future = fairdrop_gate.aleo/check_admission(auction_id);
+        let f_gate: Future = fairdrop_gate_v1.aleo/check_admission(auction_id);
 
-        let (receipt, f_proof): (fairdrop_proof.aleo/ParticipationReceipt, Future) =
-            fairdrop_proof.aleo/issue_receipt(auction_id, 0field, bidder_key);
+        let (receipt, f_proof): (fairdrop_proof_v1.aleo/ParticipationReceipt, Future) =
+            fairdrop_proof_v1.aleo/issue_receipt(auction_id, 0field, bidder_key);
 
         let bid: Bid = Bid {
             owner:          self.signer,
@@ -627,7 +627,7 @@ program fairdrop_dutch.aleo {
         quantity:       u128,
         payment_amount: u128,
     ) {
-        assert(!fairdrop_config.aleo/paused.get_or_use(0field, false));
+        assert(!fairdrop_config_v1.aleo/paused.get_or_use(0field, false));
         f_credits.await();
         f_gate.await();
         f_proof.await();
@@ -685,7 +685,7 @@ program fairdrop_dutch.aleo {
     // 4. place_bid_private_ref — private credits + referral attribution
     // =========================================================================
     //
-    // Same as place_bid_private, plus record_referral CPI to fairdrop_ref.aleo.
+    // Same as place_bid_private, plus record_referral CPI to fairdrop_ref_v1.aleo.
     // Separate transition required — Leo cannot conditionally await a CPI Future.
     // Bidder chooses this variant only if they have a referral code to apply.
 
@@ -695,7 +695,7 @@ program fairdrop_dutch.aleo {
         public quantity:       u128,
         public payment_amount: u64,
         public code_id:        field,   // referral code from referrer
-    ) -> (credits.aleo/credits, Bid, fairdrop_proof.aleo/ParticipationReceipt, Future) {
+    ) -> (credits.aleo/credits, Bid, fairdrop_proof_v1.aleo/ParticipationReceipt, Future) {
         assert(quantity > 0u128);
         assert(payment_amount > 0u64);
 
@@ -707,14 +707,14 @@ program fairdrop_dutch.aleo {
         let (change, f_credits): (credits.aleo/credits, Future) =
             credits.aleo/transfer_private_to_public(payment, self.address, payment_amount);
 
-        let f_gate: Future = fairdrop_gate.aleo/check_admission(auction_id);
+        let f_gate: Future = fairdrop_gate_v1.aleo/check_admission(auction_id);
 
-        let (receipt, f_proof): (fairdrop_proof.aleo/ParticipationReceipt, Future) =
-            fairdrop_proof.aleo/issue_receipt(auction_id, 0field, bidder_key);
+        let (receipt, f_proof): (fairdrop_proof_v1.aleo/ParticipationReceipt, Future) =
+            fairdrop_proof_v1.aleo/issue_receipt(auction_id, 0field, bidder_key);
 
         // Attribute this bid to the referral code. payment_amount stored in ref for 
-        // commission calculation (bid-time payment — see fairdrop_ref.aleo header).
-        let f_ref: Future = fairdrop_ref.aleo/record_referral(
+        // commission calculation (bid-time payment — see fairdrop_ref_v1.aleo header).
+        let f_ref: Future = fairdrop_ref_v1.aleo/record_referral(
             code_id,
             auction_id,
             bidder_key,
@@ -750,7 +750,7 @@ program fairdrop_dutch.aleo {
         quantity:       u128,
         payment_amount: u128,
     ) {
-        assert(!fairdrop_config.aleo/paused.get_or_use(0field, false));
+        assert(!fairdrop_config_v1.aleo/paused.get_or_use(0field, false));
         f_credits.await();
         f_gate.await();
         f_proof.await();
@@ -814,7 +814,7 @@ program fairdrop_dutch.aleo {
         public quantity:       u128,
         public payment_amount: u64,
         public code_id:        field,
-    ) -> (Bid, fairdrop_proof.aleo/ParticipationReceipt, Future) {
+    ) -> (Bid, fairdrop_proof_v1.aleo/ParticipationReceipt, Future) {
         assert(quantity > 0u128);
         assert(payment_amount > 0u64);
 
@@ -826,12 +826,12 @@ program fairdrop_dutch.aleo {
         let f_credits: Future =
             credits.aleo/transfer_public_as_signer(self.address, payment_amount);
 
-        let f_gate: Future = fairdrop_gate.aleo/check_admission(auction_id);
+        let f_gate: Future = fairdrop_gate_v1.aleo/check_admission(auction_id);
 
-        let (receipt, f_proof): (fairdrop_proof.aleo/ParticipationReceipt, Future) =
-            fairdrop_proof.aleo/issue_receipt(auction_id, 0field, bidder_key);
+        let (receipt, f_proof): (fairdrop_proof_v1.aleo/ParticipationReceipt, Future) =
+            fairdrop_proof_v1.aleo/issue_receipt(auction_id, 0field, bidder_key);
 
-        let f_ref: Future = fairdrop_ref.aleo/record_referral(
+        let f_ref: Future = fairdrop_ref_v1.aleo/record_referral(
             code_id,
             auction_id,
             bidder_key,
@@ -867,7 +867,7 @@ program fairdrop_dutch.aleo {
         quantity:       u128,
         payment_amount: u128,
     ) {
-        assert(!fairdrop_config.aleo/paused.get_or_use(0field, false));
+        assert(!fairdrop_config_v1.aleo/paused.get_or_use(0field, false));
         f_credits.await();
         f_gate.await();
         f_proof.await();
@@ -959,7 +959,7 @@ program fairdrop_dutch.aleo {
 
         // Update creator's on-chain reputation.
         let f_proof: Future =
-            fairdrop_proof.aleo/update_reputation(creator, filled, volume);
+            fairdrop_proof_v1.aleo/update_reputation(creator, filled, volume);
 
         return finalize_close_auction(
             f_closer,
@@ -981,7 +981,7 @@ program fairdrop_dutch.aleo {
         volume:        u128,
         closer_reward: u128,
     ) {
-        assert(!fairdrop_config.aleo/paused.get_or_use(0field, false));
+        assert(!fairdrop_config_v1.aleo/paused.get_or_use(0field, false));
         f_closer.await();
         f_proof.await();
 
@@ -1045,14 +1045,14 @@ program fairdrop_dutch.aleo {
     // 7. push_referral_budget — permissionless; call after close_auction
     // =========================================================================
     //
-    // Transfers the referral_budget credits to fairdrop_ref.aleo and calls
+    // Transfers the referral_budget credits to fairdrop_ref_v1.aleo and calls
     // fund_reserve to enable credit_commission for this auction's bidders.
     //
     // Separate from close_auction because:
     //   1. Leo cannot conditionally await a CPI Future (conditional CPI is illegal).
     //   2. Not all auctions have referral codes — pushing 0 credits would fail.
     //
-    // Double-push protection: fairdrop_ref.aleo/fund_reserve has a reserve_funded
+    // Double-push protection: fairdrop_ref_v1.aleo/fund_reserve has a reserve_funded
     // guard (one call per auction_id). AuctionState.referral_budget is zeroed after
     // push, so the D11 check also prevents any retry.
     //
@@ -1065,12 +1065,12 @@ program fairdrop_dutch.aleo {
         public auction_id: field,
         public budget:     u128,   // D11: state.referral_budget
     ) -> Future {
-        // Send actual credits to fairdrop_ref.aleo's public balance.
+        // Send actual credits to fairdrop_ref_v1.aleo's public balance.
         let f_credits: Future =
-            credits.aleo/transfer_public(fairdrop_ref.aleo, budget as u64);
+            credits.aleo/transfer_public(fairdrop_ref_v1.aleo, budget as u64);
 
         // Record reserve amount in fairdrop_ref; marks reserve_funded = true.
-        let f_ref: Future = fairdrop_ref.aleo/fund_reserve(auction_id, budget);
+        let f_ref: Future = fairdrop_ref_v1.aleo/fund_reserve(auction_id, budget);
         return finalize_push_ref_budget(f_credits, f_ref, auction_id, budget);
     }
 
@@ -1165,7 +1165,7 @@ program fairdrop_dutch.aleo {
         sale_amount:    u128,
         refund_amount:  u128,
     ) {
-        assert(!fairdrop_config.aleo/paused.get_or_use(0field, false));
+        assert(!fairdrop_config_v1.aleo/paused.get_or_use(0field, false));
         f_mint.await();
         f_refund.await();
 
@@ -1196,7 +1196,7 @@ program fairdrop_dutch.aleo {
     // =========================================================================
     //
     // Issues a VestedAllocation record instead of an immediate Token.
-    // fairdrop_vest.aleo mints tokens at release time using its own SUPPLY_MANAGER_ROLE.
+    // fairdrop_vest_v1.aleo mints tokens at release time using its own SUPPLY_MANAGER_ROLE.
     // This program only issues the vesting schedule and deducts from escrow_sales.
     //
     // D11 params: ended_at_block, cliff_blocks, vest_end_blocks validated in finalize.
@@ -1211,14 +1211,14 @@ program fairdrop_dutch.aleo {
         public ended_at_block:  u32,    // D11: state.ended_at_block
         public cliff_blocks:    u32,    // D11: config.vest_cliff_blocks
         public vest_end_blocks: u32,    // D11: config.vest_end_blocks
-    ) -> (fairdrop_vest.aleo/VestedAllocation, credits.aleo/credits, Future) {
+    ) -> (fairdrop_vest_v1.aleo/VestedAllocation, credits.aleo/credits, Future) {
         let sale_amount: u128  = bid.quantity;
         let cost: u128         = bid.quantity * clearing_price / sale_scale;
         let refund_amount: u64 = (bid.payment_amount - cost) as u64;
 
         // bid.owner is private (from Bid record) — never reaches create_vest finalize.
-        let (vest, f_vest): (fairdrop_vest.aleo/VestedAllocation, Future) =
-            fairdrop_vest.aleo/create_vest(
+        let (vest, f_vest): (fairdrop_vest_v1.aleo/VestedAllocation, Future) =
+            fairdrop_vest_v1.aleo/create_vest(
                 bid.auction_id,
                 bid.owner,
                 sale_token_id,
@@ -1260,7 +1260,7 @@ program fairdrop_dutch.aleo {
         cliff_blocks:   u32,
         vest_end_blocks: u32,
     ) {
-        assert(!fairdrop_config.aleo/paused.get_or_use(0field, false));
+        assert(!fairdrop_config_v1.aleo/paused.get_or_use(0field, false));
         f_vest.await();
         f_refund.await();
 
@@ -1314,7 +1314,7 @@ program fairdrop_dutch.aleo {
         caller:     address,
         amount:     u128,
     ) {
-        assert(!fairdrop_config.aleo/paused.get_or_use(0field, false));
+        assert(!fairdrop_config_v1.aleo/paused.get_or_use(0field, false));
         f0.await();
 
         let config: AuctionConfig = auction_configs.get(auction_id);
@@ -1373,7 +1373,7 @@ program fairdrop_dutch.aleo {
         amount:       u128,
         sale_token_id: field,
     ) {
-        assert(!fairdrop_config.aleo/paused.get_or_use(0field, false));
+        assert(!fairdrop_config_v1.aleo/paused.get_or_use(0field, false));
         f_mint.await();
 
         let config: AuctionConfig = auction_configs.get(auction_id);
@@ -1437,7 +1437,7 @@ program fairdrop_dutch.aleo {
         sale_token_id: field,
         supply:        u128,
     ) {
-        assert(!fairdrop_config.aleo/paused.get_or_use(0field, false));
+        assert(!fairdrop_config_v1.aleo/paused.get_or_use(0field, false));
         f_mint.await();
 
         let config: AuctionConfig = auction_configs.get(auction_id);

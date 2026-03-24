@@ -1,5 +1,5 @@
 // The 'fairdrop_lbp' program.
-program fairdrop_lbp.aleo {
+program fairdrop_lbp_v1.aleo {
     // This is the constructor for the program.
     // The constructor allows you to manage program upgrades.
     // It is called when the program is deployed or upgraded.

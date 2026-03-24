@@ -1,10 +1,10 @@
 /**
- * fairdrop_quadratic.aleo — TypeScript types.
+ * fairdrop_quadratic_v1.aleo — TypeScript types.
  *
  * Quadratic funding auction: contribution weight is the square root of the
  * amount, giving smaller contributors proportionally more influence.
  *
- * @todo Define fully when fairdrop_quadratic.aleo is implemented.
+ * @todo Define fully when fairdrop_quadratic_v1.aleo is implemented.
  */
 
 import type { U128, U32 } from '../../primitives/scalars';

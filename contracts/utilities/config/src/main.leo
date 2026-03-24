@@ -1,4 +1,4 @@
-// fairdrop_config.aleo — Protocol configuration root contract.
+// fairdrop_config_v1.aleo — Protocol configuration root contract.
 //
 // Root dependency of the entire Fairdrop protocol. Deployed first.
 // All other Fairdrop contracts import this to read or validate protocol params.
@@ -9,7 +9,7 @@
 //     without redeploying any auction contract.
 //   - Provide assert_config() for auction contracts to validate their snapshotted
 //     params at create_auction time (D16 in DESIGN.md).
-//   - Provide assert_ref_bps() for fairdrop_ref.aleo to enforce the referral cap
+//   - Provide assert_ref_bps() for fairdrop_ref_v1.aleo to enforce the referral cap
 //     at create_code time.
 //   - Provide check_not_paused() as a CPI guard for all auction finalize functions.
 //
@@ -27,7 +27,7 @@
 // Tracked: pre-mainnet checklist item — "Transfer protocol_admin to multisig".
 // ────────────────────────────────────────────────────────────────────────────
 
-program fairdrop_config.aleo {
+program fairdrop_config_v1.aleo {
     // Upgradeable by the deployer address.
     @admin(address="aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r")
     async constructor() {}
@@ -219,7 +219,7 @@ program fairdrop_config.aleo {
     // failure instead of a u32 underflow if the caller passed a bad range.
     //
     // Usage in auction finalize_create_auction:
-    //   let f_cfg: Future = fairdrop_config.aleo/assert_config(
+    //   let f_cfg: Future = fairdrop_config_v1.aleo/assert_config(
     //       fee_bps, creation_fee, closer_reward, slash_reward_bps,
     //       start_block, end_block,
     //   );
@@ -265,13 +265,13 @@ program fairdrop_config.aleo {
     }
 
     // =========================================================================
-    // 3. assert_ref_bps — CPI called by fairdrop_ref.aleo at create_code
+    // 3. assert_ref_bps — CPI called by fairdrop_ref_v1.aleo at create_code
     // =========================================================================
     // Validates that the commission_bps on a new ReferralCode does not exceed
     // the protocol's max_referral_bps ceiling. Prevents self-referral drain.
     //
-    // Usage in fairdrop_ref.aleo finalize_create_code:
-    //   let f_ref: Future = fairdrop_config.aleo/assert_ref_bps(commission_bps);
+    // Usage in fairdrop_ref_v1.aleo finalize_create_code:
+    //   let f_ref: Future = fairdrop_config_v1.aleo/assert_ref_bps(commission_bps);
     //   f_ref.await();
 
     async transition assert_ref_bps(public commission_bps: u16) -> Future {
@@ -288,7 +288,7 @@ program fairdrop_config.aleo {
     // across all 6 auction programs simultaneously.
     //
     // Usage in any auction finalize function:
-    //   let f_pause: Future = fairdrop_config.aleo/check_not_paused();
+    //   let f_pause: Future = fairdrop_config_v1.aleo/check_not_paused();
     //   f_pause.await();
 
     async transition check_not_paused() -> Future {

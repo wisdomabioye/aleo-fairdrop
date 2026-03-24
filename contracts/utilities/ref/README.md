@@ -1,4 +1,4 @@
-# fairdrop_ref.aleo
+# fairdrop_ref_v1.aleo
 
 Referral system. Auction creators can allocate a referral budget (`referral_budget`) at auction creation. Referrers earn a commission (in BPS) on each bid placed with their code.
 

@@ -1,5 +1,5 @@
-// Tests for fairdrop_gate.aleo
-import fairdrop_gate.aleo;
+// Tests for fairdrop_gate_v1.aleo
+import fairdrop_gate_v1.aleo;
 
 // ── Unit-test coverage scope ─────────────────────────────────────────────────
 //   ✓ check_admission   — unregistered auction_id defaults to GATE_OPEN; always passes.
@@ -35,14 +35,14 @@ program test_gate.aleo {
     // Primary open-auction pass test.
     @test
     script test_admission_open_default() {
-        let f: Future = fairdrop_gate.aleo/check_admission(1field);
+        let f: Future = fairdrop_gate_v1.aleo/check_admission(1field);
         f.await();
     }
 
     // Different auction_id — same GATE_OPEN default.
     @test
     script test_admission_open_any_id() {
-        let f: Future = fairdrop_gate.aleo/check_admission(999field);
+        let f: Future = fairdrop_gate_v1.aleo/check_admission(999field);
         f.await();
     }
 
@@ -50,14 +50,14 @@ program test_gate.aleo {
     // in the gate contract (gate_registered keys are arbitrary auction IDs).
     @test
     script test_admission_open_zero_id() {
-        let f: Future = fairdrop_gate.aleo/check_admission(0field);
+        let f: Future = fairdrop_gate_v1.aleo/check_admission(0field);
         f.await();
     }
 
     // Large auction_id (near field boundary) — still unregistered, still passes.
     @test
     script test_admission_open_large_id() {
-        let f: Future = fairdrop_gate.aleo/check_admission(
+        let f: Future = fairdrop_gate_v1.aleo/check_admission(
             8444461749428370424248824938781546531375899335154063827935233455917409239040field
         );
         f.await();
@@ -77,7 +77,7 @@ program test_gate.aleo {
     @test
     @should_fail
     script test_merkle_open_auction() {
-        let f: Future = fairdrop_gate.aleo/verify_merkle(
+        let f: Future = fairdrop_gate_v1.aleo/verify_merkle(
             1field,       // unregistered auction_id
             [0field; 20], // proof values irrelevant — mode guard fires first
             0u32,         // path_bits
@@ -89,7 +89,7 @@ program test_gate.aleo {
     @test
     @should_fail
     script test_merkle_open_zero_id() {
-        let f: Future = fairdrop_gate.aleo/verify_merkle(
+        let f: Future = fairdrop_gate_v1.aleo/verify_merkle(
             0field,
             [0field; 20],
             0u32,
@@ -101,7 +101,7 @@ program test_gate.aleo {
     @test
     @should_fail
     script test_merkle_open_all_right() {
-        let f: Future = fairdrop_gate.aleo/verify_merkle(
+        let f: Future = fairdrop_gate_v1.aleo/verify_merkle(
             2field,
             [0field; 20],
             4294967295u32, // 0xFFFFFFFF — all right-child bits
@@ -125,7 +125,7 @@ program test_gate.aleo {
     @test
     @should_fail
     script test_register_unauth_open() {
-        let f: Future = fairdrop_gate.aleo/register_gate(
+        let f: Future = fairdrop_gate_v1.aleo/register_gate(
             42field,  // auction_id
             0u8,      // gate_mode = GATE_OPEN
             0field,   // root (unused for GATE_OPEN)
@@ -138,7 +138,7 @@ program test_gate.aleo {
     @test
     @should_fail
     script test_register_unauth_merkle() {
-        let f: Future = fairdrop_gate.aleo/register_gate(
+        let f: Future = fairdrop_gate_v1.aleo/register_gate(
             43field,
             1u8,      // gate_mode = GATE_MERKLE
             1field,   // non-zero root
@@ -151,7 +151,7 @@ program test_gate.aleo {
     @test
     @should_fail
     script test_register_unauth_cred() {
-        let f: Future = fairdrop_gate.aleo/register_gate(
+        let f: Future = fairdrop_gate_v1.aleo/register_gate(
             44field,
             2u8,      // gate_mode = GATE_CREDENTIAL
             0field,

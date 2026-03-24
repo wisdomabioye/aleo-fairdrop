@@ -1,5 +1,5 @@
-// Tests for fairdrop_config.aleo
-import fairdrop_config.aleo;
+// Tests for fairdrop_config_v1.aleo
+import fairdrop_config_v1.aleo;
 
 program test_config.aleo {
     @noupgrade
@@ -12,7 +12,7 @@ program test_config.aleo {
     // Happy path: all defaults, valid block range above minimum.
     @test
     script test_assert_config_defaults() {
-        let f: Future = fairdrop_config.aleo/assert_config(
+        let f: Future = fairdrop_config_v1.aleo/assert_config(
             250u16,       // DEFAULT_FEE_BPS
             10_000u128,   // DEFAULT_CREATION_FEE
             10_000u128,   // DEFAULT_CLOSER_REWARD
@@ -26,7 +26,7 @@ program test_config.aleo {
     // Duration exactly at minimum — should pass.
     @test
     script test_cfg_min_duration_exact() {
-        let f: Future = fairdrop_config.aleo/assert_config(
+        let f: Future = fairdrop_config_v1.aleo/assert_config(
             250u16,
             10_000u128,
             10_000u128,
@@ -41,7 +41,7 @@ program test_config.aleo {
     @test
     @should_fail
     script test_cfg_duration_too_short() {
-        let f: Future = fairdrop_config.aleo/assert_config(
+        let f: Future = fairdrop_config_v1.aleo/assert_config(
             250u16,
             10_000u128,
             10_000u128,
@@ -57,7 +57,7 @@ program test_config.aleo {
     @test
     @should_fail
     script test_cfg_reversed_blocks() {
-        let f: Future = fairdrop_config.aleo/assert_config(
+        let f: Future = fairdrop_config_v1.aleo/assert_config(
             250u16,
             10_000u128,
             10_000u128,
@@ -72,7 +72,7 @@ program test_config.aleo {
     @test
     @should_fail
     script test_assert_config_equal_blocks() {
-        let f: Future = fairdrop_config.aleo/assert_config(
+        let f: Future = fairdrop_config_v1.aleo/assert_config(
             250u16,
             10_000u128,
             10_000u128,
@@ -87,7 +87,7 @@ program test_config.aleo {
     @test
     @should_fail
     script test_cfg_wrong_fee_bps() {
-        let f: Future = fairdrop_config.aleo/assert_config(
+        let f: Future = fairdrop_config_v1.aleo/assert_config(
             300u16,       // wrong — stored is 250
             10_000u128,
             10_000u128,
@@ -102,7 +102,7 @@ program test_config.aleo {
     @test
     @should_fail
     script test_cfg_wrong_creation_fee() {
-        let f: Future = fairdrop_config.aleo/assert_config(
+        let f: Future = fairdrop_config_v1.aleo/assert_config(
             250u16,
             5_000u128,    // wrong — stored is 10_000
             10_000u128,
@@ -120,14 +120,14 @@ program test_config.aleo {
     // At the default cap (2000 bps) — should pass.
     @test
     script test_assert_ref_bps_at_cap() {
-        let f: Future = fairdrop_config.aleo/assert_ref_bps(2000u16);
+        let f: Future = fairdrop_config_v1.aleo/assert_ref_bps(2000u16);
         f.await();
     }
 
     // Below the cap — should pass.
     @test
     script test_assert_ref_bps_below_cap() {
-        let f: Future = fairdrop_config.aleo/assert_ref_bps(500u16);
+        let f: Future = fairdrop_config_v1.aleo/assert_ref_bps(500u16);
         f.await();
     }
 
@@ -135,7 +135,7 @@ program test_config.aleo {
     @test
     @should_fail
     script test_assert_ref_bps_exceeds_cap() {
-        let f: Future = fairdrop_config.aleo/assert_ref_bps(2001u16);
+        let f: Future = fairdrop_config_v1.aleo/assert_ref_bps(2001u16);
         f.await();
     }
 
@@ -145,7 +145,7 @@ program test_config.aleo {
 
     @test
     script test_check_not_paused_default() {
-        let f: Future = fairdrop_config.aleo/check_not_paused();
+        let f: Future = fairdrop_config_v1.aleo/check_not_paused();
         f.await();
     }
 

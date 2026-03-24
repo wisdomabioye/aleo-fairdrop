@@ -1,5 +1,5 @@
 /**
- * fairdrop_raise.aleo — TypeScript types.
+ * fairdrop_raise_v1.aleo — TypeScript types.
  *
  * Fixed-price community raise: bidders commit credits at any amount ≥ min_bid_amount.
  * Tokens distributed pro-rata by payment when raise_target is met by end_block.

@@ -9,7 +9,7 @@ export interface CreatorProfile {
   displayName:     string | null;
   avatarUrl:       string | null;
 
-  // On-chain reputation from fairdrop_proof.aleo/reputation mapping
+  // On-chain reputation from fairdrop_proof_v1.aleo/reputation mapping
   totalAuctions:   number;
   filledAuctions:  number;
   totalVolume:     bigint;  // microcredits

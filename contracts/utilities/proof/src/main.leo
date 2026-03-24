@@ -1,4 +1,4 @@
-// fairdrop_proof.aleo — Participation receipts and creator reputation.
+// fairdrop_proof_v1.aleo — Participation receipts and creator reputation.
 //
 // Responsibility:
 //   - Issue ParticipationReceipt records to bidders (called via CPI from auction
@@ -20,7 +20,7 @@
 //   hash reaches any finalize — the bidder's raw address never appears on-chain.
 //   An observer sees that *some* address participated in an auction, but cannot
 //   identify which address without reversing BHP256 (computationally infeasible).
-//   This is consistent with the pseudonymous model used in fairdrop_ref.aleo.
+//   This is consistent with the pseudonymous model used in fairdrop_ref_v1.aleo.
 //
 // `participated` semantics:
 //   participated = true means "at least one bid or commitment was submitted."
@@ -34,7 +34,7 @@
 // Pre-mainnet: align INITIAL_ADMIN with the multisig set in fairdrop_config.
 // ─────────────────────────────────────────────────────────────────────────────
 
-program fairdrop_proof.aleo {
+program fairdrop_proof_v1.aleo {
     @admin(address="aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r")
     async constructor() {}
 
@@ -51,7 +51,7 @@ program fairdrop_proof.aleo {
     // =========================================================================
 
     // Bidder key input for participated mapping hash.
-    // Same field layout as fairdrop_gate.aleo/BidderKey — consistent hash values.
+    // Same field layout as fairdrop_gate_v1.aleo/BidderKey — consistent hash values.
     struct BidderKey { bidder: address, auction_id: field }
 
     // Creator reputation aggregate. Default values used via get_or_use — no
@@ -125,8 +125,8 @@ program fairdrop_proof.aleo {
     // updates the participated mapping with public (bidder, auction_id) inputs.
     //
     // Calling pattern from auction contract:
-    //   let (receipt, f_proof): (fairdrop_proof.aleo/ParticipationReceipt, Future) =
-    //       fairdrop_proof.aleo/issue_receipt(auction_id, commitment_hash_or_0field);
+    //   let (receipt, f_proof): (fairdrop_proof_v1.aleo/ParticipationReceipt, Future) =
+    //       fairdrop_proof_v1.aleo/issue_receipt(auction_id, commitment_hash_or_0field);
     //   // Return receipt alongside Bid record so bidder receives both.
 
     async transition issue_receipt(

@@ -1,5 +1,5 @@
 // The 'fairdrop_quadratic' program.
-program fairdrop_quadratic.aleo {
+program fairdrop_quadratic_v1.aleo {
     // This is the constructor for the program.
     // The constructor allows you to manage program upgrades.
     // It is called when the program is deployed or upgraded.

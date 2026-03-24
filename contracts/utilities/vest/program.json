@@ -1,5 +1,5 @@
 {
-  "program": "fairdrop_vest.aleo",
+  "program": "fairdrop_vest_v1.aleo",
   "version": "0.1.0",
   "description": "Post-claim token vesting with block-based linear release.",
   "license": "MIT",

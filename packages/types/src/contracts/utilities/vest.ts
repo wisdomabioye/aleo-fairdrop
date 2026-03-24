@@ -1,9 +1,9 @@
 /**
- * fairdrop_vest.aleo — TypeScript types.
+ * fairdrop_vest_v1.aleo — TypeScript types.
  *
  * Token vesting. Auction contracts call create_vest after clearing;
  * token holders call release once the cliff has passed.
- * fairdrop_vest.aleo holds SUPPLY_MANAGER_ROLE and mints tokens on release.
+ * fairdrop_vest_v1.aleo holds SUPPLY_MANAGER_ROLE and mints tokens on release.
  */
 
 import type { Field, Address, U128, U32 } from '../../primitives/scalars';

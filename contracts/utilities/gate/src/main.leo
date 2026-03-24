@@ -1,4 +1,4 @@
-// fairdrop_gate.aleo — Access control for all Fairdrop auctions.
+// fairdrop_gate_v1.aleo — Access control for all Fairdrop auctions.
 //
 // Three gate modes:
 //   0 = OPEN        — no restriction; all bidders admitted automatically
@@ -43,7 +43,7 @@
 // Pre-mainnet: align with the multisig address set in fairdrop_config.
 // ─────────────────────────────────────────────────────────────────────────────
 
-program fairdrop_gate.aleo {
+program fairdrop_gate_v1.aleo {
     @admin(address="aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r")
     async constructor() {}
 
@@ -366,7 +366,7 @@ program fairdrop_gate.aleo {
     // Unregistered auction_ids default to GATE_OPEN (get_or_use → 0u8).
     //
     // Usage in auction finalize_place_bid:
-    //   let f_gate: Future = fairdrop_gate.aleo/check_admission(auction_id);
+    //   let f_gate: Future = fairdrop_gate_v1.aleo/check_admission(auction_id);
     //   f_gate.await();
 
     async transition check_admission(public auction_id: field) -> Future {

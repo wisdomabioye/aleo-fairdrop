@@ -1,4 +1,4 @@
-// fairdrop_ref.aleo — Referral code creation, tracking, and commission distribution.
+// fairdrop_ref_v1.aleo — Referral code creation, tracking, and commission distribution.
 //
 // Lifecycle:
 //   1. create_code(auction_id, commission_bps) → ReferralCode (private record)
@@ -70,10 +70,10 @@
 // Pre-mainnet: align INITIAL_ADMIN with the multisig in fairdrop_config.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import fairdrop_config.aleo;
+import fairdrop_config_v1.aleo;
 import credits.aleo;
 
-program fairdrop_ref.aleo {
+program fairdrop_ref_v1.aleo {
     @admin(address="aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r")
     async constructor() {}
 
@@ -141,7 +141,7 @@ program fairdrop_ref.aleo {
 
     // auction_id → available referral budget in microcredits (G3).
     // Keyed by auction_id directly (globally unique via PROGRAM_SALT — G23).
-    // Backed by real credits in fairdrop_ref.aleo's credits.aleo public balance.
+    // Backed by real credits in fairdrop_ref_v1.aleo's credits.aleo public balance.
     // Decremented by credit_commission. Cannot go below zero (ternary cap).
     mapping referral_reserve: field => u128;
 
@@ -197,7 +197,7 @@ program fairdrop_ref.aleo {
     // =========================================================================
     // code_id = BHP256(CodeKey { referrer: self.signer, auction_id }) (G1).
     // Re-registration of the same code_id is permanently rejected (G2).
-    // commission_bps validated against fairdrop_config.aleo/assert_ref_bps (G13).
+    // commission_bps validated against fairdrop_config_v1.aleo/assert_ref_bps (G13).
     //
     // Permissionless: anyone can create a code for any auction_id (including
     // ones that don't exist yet). Creating a code for a non-existent auction
@@ -223,7 +223,7 @@ program fairdrop_ref.aleo {
             commission_bps: commission_bps,
         };
         // Validate commission_bps against protocol max_referral_bps (G13)
-        let f_config: Future = fairdrop_config.aleo/assert_ref_bps(commission_bps);
+        let f_config: Future = fairdrop_config_v1.aleo/assert_ref_bps(commission_bps);
         return (code, finalize_create_code(code_id, auction_id, commission_bps, f_config));
     }
     async function finalize_create_code(

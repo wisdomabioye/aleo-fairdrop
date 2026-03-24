@@ -52,6 +52,6 @@ export type NewIndexerCheckpoint = InferInsertModel<typeof indexerCheckpoints>;
 export type IndexerTransitionRow = InferSelectModel<typeof indexerTransitions>;
 export type NewIndexerTransition = InferInsertModel<typeof indexerTransitions>;
 
-// Protocol config (single-row; indexed from fairdrop_config.aleo)
+// Protocol config (single-row; indexed from fairdrop_config_v1.aleo)
 export type ProtocolConfigRow = InferSelectModel<typeof protocolConfig>;
 export type NewProtocolConfig  = InferInsertModel<typeof protocolConfig>;

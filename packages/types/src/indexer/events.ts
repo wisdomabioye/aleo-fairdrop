@@ -4,7 +4,7 @@
  * MappingUpdateEvents. Services subscribe to these to update derived state.
  */
 
-/** All fairdrop_dutch.aleo transition names. Extend as new auction types land. */
+/** All fairdrop_dutch_v1.aleo transition names. Extend as new auction types land. */
 export enum DutchTransition {
   CreateAuction       = 'create_auction',
   PlaceBidPrivate     = 'place_bid_private',
@@ -23,17 +23,17 @@ export enum DutchTransition {
 
 /** Utility contract transition names. */
 export enum UtilityTransition {
-  // fairdrop_proof.aleo
+  // fairdrop_proof_v1.aleo
   IssueReceipt       = 'issue_receipt',
   UpdateReputation   = 'update_reputation',
-  // fairdrop_vest.aleo
+  // fairdrop_vest_v1.aleo
   CreateVest         = 'create_vest',
   Release            = 'release',
-  // fairdrop_ref.aleo
+  // fairdrop_ref_v1.aleo
   RecordReferral     = 'record_referral',
   FundReserve        = 'fund_reserve',
   CreditCommission   = 'credit_commission',
-  // fairdrop_gate.aleo
+  // fairdrop_gate_v1.aleo
   RegisterGate       = 'register_gate',
   CheckAdmission     = 'check_admission',
 }

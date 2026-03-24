@@ -1,5 +1,5 @@
-// Tests for fairdrop_vest.aleo
-import fairdrop_vest.aleo;
+// Tests for fairdrop_vest_v1.aleo
+import fairdrop_vest_v1.aleo;
 
 // ── Unit-test coverage scope ─────────────────────────────────────────────────
 //   ✓ create_vest — D12 caller guard rejects test program (not in allowed_callers).
@@ -40,8 +40,8 @@ program test_vest.aleo {
     @test
     @should_fail
     script test_create_vest_unauth() {
-        let (vest, f): (fairdrop_vest.aleo/VestedAllocation, Future) =
-            fairdrop_vest.aleo/create_vest(
+        let (vest, f): (fairdrop_vest_v1.aleo/VestedAllocation, Future) =
+            fairdrop_vest_v1.aleo/create_vest(
                 1field,                                                                         // auction_id
                 aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r,               // owner (private param — any address)
                 1field,                                                                         // sale_token_id
@@ -57,8 +57,8 @@ program test_vest.aleo {
     @test
     @should_fail
     script test_create_vest_unauth_zero() {
-        let (vest, f): (fairdrop_vest.aleo/VestedAllocation, Future) =
-            fairdrop_vest.aleo/create_vest(
+        let (vest, f): (fairdrop_vest_v1.aleo/VestedAllocation, Future) =
+            fairdrop_vest_v1.aleo/create_vest(
                 2field,
                 aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r,
                 1field,
@@ -74,8 +74,8 @@ program test_vest.aleo {
     @test
     @should_fail
     script test_create_vest_unauth_bad_dur() {
-        let (vest, f): (fairdrop_vest.aleo/VestedAllocation, Future) =
-            fairdrop_vest.aleo/create_vest(
+        let (vest, f): (fairdrop_vest_v1.aleo/VestedAllocation, Future) =
+            fairdrop_vest_v1.aleo/create_vest(
                 3field,
                 aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r,
                 1field,
@@ -91,8 +91,8 @@ program test_vest.aleo {
     @test
     @should_fail
     script test_create_vest_unauth_rev_dur() {
-        let (vest, f): (fairdrop_vest.aleo/VestedAllocation, Future) =
-            fairdrop_vest.aleo/create_vest(
+        let (vest, f): (fairdrop_vest_v1.aleo/VestedAllocation, Future) =
+            fairdrop_vest_v1.aleo/create_vest(
                 4field,
                 aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r,
                 1field,
@@ -113,7 +113,7 @@ program test_vest.aleo {
     @test
     @should_fail
     script test_set_allowed_caller_unauth() {
-        let f: Future = fairdrop_vest.aleo/set_allowed_caller(
+        let f: Future = fairdrop_vest_v1.aleo/set_allowed_caller(
             aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc,  // any program address
             true,
         );

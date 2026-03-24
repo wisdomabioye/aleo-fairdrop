@@ -2,7 +2,7 @@
  * Domain-level referral types.
  */
 
-/** Referral code view — enriched from fairdrop_ref.aleo on-chain data. */
+/** Referral code view — enriched from fairdrop_ref_v1.aleo on-chain data. */
 export interface ReferralView {
   codeId:      string;  // field as hex
   referrer:    string;  // address

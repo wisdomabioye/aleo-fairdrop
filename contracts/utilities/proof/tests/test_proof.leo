@@ -1,5 +1,5 @@
-// Tests for fairdrop_proof.aleo
-import fairdrop_proof.aleo;
+// Tests for fairdrop_proof_v1.aleo
+import fairdrop_proof_v1.aleo;
 
 // ── Unit-test coverage scope ─────────────────────────────────────────────────
 //   ✓ issue_receipt     — D12 caller guard rejects the test program.
@@ -34,8 +34,8 @@ program test_proof.aleo {
     @test
     @should_fail
     script test_receipt_unauth_no_commit() {
-        let (receipt, f): (fairdrop_proof.aleo/ParticipationReceipt, Future) =
-            fairdrop_proof.aleo/issue_receipt(
+        let (receipt, f): (fairdrop_proof_v1.aleo/ParticipationReceipt, Future) =
+            fairdrop_proof_v1.aleo/issue_receipt(
                 1field,   // auction_id
                 0field,   // commitment_hash (non-sealed auction style)
                 0field,   // bidder_key — dummy; D12 guard fires before it is used
@@ -47,8 +47,8 @@ program test_proof.aleo {
     @test
     @should_fail
     script test_receipt_unauth_with_commit() {
-        let (receipt, f): (fairdrop_proof.aleo/ParticipationReceipt, Future) =
-            fairdrop_proof.aleo/issue_receipt(
+        let (receipt, f): (fairdrop_proof_v1.aleo/ParticipationReceipt, Future) =
+            fairdrop_proof_v1.aleo/issue_receipt(
                 2field,
                 12345field,  // dummy commitment_hash
                 99field,     // bidder_key — dummy; D12 guard fires before it is used
@@ -60,8 +60,8 @@ program test_proof.aleo {
     @test
     @should_fail
     script test_receipt_unauth_zero_id() {
-        let (receipt, f): (fairdrop_proof.aleo/ParticipationReceipt, Future) =
-            fairdrop_proof.aleo/issue_receipt(0field, 0field, 0field);
+        let (receipt, f): (fairdrop_proof_v1.aleo/ParticipationReceipt, Future) =
+            fairdrop_proof_v1.aleo/issue_receipt(0field, 0field, 0field);
         f.await();
     }
 
@@ -76,7 +76,7 @@ program test_proof.aleo {
     @test
     @should_fail
     script test_reputation_unauth_unfilled() {
-        let f: Future = fairdrop_proof.aleo/update_reputation(
+        let f: Future = fairdrop_proof_v1.aleo/update_reputation(
             aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r,  // creator
             false,     // not filled
             0u128,     // volume
@@ -88,7 +88,7 @@ program test_proof.aleo {
     @test
     @should_fail
     script test_reputation_unauth_filled() {
-        let f: Future = fairdrop_proof.aleo/update_reputation(
+        let f: Future = fairdrop_proof_v1.aleo/update_reputation(
             aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r,
             true,
             1_000_000u128,  // 1 credit in microcredits
@@ -100,7 +100,7 @@ program test_proof.aleo {
     @test
     @should_fail
     script test_reputation_unauth_max_vol() {
-        let f: Future = fairdrop_proof.aleo/update_reputation(
+        let f: Future = fairdrop_proof_v1.aleo/update_reputation(
             aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r,
             true,
             340282366920938463463374607431768211455u128,  // u128::MAX
