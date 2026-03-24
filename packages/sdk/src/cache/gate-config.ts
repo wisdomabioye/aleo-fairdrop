@@ -6,7 +6,7 @@
  */
 
 import type { GateConfig } from '@fairdrop/types/contracts/utilities';
-import { cacheKey, getPersisted, setPersisted } from './persist.js';
+import { cacheKey, getPersisted, setPersisted } from './persist';
 
 const NS = 'gate-config';
 

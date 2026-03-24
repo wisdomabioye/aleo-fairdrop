@@ -7,7 +7,7 @@ export type {
   ConfigSnapshot,
   GateParams,
   VestParams,
-} from './common.js';
+} from './common';
 
 // Dutch auction
 export type {
@@ -26,7 +26,7 @@ export type {
   DutchWithdrawPaymentsInput,
   DutchWithdrawUnsoldInput,
   DutchCancelAuctionInput,
-} from './dutch.js';
+} from './dutch';
 
 // Sealed-bid auction
 export type {
@@ -47,7 +47,7 @@ export type {
   SealedWithdrawPaymentsInput,
   SealedWithdrawUnsoldInput,
   SealedCancelAuctionInput,
-} from './sealed.js';
+} from './sealed';
 
 // Raise auction
 export type {
@@ -65,7 +65,7 @@ export type {
   RaiseWithdrawPaymentsInput,
   RaiseWithdrawUnsoldInput,
   RaiseCancelAuctionInput,
-} from './raise.js';
+} from './raise';
 
 // Ascending auction
 export type {
@@ -84,10 +84,10 @@ export type {
   AscendingWithdrawPaymentsInput,
   AscendingWithdrawUnsoldInput,
   AscendingCancelAuctionInput,
-} from './ascending.js';
+} from './ascending';
 
 // LBP auction
-export type { LbpAuctionConfig, LbpBid } from './lbp.js';
+export type { LbpAuctionConfig, LbpBid } from './lbp';
 
 // Quadratic auction
-export type { QuadraticAuctionConfig, QuadraticBid } from './quadratic.js';
+export type { QuadraticAuctionConfig, QuadraticBid } from './quadratic';

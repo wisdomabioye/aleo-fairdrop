@@ -1,5 +1,5 @@
-import type { AuctionView, AuctionListItem, AuctionMetadata, AuctionType, AuctionStatus, GateMode } from '../domain/auction.js';
-import type { Page } from './pagination.js';
+import type { AuctionView, AuctionListItem, AuctionMetadata, AuctionType, AuctionStatus, GateMode } from '../domain/auction';
+import type { Page } from './pagination';
 
 // ── List ─────────────────────────────────────────────────────────────────────
 

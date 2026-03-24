@@ -7,8 +7,8 @@
  * @todo Define fully when fairdrop_quadratic.aleo is implemented.
  */
 
-import type { U128, U32 } from '../../primitives/scalars.js';
-import type { BaseAuctionConfig, AuctionState, BaseBid } from './common.js';
+import type { U128, U32 } from '../../primitives/scalars';
+import type { BaseAuctionConfig, AuctionState, BaseBid } from './common';
 
 export interface QuadraticAuctionConfig extends BaseAuctionConfig {
   matching_pool:       U128; // external matching credits added by the creator

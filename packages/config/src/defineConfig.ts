@@ -1,7 +1,7 @@
 import testnetNetwork from '../../../contracts/deployments/testnet/network.json';
 import mainnetNetwork from '../../../contracts/deployments/mainnet/network.json';
-import { PROGRAMS } from './programs.js';
-import type { ConfigEnv, FairdropConfig, Network } from './types.js';
+import { PROGRAMS } from './programs';
+import type { ConfigEnv, FairdropConfig, Network } from './types';
 
 const EXPLORER_URLS: Record<Network, string> = {
   testnet: 'https://testnet.explorer.provable.com/transaction',

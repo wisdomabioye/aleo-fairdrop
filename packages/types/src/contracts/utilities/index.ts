@@ -1,7 +1,7 @@
-export type { ProtocolConfig, AssertConfigInput, PausedState } from './config.js';
+export type { ProtocolConfig, AssertConfigInput, PausedState } from './config';
 
-export type { GateConfig, RegisterGateInput, CheckAdmissionInput, VerifiedState } from './gate.js';
-export { GateModeValue } from './gate.js';
+export type { GateConfig, RegisterGateInput, CheckAdmissionInput, VerifiedState } from './gate';
+export { GateModeValue } from './gate';
 
 export type {
   ParticipationReceipt,
@@ -9,7 +9,7 @@ export type {
   ParticipatedState,
   IssueReceiptInput,
   UpdateReputationInput,
-} from './proof.js';
+} from './proof';
 
 export type {
   ReferralCode,
@@ -18,6 +18,6 @@ export type {
   FundReserveInput,
   CreditCommissionInput,
   ReserveFunded,
-} from './ref.js';
+} from './ref';
 
-export type { VestedAllocation, CreateVestInput, ReleaseInput } from './vest.js';
+export type { VestedAllocation, CreateVestInput, ReleaseInput } from './vest';

@@ -7,7 +7,7 @@
  * GATE_CREDENTIAL (2): bidder holds a signed credential from a trusted issuer.
  */
 
-import type { Field, Address, U8, Bool } from '../../primitives/scalars.js';
+import type { Field, Address, U8, Bool } from '../../primitives/scalars';
 
 /** Numeric gate mode values — match Leo constants exactly. */
 export const GateModeValue = {

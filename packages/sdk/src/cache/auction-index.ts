@@ -6,7 +6,7 @@
  * changed, the list is identical and no chain reads are needed.
  */
 
-import { cacheKey, getPersisted, setPersisted } from './persist.js';
+import { cacheKey, getPersisted, setPersisted } from './persist';
 
 const NS_GLOBAL  = 'auction-index-global';
 const NS_CREATOR = 'auction-index-creator';

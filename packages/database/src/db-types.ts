@@ -18,7 +18,7 @@ import type {
   indexerCheckpoints,
   indexerTransitions,
   protocolConfig,
-} from './schema/index.js';
+} from './schema/index';
 
 // Auctions
 export type AuctionRow    = InferSelectModel<typeof auctions>;

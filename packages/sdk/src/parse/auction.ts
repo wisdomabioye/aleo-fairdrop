@@ -17,7 +17,7 @@ import {
   parseU32,
   parseBool,
   stripSuffix,
-} from './leo.js';
+} from './leo';
 
 /** Parse a raw Leo struct string into a BaseAuctionConfig. */
 export function parseBaseAuctionConfig(raw: string): BaseAuctionConfig {

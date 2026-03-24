@@ -6,7 +6,7 @@
  */
 
 import type { TokenInfo } from '@fairdrop/types/domain';
-import { cacheKey, getPersisted, setPersisted } from './persist.js';
+import { cacheKey, getPersisted, setPersisted } from './persist';
 
 const NS = 'token-meta';
 

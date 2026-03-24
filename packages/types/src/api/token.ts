@@ -1,5 +1,5 @@
-import type { TokenMetadata } from '../domain/token.js';
-import type { Page } from './pagination.js';
+import type { TokenMetadata } from '../domain/token';
+import type { Page } from './pagination';
 
 export interface TokenSearchParams {
   query?:    string;

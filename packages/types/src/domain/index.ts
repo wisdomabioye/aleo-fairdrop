@@ -1,17 +1,17 @@
-export type { AuctionView, AuctionListItem, AuctionMetadata, AuctionParams } from './auction.js';
-export { AuctionType, AuctionStatus, GateMode } from './auction.js';
+export type { AuctionView, AuctionListItem, AuctionMetadata, AuctionParams } from './auction';
+export { AuctionType, AuctionStatus, GateMode } from './auction';
 
-export type { BidView, ReleasableAmount } from './bid.js';
-export { ClaimStatus } from './bid.js';
+export type { BidView, ReleasableAmount } from './bid';
+export { ClaimStatus } from './bid';
 
-export type { TokenInfo, TokenMetadata, TokenBalance, TokenRole, TokenRoleValue } from './token.js';
-export { TOKEN_ROLE } from './token.js';
+export type { TokenInfo, TokenMetadata, TokenBalance, TokenRole, TokenRoleValue } from './token';
+export { TOKEN_ROLE } from './token';
 
-export type { CreatorProfile, CreatorAuctionRevenue } from './creator.js';
+export type { CreatorProfile, CreatorAuctionRevenue } from './creator';
 
-export type { ReferralView, CommissionEstimate } from './referral.js';
+export type { ReferralView, CommissionEstimate } from './referral';
 
-export type { VestingSchedule } from './vesting.js';
-export { VestingStatus } from './vesting.js';
+export type { VestingSchedule } from './vesting';
+export { VestingStatus } from './vesting';
 
-export type { ProtocolConfig } from './config.js';
+export type { ProtocolConfig } from './config';

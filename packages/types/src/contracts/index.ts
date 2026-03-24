@@ -1,2 +1,2 @@
-export * from './auctions/index.js';
-export * from './utilities/index.js';
+export * from './auctions/index';
+export * from './utilities/index';

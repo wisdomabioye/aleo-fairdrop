@@ -6,7 +6,7 @@
  * extends it with mechanism-specific fields in its own file.
  */
 
-import type { Field, Address, U128, U64, U32, U16, U8, Bool } from '../../primitives/scalars.js';
+import type { Field, Address, U128, U64, U32, U16, U8, Bool } from '../../primitives/scalars';
 
 // ── Shared structs ────────────────────────────────────────────────────────────
 

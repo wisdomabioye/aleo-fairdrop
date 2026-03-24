@@ -6,7 +6,7 @@
  * Auction contracts snapshot these at create time (D16 pattern).
  */
 
-import type { U128, U32, U16, Bool } from '../../primitives/scalars.js';
+import type { U128, U32, U16, Bool } from '../../primitives/scalars';
 
 /** On-chain protocol configuration struct. */
 export interface ProtocolConfig {

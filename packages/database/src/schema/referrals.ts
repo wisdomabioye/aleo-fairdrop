@@ -1,5 +1,5 @@
 import { pgTable, text, integer, timestamp, primaryKey, index } from 'drizzle-orm/pg-core';
-import { auctions } from './auctions.js';
+import { auctions } from './auctions';
 
 export const referralCodes = pgTable('referral_codes', {
   codeId:        text('code_id').primaryKey(),  // BHP256(code_id)

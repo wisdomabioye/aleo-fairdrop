@@ -1,4 +1,4 @@
-import type { Address } from './scalars.js';
+import type { Address } from './scalars';
 
 /**
  * The raw encrypted form of a Leo record as returned by the Aleo RPC / wallet.

@@ -7,7 +7,7 @@
  * and referrers claim commissions proportional to attributed volume.
  */
 
-import type { Field, Address, U128, Bool } from '../../primitives/scalars.js';
+import type { Field, Address, U128, Bool } from '../../primitives/scalars';
 
 /** On-chain referral code record, created by a referrer. */
 export interface ReferralCode {

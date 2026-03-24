@@ -2,7 +2,7 @@
  * Domain-level bid and claim types.
  */
 
-import type { AuctionType } from './auction.js';
+import type { AuctionType } from './auction';
 
 /** Claim lifecycle state for a winning bid after close_auction. */
 export enum ClaimStatus {

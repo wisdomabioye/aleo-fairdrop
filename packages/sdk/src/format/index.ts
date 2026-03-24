@@ -6,8 +6,8 @@
  *   import { truncateAddress, estimateDate, sanitizeExternalUrl } from '@fairdrop/sdk/format'
  */
 
-export { estimateDate, estimateMinutes } from './blocks.js';
-export { sanitizeExternalUrl } from './url.js';
+export { estimateDate, estimateMinutes } from './blocks';
+export { sanitizeExternalUrl } from './url';
 
 // ── Address / field ────────────────────────────────────────────────────────────
 

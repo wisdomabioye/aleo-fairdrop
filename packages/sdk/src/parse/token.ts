@@ -9,7 +9,7 @@
  */
 
 import type { TokenInfo } from '@fairdrop/types/domain';
-import { parseStruct, parseField, parseAddress, parseU8, parseU32, parseBool, stripSuffix } from './leo.js';
+import { parseStruct, parseField, parseAddress, parseU8, parseU32, parseBool, stripSuffix } from './leo';
 
 // ── ASCII / u128 codec ────────────────────────────────────────────────────────
 

@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import { createDb }                  from '@fairdrop/database';
 import { env }                        from './env.js';
 import { AleoRpcClient }              from './client/rpc.js';

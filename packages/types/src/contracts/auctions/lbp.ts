@@ -7,8 +7,8 @@
  * @todo Define fully when fairdrop_lbp.aleo is implemented.
  */
 
-import type { U128, U32, U16 } from '../../primitives/scalars.js';
-import type { BaseAuctionConfig, AuctionState, BaseBid } from './common.js';
+import type { U128, U32, U16 } from '../../primitives/scalars';
+import type { BaseAuctionConfig, AuctionState, BaseBid } from './common';
 
 export interface LbpAuctionConfig extends BaseAuctionConfig {
   start_weight:   U16;  // initial sale-token weight in bps (e.g. 9000 = 90%)

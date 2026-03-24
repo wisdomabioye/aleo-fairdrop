@@ -1,5 +1,5 @@
 import { pgTable, text, boolean, integer, timestamp, primaryKey, index } from 'drizzle-orm/pg-core';
-import { auctions } from './auctions.js';
+import { auctions } from './auctions';
 
 export const bids = pgTable('bids', {
   // Composite PK: bidder_key is pseudonymous (BHP256(bidder, auction_id))

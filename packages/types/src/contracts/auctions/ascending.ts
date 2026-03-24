@@ -6,7 +6,7 @@
  * No uniform clearing price — no refund at claim.
  */
 
-import type { Field, Address, U128, U64, U32, Bool } from '../../primitives/scalars.js';
+import type { Field, Address, U128, U64, U32, Bool } from '../../primitives/scalars';
 import type {
   BaseAuctionConfig,
   AuctionState,
@@ -14,7 +14,7 @@ import type {
   GateParams,
   VestParams,
   ConfigSnapshot,
-} from './common.js';
+} from './common';
 
 // ── On-chain structs ──────────────────────────────────────────────────────────
 

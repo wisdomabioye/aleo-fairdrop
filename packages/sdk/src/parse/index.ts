@@ -17,9 +17,9 @@ export {
   recU128,
   recU32,
   hasRecordKey,
-} from './leo.js';
+} from './leo';
 
-export { parseBaseAuctionConfig, parseAuctionState, parseAuctionStats } from './auction.js';
+export { parseBaseAuctionConfig, parseAuctionState, parseAuctionStats } from './auction';
 
 export {
   parseTokenInfo,
@@ -27,4 +27,4 @@ export {
   asciiToU128,
   u128ToAscii,
   type RawTokenBalance,
-} from './token.js';
+} from './token';

@@ -5,7 +5,7 @@
  * Bidder identity is pseudonymous: only BHP256(bidder, auction_id) stored on-chain.
  */
 
-import type { Field, Address, U128, U64, Bool } from '../../primitives/scalars.js';
+import type { Field, Address, U128, U64, Bool } from '../../primitives/scalars';
 
 /**
  * Private record proving participation in an auction.

@@ -1,7 +1,7 @@
-export { auctions } from './auctions.js';
-export { auctionMetadata } from './metadata.js';
-export { bids, vesting } from './bids.js';
-export { userReputation, creatorNonces } from './users.js';
-export { referralCodes, referralAttributions } from './referrals.js';
-export { indexerCheckpoints, indexerTransitions } from './indexer.js';
-export { protocolConfig } from './protocol-config.js';
+export { auctions } from './auctions';
+export { auctionMetadata } from './metadata';
+export { bids, vesting } from './bids';
+export { userReputation, creatorNonces } from './users';
+export { referralCodes, referralAttributions } from './referrals';
+export { indexerCheckpoints, indexerTransitions } from './indexer';
+export { protocolConfig } from './protocol-config';

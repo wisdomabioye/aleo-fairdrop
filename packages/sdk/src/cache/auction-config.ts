@@ -6,7 +6,7 @@
  */
 
 import type { BaseAuctionConfig } from '@fairdrop/types/contracts/auctions';
-import { cacheKey, getPersisted, setPersisted } from './persist.js';
+import { cacheKey, getPersisted, setPersisted } from './persist';
 
 const NS = 'auction-config';
 

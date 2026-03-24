@@ -4,21 +4,21 @@
  * import { getPersisted, getCachedAuctionConfig, getCachedTokenInfo … } from '@fairdrop/sdk/cache'
  */
 
-export { cacheKey, getPersisted, setPersisted, removePersisted, CACHE_VERSION } from './persist.js';
+export { cacheKey, getPersisted, setPersisted, removePersisted, CACHE_VERSION } from './persist';
 
 export {
   getCachedAuctionConfig,
   setCachedAuctionConfig,
   partitionAuctionConfigs,
-} from './auction-config.js';
+} from './auction-config';
 
 export {
   getCachedGlobalIndex,
   setCachedGlobalIndex,
   getCachedCreatorIndex,
   setCachedCreatorIndex,
-} from './auction-index.js';
+} from './auction-index';
 
-export { getCachedTokenInfo, setCachedTokenInfo } from './token-meta.js';
+export { getCachedTokenInfo, setCachedTokenInfo } from './token-meta';
 
-export { getCachedGateConfig, setCachedGateConfig } from './gate-config.js';
+export { getCachedGateConfig, setCachedGateConfig } from './gate-config';

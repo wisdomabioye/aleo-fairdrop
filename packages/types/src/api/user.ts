@@ -1,8 +1,8 @@
-import type { CreatorProfile } from '../domain/creator.js';
-import type { BidView } from '../domain/bid.js';
-import type { AuctionListItem } from '../domain/auction.js';
-import type { VestingSchedule } from '../domain/vesting.js';
-import type { Page } from './pagination.js';
+import type { CreatorProfile } from '../domain/creator';
+import type { BidView } from '../domain/bid';
+import type { AuctionListItem } from '../domain/auction';
+import type { VestingSchedule } from '../domain/vesting';
+import type { Page } from './pagination';
 
 export type UserProfileResponse = CreatorProfile;
 

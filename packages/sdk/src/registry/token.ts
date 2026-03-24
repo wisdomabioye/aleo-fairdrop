@@ -10,9 +10,9 @@
 
 import { BHP256, Plaintext } from '@provablehq/sdk';
 import type { TokenInfo, TokenBalance } from '@fairdrop/types/domain';
-import { SYSTEM_PROGRAMS } from '../constants.js';
-import { getAleoClient } from '../client.js';
-import { parseTokenInfo, parseRawTokenBalance } from '../parse/token.js';
+import { SYSTEM_PROGRAMS } from '../constants';
+import { getAleoClient } from '../client';
+import { parseTokenInfo, parseRawTokenBalance } from '../parse/token';
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
 

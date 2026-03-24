@@ -6,7 +6,7 @@
  * fairdrop_vest.aleo holds SUPPLY_MANAGER_ROLE and mints tokens on release.
  */
 
-import type { Field, Address, U128, U32 } from '../../primitives/scalars.js';
+import type { Field, Address, U128, U32 } from '../../primitives/scalars';
 
 /**
  * Private vesting schedule record.

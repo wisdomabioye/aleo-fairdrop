@@ -4,13 +4,13 @@
  * human-readable values, and wall-clock timestamps derived from block heights.
  */
 
-import type { DutchParams }        from '../contracts/auctions/dutch.js';
-import type { SealedParams }       from '../contracts/auctions/sealed.js';
-import type { RaiseAuctionConfig } from '../contracts/auctions/raise.js';
-import type { AscendingParams }    from '../contracts/auctions/ascending.js';
-import type { LbpAuctionConfig }   from '../contracts/auctions/lbp.js';
-import type { QuadraticAuctionConfig } from '../contracts/auctions/quadratic.js';
-import type { U16 }                from '../primitives/scalars.js';
+import type { DutchParams }        from '../contracts/auctions/dutch';
+import type { SealedParams }       from '../contracts/auctions/sealed';
+import type { RaiseAuctionConfig } from '../contracts/auctions/raise';
+import type { AscendingParams }    from '../contracts/auctions/ascending';
+import type { LbpAuctionConfig }   from '../contracts/auctions/lbp';
+import type { QuadraticAuctionConfig } from '../contracts/auctions/quadratic';
+import type { U16 }                from '../primitives/scalars';
 
 /** All supported auction mechanisms. Matches PROGRAM_SALT constants. */
 export enum AuctionType {

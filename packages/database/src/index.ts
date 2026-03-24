@@ -1,4 +1,4 @@
-export * from './schema/index.js';
-export * from './db-types.js';
-export { createDb } from './client.js';
-export type { Db, DbTx } from './client.js';
+export * from './schema/index';
+export * from './db-types';
+export { createDb } from './client';
+export type { Db, DbTx } from './client';

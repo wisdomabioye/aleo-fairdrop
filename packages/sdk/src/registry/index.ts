@@ -4,4 +4,4 @@ export {
   fetchTokenBalance,
   fetchTokenRole,
   fetchCreditsBalance,
-} from './token.js';
+} from './token';

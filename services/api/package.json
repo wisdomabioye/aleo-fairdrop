@@ -6,7 +6,11 @@
   "scripts": {
     "dev":        "tsx watch src/index.ts",
     "start":      "tsx src/index.ts",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "db:generate":  "drizzle-kit generate",
+    "db:migrate":   "drizzle-kit migrate",
+    "db:studio":    "drizzle-kit studio",
+    "db:push":      "drizzle-kit push"
   },
   "dependencies": {
     "@fairdrop/database": "workspace:*",
@@ -16,6 +20,7 @@
     "hono":               "^4.7.10"
   },
   "devDependencies": {
+    "drizzle-kit": "^0.31.1",
     "@types/node": "^25.5.0",
     "tsx":         "^4.19.3",
     "typescript":  "~5.9.3"

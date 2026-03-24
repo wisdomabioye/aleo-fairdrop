@@ -1,4 +1,4 @@
-export type { Page, CursorPage, SortOrder, PaginationParams } from './pagination.js';
+export type { Page, CursorPage, SortOrder, PaginationParams } from './pagination';
 
 export type {
   AuctionListParams,
@@ -11,13 +11,13 @@ export type {
   MetadataCreateResponse,
   LogoUploadResponse,
   MetadataResponse,
-} from './auction.js';
+} from './auction';
 
-export type { TokenSearchParams, TokenListResponse, TokenDetailResponse } from './token.js';
+export type { TokenSearchParams, TokenListResponse, TokenDetailResponse } from './token';
 
 export type {
   UserProfileResponse,
   UserBidsResponse,
   UserAuctionsResponse,
   UserVestingResponse,
-} from './user.js';
+} from './user';

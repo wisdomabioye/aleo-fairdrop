@@ -2,6 +2,7 @@
   "name": "@fairdrop/sdk",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "exports": {
     "./parse":     "./src/parse/index.ts",
     "./credits":   "./src/credits/index.ts",
