@@ -4,7 +4,7 @@ import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { Button, Spinner } from '@/components';
 import { fetchTokenInfo, fetchTokenRole } from '@fairdrop/sdk/registry';
 import { SYSTEM_PROGRAMS } from '@fairdrop/sdk/constants';
-import { config } from '@/env';
+import { config, TX_DEFAULT_FEE } from '@/env';
 import { AppRoutes } from '@/config/app.routes';
 import { parseExecutionError } from '@/shared/utils/errors';
 import type { StepProps } from './types';
@@ -25,9 +25,9 @@ export function TokenStep({ form, onChange }: StepProps) {
   const [authLoading,  setAuthLoading]  = useState(false);
   const [txError,      setTxError]      = useState<string | null>(null);
 
-  const auctionProgramAddress =
-    form.auctionType ? config.programs[form.auctionType].programAddress : '';
-  const programDeployed = auctionProgramAddress.startsWith('aleo1');
+  const auctionProgram = form.auctionType ? config.programs[form.auctionType] : '' 
+  const auctionProgramAddress = auctionProgram && auctionProgram.programAddress ? auctionProgram.programAddress : '';
+  const programDeployed = auctionProgramAddress?.startsWith('aleo1');
 
   // Load token records when wallet connects
   useEffect(() => {
@@ -75,7 +75,8 @@ export function TokenStep({ form, onChange }: StepProps) {
         program:  SYSTEM_PROGRAMS.tokenRegistry,
         function: 'set_role',
         inputs:   [form.saleTokenId, auctionProgramAddress, '3u8'],
-        fee:      0.1,
+        fee:      TX_DEFAULT_FEE,
+        privateFee: true
       });
       setRoleStatus('ok');
     } catch (err) {

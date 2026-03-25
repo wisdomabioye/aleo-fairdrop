@@ -72,7 +72,7 @@ export const AUCTION_REGISTRY: Record<AuctionType, AuctionTypeSlot> = {
   },
   [AuctionType.Lbp]: {
     type:          AuctionType.Lbp,
-    label:         'LBP',
+    label:         'LBP (Not Available)',
     color:         'bg-amber-500/15 text-amber-600 dark:text-amber-400',
     description:   'Liquidity bootstrapping pool — weight-decay price discovery.',
     BidForm:       LbpBidForm,
@@ -81,7 +81,7 @@ export const AUCTION_REGISTRY: Record<AuctionType, AuctionTypeSlot> = {
   },
   [AuctionType.Quadratic]: {
     type:          AuctionType.Quadratic,
-    label:         'Quadratic',
+    label:         'Quadratic (Not Available)',
     color:         'bg-rose-500/15 text-rose-600 dark:text-rose-400',
     description:   'Square-root weighting — smaller voices count more.',
     BidForm:       QuadraticBidForm,
