@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Input, Label, Switch, NativeSelect, NativeSelectOption, Button, Spinner } from '@/components';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { SYSTEM_PROGRAMS } from '@fairdrop/sdk/constants';
-import { config } from '@/env';
+import { config, TX_DEFAULT_FEE } from '@/env';
 import { parseExecutionError } from '@/shared/utils/errors';
 import type { StepProps } from './types';
 
@@ -19,8 +19,9 @@ export function GateVestStep({ form, onChange }: StepProps) {
       await executeTransaction({
         program:  SYSTEM_PROGRAMS.tokenRegistry,
         function: 'set_role',
-        inputs:   [form.saleTokenId, config.programs.vest.programAddress, '3u8'],
-        fee:      0.1,
+        inputs:   [form.saleTokenId, config.programs.vest.programAddress as string, '3u8'],
+        fee:      TX_DEFAULT_FEE,
+        privateFee: false
       });
       setVestAuthStatus('done');
     } catch (err) {

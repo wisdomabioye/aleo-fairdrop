@@ -126,6 +126,7 @@ export function CreateAuctionPage() {
       const result = await executeTransaction({
         ...tx,
         inputs: tx.inputs as string[],
+        privateFee: false
       });
 
       if (!result?.transactionId) {

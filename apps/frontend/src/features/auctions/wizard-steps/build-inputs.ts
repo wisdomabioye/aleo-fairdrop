@@ -24,6 +24,7 @@ import type {
   LbpPricingValues,
   QuadraticPricingValues,
 } from '../pricing-steps/types';
+import { TX_DEFAULT_FEE } from '@/env';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -111,16 +112,13 @@ export function buildCreateAuctionInputs(
   const snapshot = buildSnapshot(protocolConfig);
   const tail     = [gate, vest, snapshot];
 
-  // creationFee is a u128 microcredits string; executeTransaction expects ALEO
-  const fee = Number(protocolConfig.creationFee) / 1e6;
-
   switch (auctionType) {
     case AuctionType.Dutch: {
       const p = pricing as DutchPricingValues;
       return {
         program:  appConfig.programs.dutch.programId,
         function: 'create_auction',
-        fee,
+        fee: TX_DEFAULT_FEE,
         inputs: [
           tokenRecord,
           ...common,
@@ -141,7 +139,7 @@ export function buildCreateAuctionInputs(
       return {
         program:  appConfig.programs.sealed.programId,
         function: 'create_auction',
-        fee,
+        fee: TX_DEFAULT_FEE,
         inputs: [
           tokenRecord,
           ...common,
@@ -162,7 +160,7 @@ export function buildCreateAuctionInputs(
       return {
         program:  appConfig.programs.ascending.programId,
         function: 'create_auction',
-        fee,
+        fee: TX_DEFAULT_FEE,
         inputs: [
           tokenRecord,
           ...common,
@@ -182,7 +180,7 @@ export function buildCreateAuctionInputs(
       return {
         program:  appConfig.programs.raise.programId,
         function: 'create_auction',
-        fee,
+        fee: TX_DEFAULT_FEE,
         inputs: [
           tokenRecord,
           ...common,
@@ -197,7 +195,7 @@ export function buildCreateAuctionInputs(
       return {
         program:  appConfig.programs.lbp.programId,
         function: 'create_auction',
-        fee,
+        fee: TX_DEFAULT_FEE,
         inputs: [
           tokenRecord,
           ...common,
@@ -218,7 +216,7 @@ export function buildCreateAuctionInputs(
       return {
         program:  appConfig.programs.quadratic.programId,
         function: 'create_auction',
-        fee,
+        fee: TX_DEFAULT_FEE,
         inputs: [
           tokenRecord,
           ...common,

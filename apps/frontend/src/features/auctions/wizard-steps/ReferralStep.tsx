@@ -36,11 +36,6 @@ export function ReferralStep({ protocolConfig }: ReferralStepProps) {
           When a bidder uses a referral link, their referrer earns a commission paid
           from the auction's referral budget.
         </p>
-        <p>
-          You can push additional credits into your auction's referral pool at any time
-          after creation using the <strong>Push Referral Budget</strong> action on the
-          auction detail page.
-        </p>
       </div>
     </div>
   );
