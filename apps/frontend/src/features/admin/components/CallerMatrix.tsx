@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useWallet }          from '@provablehq/aleo-wallet-adaptor-react';
+import { useWallet }   from '@provablehq/aleo-wallet-adaptor-react';
 import { Button, Spinner, Input, Label } from '@/components';
-import { getAleoClient }      from '@fairdrop/sdk/client';
-import { AuctionType }        from '@fairdrop/types/domain';
-import { config, TX_DEFAULT_FEE }             from '@/env';
-import { parseExecutionError } from '@/shared/utils/errors';
-import { useTransactionStore } from '@/stores/transaction.store';
+import { getAleoClient } from '@fairdrop/sdk/client';
+import { AuctionType }   from '@fairdrop/types/domain';
+import { config, TX_DEFAULT_FEE } from '@/env';
+import { WizardTxStatus }          from '@/shared/components/WizardTxStatus';
+import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
 
-// ── registries ────────────────────────────────────────────────────────────────
+// ── Registries ────────────────────────────────────────────────────────────────
 
 const UTILITIES = [
   { key: 'gate',  label: 'Gate',  programId: config.programs.gate.programId  },
@@ -27,16 +27,15 @@ const KNOWN_AUCTIONS = [
   { type: AuctionType.Quadratic, label: 'Quadratic', programAddress: config.programs.quadratic.programAddress },
 ] as const;
 
-// ── types ─────────────────────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 interface AuctionRow {
   label:          string;
   programAddress: string;
-  /** null = still loading */
   status:         Record<UtilityKey, boolean | null>;
 }
 
-// ── helpers ───────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 async function readAllowed(utilityProgramId: string, auctionProgramAddress: string): Promise<boolean> {
   try {
@@ -50,12 +49,8 @@ async function readAllowed(utilityProgramId: string, auctionProgramAddress: stri
 }
 
 async function loadRowStatus(programAddress: string): Promise<Record<UtilityKey, boolean>> {
-  const results = await Promise.all(
-    UTILITIES.map((u) => readAllowed(u.programId, programAddress)),
-  );
-  return Object.fromEntries(
-    UTILITIES.map((u, i) => [u.key, results[i]]),
-  ) as Record<UtilityKey, boolean>;
+  const results = await Promise.all(UTILITIES.map((u) => readAllowed(u.programId, programAddress)));
+  return Object.fromEntries(UTILITIES.map((u, i) => [u.key, results[i]])) as Record<UtilityKey, boolean>;
 }
 
 // ── AuctionAuthRow ────────────────────────────────────────────────────────────
@@ -67,89 +62,101 @@ interface AuctionAuthRowProps {
 
 function AuctionAuthRow({ row, onUpdate }: AuctionAuthRowProps) {
   const { executeTransaction } = useWallet();
-  const { setTx }              = useTransactionStore();
-  const [busy,  setBusy]       = useState(false);
-  const [error, setError]      = useState('');
 
   const missingUtilities = UTILITIES.filter((u) => row.status[u.key] !== true);
   const allAuthorized    = missingUtilities.length === 0;
 
-  async function authorizeOnUtility(utilityKey: UtilityKey, utilityProgramId: string) {
-    const result = await executeTransaction({
-      program:  utilityProgramId,
-      function: 'set_allowed_caller',
-      inputs:   [row.programAddress, 'true'],
-      fee:      TX_DEFAULT_FEE,
-      privateFee: false
-    });
-    if (result?.transactionId) {
-      setTx(result.transactionId, `Authorize ${row.label} on ${utilityKey}`);
-      onUpdate(row.programAddress, utilityKey, true);
-    }
-  }
+  // One step per missing utility — confirms each before submitting the next.
+  // IMPORTANT: execute must NOT call onUpdate — doing so shrinks missingUtilities,
+  // which shrinks steps mid-sequence, causing the stepsRef to point to wrong indices.
+  const steps = missingUtilities.map((u) => ({
+    label: `Authorize ${row.label} on ${u.label}`,
+    execute: async () => {
+      const result = await executeTransaction({
+        program:    u.programId,
+        function:   'set_allowed_caller',
+        inputs:     [row.programAddress, 'true'],
+        fee:        TX_DEFAULT_FEE,
+        privateFee: false,
+      });
+      return result?.transactionId;
+    },
+  }));
 
-  async function handleAuthorize() {
-    setError('');
-    setBusy(true);
-    try {
-      for (const u of missingUtilities) {
-        await authorizeOnUtility(u.key, u.programId);
-      }
-    } catch (err) {
-      setError(parseExecutionError(err));
-    } finally {
-      setBusy(false);
+  const { currentStep, done, busy, isWaiting, error, trackedIds, advance } =
+    useConfirmedSequentialTx(steps);
+
+  // Auto-advance: after each confirmation, kick off the next step without user interaction
+  useEffect(() => {
+    if (currentStep > 0 && !done && !busy && !isWaiting) {
+      advance();
     }
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentStep]);
+
+  // After all steps confirmed, reload the actual on-chain status and update parent
+  useEffect(() => {
+    if (!done) return;
+    loadRowStatus(row.programAddress).then((status) => {
+      UTILITIES.forEach((u) => onUpdate(row.programAddress, u.key, status[u.key]));
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [done]);
+
+  const inProgress = busy || isWaiting || (trackedIds.length > 0 && !done);
 
   return (
-    <div className="flex items-center gap-3 py-3 border-b border-border last:border-0 flex-wrap">
-      {/* Auction label */}
-      <div className="w-24 shrink-0">
-        <p className="text-sm font-medium">{row.label}</p>
-        <p className="text-[10px] text-muted-foreground font-mono truncate">
-          {row.programAddress.slice(0, 12)}…
-        </p>
-      </div>
+    <div className="py-3 border-b border-border last:border-0 space-y-2">
+      <div className="flex items-center gap-3 flex-wrap">
+        {/* Auction label */}
+        <div className="w-24 shrink-0">
+          <p className="text-sm font-medium">{row.label}</p>
+          <p className="text-[10px] text-muted-foreground font-mono truncate">
+            {row.programAddress.slice(0, 12)}…
+          </p>
+        </div>
 
-      {/* Status per utility */}
-      <div className="flex gap-3 flex-1">
-        {UTILITIES.map((u) => {
-          const status = row.status[u.key];
-          return (
-            <div key={u.key} className="flex flex-col items-center gap-0.5 min-w-[40px]">
-              <p className="text-[10px] text-muted-foreground">{u.label}</p>
-              {status === null ? (
-                <Spinner className="h-3 w-3" />
-              ) : (
-                <span className={`text-sm font-medium ${
-                  status
-                    ? 'text-emerald-600 dark:text-emerald-400'
-                    : 'text-destructive'
-                }`}>
-                  {status ? '✓' : '✗'}
-                </span>
-              )}
-            </div>
-          );
-        })}
-      </div>
+        {/* Status per utility */}
+        <div className="flex gap-3 flex-1">
+          {UTILITIES.map((u) => {
+            const status = row.status[u.key];
+            return (
+              <div key={u.key} className="flex flex-col items-center gap-0.5 min-w-[40px]">
+                <p className="text-[10px] text-muted-foreground">{u.label}</p>
+                {status === null ? (
+                  <Spinner className="h-3 w-3" />
+                ) : (
+                  <span className={`text-sm font-medium ${
+                    status ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'
+                  }`}>
+                    {status ? '✓' : '✗'}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
 
-      {/* Action */}
-      <div className="flex flex-col items-end gap-1 shrink-0">
-        {allAuthorized ? (
-          <span className="text-xs text-muted-foreground">Authorized</span>
-        ) : (
-          <Button size="sm" variant="outline" disabled={busy} onClick={handleAuthorize}>
-            {busy
-              ? <><Spinner className="mr-1.5 h-3 w-3" />Authorizing…</>
+        {/* Action */}
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          {allAuthorized ? (
+            <span className="text-xs text-muted-foreground">Authorized</span>
+          ) : done ? (
+            <span className="text-xs text-emerald-600 dark:text-emerald-400">All authorized ✓</span>
+          ) : (
+            <Button size="sm" variant="outline" disabled={inProgress} onClick={advance}>
+              {busy      ? <><Spinner className="mr-1.5 h-3 w-3" />Authorizing…</>
+              : isWaiting ? <><Spinner className="mr-1.5 h-3 w-3" />Confirming…</>
               : missingUtilities.length === UTILITIES.length
                 ? 'Authorize on All'
                 : `Authorize ${missingUtilities.length} Missing`}
-          </Button>
-        )}
-        {error && <p className="text-xs text-destructive max-w-[160px] text-right">{error}</p>}
+            </Button>
+          )}
+          {error && <p className="text-xs text-destructive max-w-[160px] text-right">{error.message}</p>}
+        </div>
       </div>
+
+      {trackedIds.length > 0 && <WizardTxStatus trackedIds={trackedIds} />}
     </div>
   );
 }
@@ -158,24 +165,70 @@ function AuctionAuthRow({ row, onUpdate }: AuctionAuthRowProps) {
 
 export function CallerMatrix() {
   const { executeTransaction } = useWallet();
-  const { setTx }              = useTransactionStore();
 
   const [rows,       setRows]       = useState<AuctionRow[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [customAddr, setCustomAddr] = useState('');
-  const [addBusy,    setAddBusy]    = useState(false);
   const [addError,   setAddError]   = useState('');
+
+  // Custom address: authorize on all 4 utilities sequentially
+  const customSteps = UTILITIES.map((u) => ({
+    label: `Authorize custom on ${u.label}`,
+    execute: async () => {
+      const addr = customAddr.trim();
+      const result = await executeTransaction({
+        program:    u.programId,
+        function:   'set_allowed_caller',
+        inputs:     [addr, 'true'],
+        fee:        TX_DEFAULT_FEE,
+        privateFee: false,
+      });
+      return result?.transactionId;
+    },
+  }));
+
+  const {
+    currentStep: customStep,
+    done:        customDone,
+    busy:        customBusy,
+    isWaiting:   customWaiting,
+    error:       customError,
+    trackedIds:  customTrackedIds,
+    advance:     customAdvance,
+    reset:       customReset,
+  } = useConfirmedSequentialTx(customSteps);
+
+  // Auto-advance custom authorization after each step confirms
+  useEffect(() => {
+    if (customStep > 0 && !customDone && !customBusy && !customWaiting) {
+      customAdvance();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customStep]);
+
+  // After all 4 custom utilities confirmed, add row to matrix
+  useEffect(() => {
+    if (!customDone) return;
+    const addr = customAddr.trim();
+    if (!addr) return;
+    loadRowStatus(addr).then((status) => {
+      setRows((prev) => [...prev, { label: addr.slice(0, 8) + '…', programAddress: addr, status }]);
+      customReset();
+      setCustomAddr('');
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customDone]);
 
   const loadRows = useCallback(async () => {
     setLoading(true);
     const loaded = await Promise.all(
       KNOWN_AUCTIONS
-      .filter(p => !!p.programAddress)
-      .map(async (a) => ({
-        label:          a.label,
-        programAddress: a.programAddress as string,
-        status:         await loadRowStatus(a.programAddress as string),
-      })),
+        .filter((p) => !!p.programAddress)
+        .map(async (a) => ({
+          label:          a.label,
+          programAddress: a.programAddress as string,
+          status:         await loadRowStatus(a.programAddress as string),
+        })),
     );
     setRows(loaded);
     setLoading(false);
@@ -191,38 +244,15 @@ export function CallerMatrix() {
     ));
   }
 
-  async function handleAddCustom() {
+  function handleAddCustom() {
     const addr = customAddr.trim();
-    if (!addr.startsWith('aleo1')) {
-      setAddError('Must be a valid aleo1… program address.');
-      return;
-    }
-    if (rows.some((r) => r.programAddress === addr)) {
-      setAddError('Already in the list.');
-      return;
-    }
     setAddError('');
-    setAddBusy(true);
-    try {
-      for (const u of UTILITIES) {
-        const result = await executeTransaction({
-          program:  u.programId,
-          function: 'set_allowed_caller',
-          inputs:   [addr, 'true'],
-          fee:      TX_DEFAULT_FEE,
-          privateFee: false
-        });
-        if (result?.transactionId) setTx(result.transactionId, `Authorize custom on ${u.label}`);
-      }
-      const status = await loadRowStatus(addr);
-      setRows((prev) => [...prev, { label: addr.slice(0, 8) + '…', programAddress: addr, status }]);
-      setCustomAddr('');
-    } catch (err) {
-      setAddError(parseExecutionError(err));
-    } finally {
-      setAddBusy(false);
-    }
+    if (!addr.startsWith('aleo1')) { setAddError('Must be a valid aleo1… program address.'); return; }
+    if (rows.some((r) => r.programAddress === addr)) { setAddError('Already in the list.'); return; }
+    customAdvance();
   }
+
+  const customBlocked = customBusy || customWaiting;
 
   if (loading) {
     return <div className="flex justify-center py-6"><Spinner className="h-5 w-5" /></div>;
@@ -243,16 +273,11 @@ export function CallerMatrix() {
         <div className="w-28 shrink-0" />
       </div>
 
-      {/* Known auction rows */}
       {rows.map((row) => (
-        <AuctionAuthRow
-          key={row.programAddress}
-          row={row}
-          onUpdate={handleUpdate}
-        />
+        <AuctionAuthRow key={row.programAddress} row={row} onUpdate={handleUpdate} />
       ))}
 
-      {/* Add a new/custom auction contract */}
+      {/* Add custom auction contract */}
       <div className="pt-3 border-t border-border space-y-2">
         <Label className="text-xs text-muted-foreground">
           Authorize a new auction contract address on all 4 utilities
@@ -263,18 +288,17 @@ export function CallerMatrix() {
             placeholder="aleo1… (program address)"
             value={customAddr}
             onChange={(e) => setCustomAddr(e.target.value)}
+            disabled={customBlocked}
           />
-          <Button
-            size="sm"
-            disabled={addBusy || !customAddr.trim()}
-            onClick={handleAddCustom}
-          >
-            {addBusy
-              ? <><Spinner className="mr-1.5 h-3 w-3" />Authorizing…</>
-              : 'Authorize on All'}
+          <Button size="sm" disabled={customBlocked || !customAddr.trim()} onClick={handleAddCustom}>
+            {customBusy      ? <><Spinner className="mr-1.5 h-3 w-3" />Authorizing…</>
+            : customWaiting  ? <><Spinner className="mr-1.5 h-3 w-3" />Confirming…</>
+            : 'Authorize on All'}
           </Button>
         </div>
-        {addError && <p className="text-xs text-destructive">{addError}</p>}
+        {addError    && <p className="text-xs text-destructive">{addError}</p>}
+        {customError && <p className="text-xs text-destructive">{customError.message}</p>}
+        {customTrackedIds.length > 0 && <WizardTxStatus trackedIds={customTrackedIds} />}
       </div>
     </div>
   );

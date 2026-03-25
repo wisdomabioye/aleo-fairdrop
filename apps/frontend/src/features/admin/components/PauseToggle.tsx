@@ -1,9 +1,8 @@
-import { useState }                from 'react';
-import { useWallet }               from '@provablehq/aleo-wallet-adaptor-react';
-import { Button, Spinner, Badge }  from '@/components';
+import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+import { Button, Spinner, Badge } from '@/components';
+import { WizardTxStatus }          from '@/shared/components/WizardTxStatus';
+import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
 import { config, TX_DEFAULT_FEE }  from '@/env';
-import { parseExecutionError }     from '@/shared/utils/errors';
-import { useTransactionStore }     from '@/stores/transaction.store';
 
 const CFG_PROGRAM = config.programs.config.programId;
 
@@ -13,29 +12,27 @@ interface PauseToggleProps {
 
 export function PauseToggle({ paused }: PauseToggleProps) {
   const { executeTransaction } = useWallet();
-  const { setTx }              = useTransactionStore();
-  const [busy,  setBusy]       = useState(false);
-  const [error, setError]      = useState('');
 
-  async function handleToggle() {
-    setError('');
-    setBusy(true);
-    try {
-      const next = !paused;
+  const next = !paused;
+
+  const steps = [{
+    label: next ? 'Pause Protocol' : 'Resume Protocol',
+    execute: async () => {
       const result = await executeTransaction({
-        program:  CFG_PROGRAM,
-        function: 'set_paused',
-        inputs:   [String(next)],
-        fee:     TX_DEFAULT_FEE,
-        privateFee: false
+        program:    CFG_PROGRAM,
+        function:   'set_paused',
+        inputs:     [String(next)],
+        fee:        TX_DEFAULT_FEE,
+        privateFee: false,
       });
-      if (result?.transactionId) setTx(result.transactionId, next ? 'Pause protocol' : 'Resume protocol');
-    } catch (err) {
-      setError(parseExecutionError(err));
-    } finally {
-      setBusy(false);
-    }
-  }
+      return result?.transactionId;
+    },
+  }];
+
+  const { done, busy, isWaiting, error, trackedIds, advance, reset } =
+    useConfirmedSequentialTx(steps);
+
+  const blocked = busy || isWaiting;
 
   return (
     <div className="space-y-3">
@@ -49,21 +46,29 @@ export function PauseToggle({ paused }: PauseToggleProps) {
         <Badge variant={paused ? 'destructive' : 'outline'}>
           {paused ? 'PAUSED' : 'Active'}
         </Badge>
-        <Button
-          variant={paused ? 'outline' : 'destructive'}
-          size="sm"
-          disabled={busy}
-          onClick={handleToggle}
-        >
-          {busy
-            ? <><Spinner className="mr-2 h-3 w-3" />{paused ? 'Resuming…' : 'Pausing…'}</>
-            : paused
-              ? 'Resume Protocol'
-              : 'Emergency Pause — Halt All Activity'}
-        </Button>
+        {!done && (
+          <Button
+            variant={paused ? 'outline' : 'destructive'}
+            size="sm"
+            disabled={blocked}
+            onClick={advance}
+          >
+            {busy
+              ? <><Spinner className="mr-2 h-3 w-3" />{paused ? 'Resuming…' : 'Pausing…'}</>
+              : isWaiting
+                ? <><Spinner className="mr-2 h-3 w-3" />Awaiting confirmation…</>
+                : paused
+                  ? 'Resume Protocol'
+                  : 'Emergency Pause — Halt All Activity'}
+          </Button>
+        )}
+        {done && (
+          <Button size="sm" variant="outline" onClick={reset}>Undo / Toggle again</Button>
+        )}
       </div>
 
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      {error && <p className="text-xs text-destructive">{error.message}</p>}
+      <WizardTxStatus trackedIds={trackedIds} />
     </div>
   );
 }

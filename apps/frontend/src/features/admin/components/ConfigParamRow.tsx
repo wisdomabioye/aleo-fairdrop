@@ -1,7 +1,13 @@
-import { useState }          from 'react';
+import { useState } from 'react';
+import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { Button, Input, Badge } from '@/components';
-import { formatMicrocredits }  from '@fairdrop/sdk/credits';
-import { stripSuffix }         from '@fairdrop/sdk/parse';
+import { formatMicrocredits } from '@fairdrop/sdk/credits';
+import { stripSuffix }        from '@fairdrop/sdk/parse';
+import { WizardTxStatus }          from '@/shared/components/WizardTxStatus';
+import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
+import { config, TX_DEFAULT_FEE }  from '@/env';
+
+const CFG_PROGRAM = config.programs.config.programId;
 
 export interface ConfigParamRowProps {
   label:       string;
@@ -12,9 +18,6 @@ export interface ConfigParamRowProps {
   transition:  string;
   inputType:   'u16' | 'u32' | 'u128';
   maxValue:    number | bigint;
-  busy:        boolean;
-  onSave:      (transition: string, value: string, type: 'u16' | 'u32' | 'u128') => Promise<void>;
-  error?:      string;
 }
 
 function formatCurrent(raw: string | null, unit: ConfigParamRowProps['unit']): string {
@@ -27,12 +30,32 @@ function formatCurrent(raw: string | null, unit: ConfigParamRowProps['unit']): s
 
 export function ConfigParamRow({
   label, description, currentRaw, hardCap, unit,
-  transition, inputType, maxValue, busy, onSave, error,
+  transition, inputType, maxValue,
 }: ConfigParamRowProps) {
-  const [value, setValue]   = useState('');
+  const { executeTransaction } = useWallet();
+  const [value,    setValue]    = useState('');
   const [localErr, setLocalErr] = useState('');
 
-  async function handleSave() {
+  const steps = [{
+    label: `Set ${label}`,
+    execute: async () => {
+      const result = await executeTransaction({
+        program:    CFG_PROGRAM,
+        function:   transition,
+        inputs:     [`${value}${inputType}`],
+        fee:        TX_DEFAULT_FEE,
+        privateFee: false,
+      });
+      return result?.transactionId;
+    },
+  }];
+
+  const { done, busy, isWaiting, error, trackedIds, advance, reset } =
+    useConfirmedSequentialTx(steps);
+
+  const blocked = busy || isWaiting;
+
+  function handleSave() {
     setLocalErr('');
     try {
       const n = inputType === 'u128' ? BigInt(value) : parseInt(value, 10);
@@ -42,12 +65,17 @@ export function ConfigParamRow({
       setLocalErr('Enter a valid number.');
       return;
     }
-    await onSave(transition, value, inputType);
+    advance();
+  }
+
+  function handleReset() {
+    reset();
     setValue('');
   }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 py-3 border-b border-border last:border-0">
+      {/* Label + current value */}
       <div className="space-y-0.5 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <p className="text-sm font-medium">{label}</p>
@@ -59,22 +87,38 @@ export function ConfigParamRow({
         <p className="text-xs text-muted-foreground">{description}</p>
       </div>
 
+      {/* Input + action */}
       <div className="flex items-center gap-2 flex-wrap justify-end shrink-0">
-        <Input
-          className="w-36 h-8 text-sm"
-          placeholder="new value"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          type="number"
-          min={0}
-        />
-        <Button size="sm" disabled={busy || !value} onClick={handleSave}>
-          {busy ? '…' : 'Save'}
-        </Button>
+        {done ? (
+          <Button size="sm" variant="outline" onClick={handleReset}>Set another</Button>
+        ) : (
+          <>
+            <Input
+              className="w-36 h-8 text-sm"
+              placeholder="new value"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              type="number"
+              min={0}
+              disabled={blocked}
+            />
+            <Button size="sm" disabled={blocked || !value} onClick={handleSave}>
+              {busy ? '…' : isWaiting ? '⏳' : 'Save'}
+            </Button>
+          </>
+        )}
       </div>
 
+      {/* Errors + tx status (full width) */}
       {(localErr || error) && (
-        <p className="text-xs text-destructive col-span-full">{localErr || error}</p>
+        <p className="text-xs text-destructive col-span-full">
+          {localErr || error?.message}
+        </p>
+      )}
+      {trackedIds.length > 0 && (
+        <div className="col-span-full">
+          <WizardTxStatus trackedIds={trackedIds} />
+        </div>
       )}
     </div>
   );
