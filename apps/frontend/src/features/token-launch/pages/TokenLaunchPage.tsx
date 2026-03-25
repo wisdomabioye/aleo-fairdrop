@@ -3,8 +3,10 @@
  *
  * Step 1: register_token on token_registry.aleo (auto-generated token_id)
  * Step 2: mint_private the initial supply to the creator's wallet
+ *
+ * Each step waits for on-chain confirmation before advancing.
  */
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useWallet }         from '@provablehq/aleo-wallet-adaptor-react';
 import {
   Button,
@@ -20,12 +22,12 @@ import {
   CopyField,
   Spinner,
 } from '@/components';
-import { CheckCircle2, ChevronRight } from 'lucide-react';
+import { CheckCircle2, ChevronRight, Clock } from 'lucide-react';
 import { SYSTEM_PROGRAMS }   from '@fairdrop/sdk/constants';
-import { asciiToU128 }    from '@fairdrop/sdk/parse';
+import { asciiToU128 }       from '@fairdrop/sdk/parse';
 import { parseTokenAmount, formatAmount } from '@fairdrop/sdk/format';
 import { ConnectWalletPrompt } from '@/shared/components/wallet/ConnectWalletPrompt';
-import { useTransactionStore } from '@/stores/transaction.store';
+import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
 import { parseExecutionError } from '@/shared/utils/errors';
 import { TX_DEFAULT_FEE } from '@/env';
 
@@ -64,23 +66,19 @@ function StepDot({ n, current, done }: { n: number; current: number; done: boole
 
 export function TokenLaunchPage() {
   const { address, connected, executeTransaction } = useWallet();
-  const { setTx } = useTransactionStore();
 
-  const [step,    setStep]  = useState<1 | 2 | 'done'>(1);
-  const [tokenId]           = useState(generateTokenId);
-  const [busy,    setBusy]  = useState(false);
-  const [error,   setError] = useState<string | null>(null);
+  const [tokenId] = useState(generateTokenId);
 
-  // Step 1 state
+  // Step 1 fields
   const [name,      setName]      = useState('');
   const [symbol,    setSymbol]    = useState('');
   const [decimals,  setDecimals]  = useState('6');
   const [maxSupply, setMaxSupply] = useState('');
 
-  // Step 2 state
+  // Step 2 fields
   const [mintAmount, setMintAmount] = useState('');
 
-  // Parsed values
+  // Parsed / validated values
   const dec     = parseInt(decimals, 10);
   const maxRaw  = parseTokenAmount(maxSupply, isNaN(dec) ? 0 : dec);
   const mintRaw = parseTokenAmount(mintAmount, isNaN(dec) ? 0 : dec);
@@ -89,50 +87,55 @@ export function TokenLaunchPage() {
   let symbolU128: bigint | null = null;
   let nameError   = '';
   let symbolError = '';
-
   try { nameU128   = name   ? asciiToU128(name)   : null; } catch (e) { nameError   = e instanceof Error ? e.message : 'Invalid'; }
   try { symbolU128 = symbol ? asciiToU128(symbol) : null; } catch (e) { symbolError = e instanceof Error ? e.message : 'Invalid'; }
 
   const step1Valid = !!nameU128 && !!symbolU128 && symbol.length >= 2 &&
     !isNaN(dec) && dec >= 0 && dec <= 18 && maxRaw > 0n;
-
   const step2Valid = mintRaw > 0n && mintRaw <= maxRaw;
 
-  async function runStep1() {
-    if (!step1Valid || !address) return;
-    setBusy(true); setError(null);
-    try {
-      const result = await executeTransaction({
-        program:  TOKEN_REGISTRY,
-        function: 'register_token',
-        inputs:   [tokenId, `${nameU128}u128`, `${symbolU128}u128`, `${dec}u8`, `${maxRaw}u128`, 'false', address],
-        fee:      TX_DEFAULT_FEE,
-        privateFee: false,
-      });
-      if (result?.transactionId) { setTx(result.transactionId, 'Register Token'); setStep(2); }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : parseExecutionError(err)); 
-    }
-    finally { setBusy(false); }
-  }
+  // ── Sequential tx flow ──────────────────────────────────────────────────────
 
-  async function runStep2() {
-    if (!step2Valid || !address) return;
-    setBusy(true); setError(null);
-    try {
-      const result = await executeTransaction({
-        program:  TOKEN_REGISTRY,
-        function: 'mint_private',
-        inputs:   [tokenId, address, `${mintRaw}u128`, 'false', `${NO_EXPIRY}u32`],
-        fee:      TX_DEFAULT_FEE,
-        privateFee: false,
-      });
-      if (result?.transactionId) { setTx(result.transactionId, 'Mint Tokens'); setStep('done'); }
-    } catch (err) { 
-      setError(err instanceof Error ? err.message : parseExecutionError(err)); 
-    }
-    finally { setBusy(false); }
-  }
+  const steps = useMemo(() => [
+    {
+      label:   'Register Token',
+      execute: async () => {
+        const result = await executeTransaction({
+          program:    TOKEN_REGISTRY,
+          function:   'register_token',
+          inputs:     [tokenId, `${nameU128}u128`, `${symbolU128}u128`, `${dec}u8`, `${maxRaw}u128`, 'false', address!],
+          fee:        TX_DEFAULT_FEE,
+          privateFee: false,
+        });
+        return result?.transactionId;
+      },
+    },
+    {
+      label:   'Mint Tokens',
+      execute: async () => {
+        const result = await executeTransaction({
+          program:    TOKEN_REGISTRY,
+          function:   'mint_private',
+          inputs:     [tokenId, address!, `${mintRaw}u128`, 'false', `${NO_EXPIRY}u32`],
+          fee:        TX_DEFAULT_FEE,
+          privateFee: false,
+        });
+        return result?.transactionId;
+      },
+    },
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [address, tokenId, nameU128, symbolU128, dec, maxRaw, mintRaw]);
+
+  const {
+    currentStep,
+    done,
+    busy,
+    isWaiting,
+    error,
+    advance,
+  } = useConfirmedSequentialTx(steps);
+
+  // ── Early exit ──────────────────────────────────────────────────────────────
 
   if (!connected) {
     return (
@@ -143,7 +146,20 @@ export function TokenLaunchPage() {
     );
   }
 
-  const currentStep = step === 'done' ? 3 : step;
+  // ── Waiting banner (shown between steps while polling) ─────────────────────
+
+  const waitingBanner = isWaiting && (
+    <div className="flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2">
+      <Clock className="size-4 text-amber-500 shrink-0" />
+      <p className="text-xs text-amber-600 dark:text-amber-400">
+        Waiting for on-chain confirmation…
+      </p>
+    </div>
+  );
+
+  const errorBanner = error && (
+    <p className="text-xs text-destructive">{parseExecutionError(error)}</p>
+  );
 
   return (
     <div className="mx-auto max-w-xl space-y-6 p-6">
@@ -152,12 +168,12 @@ export function TokenLaunchPage() {
       {/* Step indicator */}
       <div className="flex items-center justify-center gap-1 py-2">
         {([1, 2] as const).map((n) => (
-          <StepDot key={n} n={n} current={currentStep} done={step === 'done'} />
+          <StepDot key={n} n={n} current={done ? 3 : currentStep + 1} done={done} />
         ))}
       </div>
 
       {/* ── Step 1: Register ── */}
-      {step === 1 && (
+      {!done && currentStep === 0 && (
         <Card>
           <CardHeader>
             <CardTitle>1 · Register Token</CardTitle>
@@ -206,16 +222,32 @@ export function TokenLaunchPage() {
                 </span>
               </div>
             )}
-            {error && <p className="text-xs text-destructive">{error}</p>}
-            <Button className="w-full" onClick={runStep1} disabled={!step1Valid || busy}>
+            {waitingBanner}
+            {errorBanner}
+            <Button className="w-full" onClick={advance} disabled={!step1Valid || busy || isWaiting}>
               {busy ? <><Spinner className="mr-2 size-4" /> Waiting for wallet…</> : 'Register Token →'}
             </Button>
           </CardContent>
         </Card>
       )}
 
+      {/* ── Confirmation wait screen (between steps) ── */}
+      {!done && currentStep === 1 && isWaiting && (
+        <Card>
+          <CardContent className="flex flex-col items-center gap-4 py-10 text-center">
+            <Spinner className="size-8" />
+            <div>
+              <p className="text-sm font-semibold">Confirming Step 1…</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Waiting for the register transaction to settle on-chain before minting.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* ── Step 2: Mint ── */}
-      {step === 2 && (
+      {!done && currentStep === 1 && !isWaiting && (
         <Card>
           <CardHeader>
             <CardTitle>2 · Mint Initial Supply</CardTitle>
@@ -224,10 +256,16 @@ export function TokenLaunchPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2">
+              <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />
+              <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                Token registered on-chain. Ready to mint.
+              </p>
+            </div>
             <TokenAmountInput
               label="Mint Amount"
               value={mintAmount}
-              onChange={(v) => { setMintAmount(v); setError(null); }}
+              onChange={(v) => setMintAmount(v)}
               decimals={isNaN(dec) ? 0 : dec}
               symbol={symbol || undefined}
               max={maxRaw}
@@ -235,8 +273,9 @@ export function TokenLaunchPage() {
               placeholder={formatAmount(maxRaw, isNaN(dec) ? 0 : dec)}
               error={mintRaw > maxRaw ? 'Exceeds max supply' : undefined}
             />
-            {error && <p className="text-xs text-destructive">{error}</p>}
-            <Button className="w-full" onClick={runStep2} disabled={!step2Valid || busy}>
+            {waitingBanner}
+            {errorBanner}
+            <Button className="w-full" onClick={advance} disabled={!step2Valid || busy || isWaiting}>
               {busy ? <><Spinner className="mr-2 size-4" /> Waiting for wallet…</> : 'Mint Tokens →'}
             </Button>
           </CardContent>
@@ -244,7 +283,7 @@ export function TokenLaunchPage() {
       )}
 
       {/* ── Done ── */}
-      {step === 'done' && (
+      {done && (
         <Card className="border-emerald-500/20 bg-emerald-500/5">
           <CardContent className="flex flex-col items-center gap-4 py-8 text-center">
             <CheckCircle2 className="size-12 text-emerald-500" />
