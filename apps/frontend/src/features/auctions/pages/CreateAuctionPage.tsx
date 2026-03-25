@@ -6,7 +6,7 @@ import { getAleoClient }         from '@fairdrop/sdk/client';
 import { AuctionType }           from '@fairdrop/types/domain';
 import { config }                from '@/env';
 import { parseExecutionError }   from '@/shared/utils/errors';
-import { useProtocolConfig }     from '../hooks/useProtocolConfig';
+import { useProtocolConfig }     from '../../../shared/hooks/useProtocolConfig';
 import { TypeStep }              from '../wizard-steps/TypeStep';
 import { TokenStep }             from '../wizard-steps/TokenStep';
 import { PricingStep }           from '../wizard-steps/PricingStep';

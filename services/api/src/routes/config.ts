@@ -12,6 +12,7 @@
 import { Hono } from 'hono';
 import type { Db } from '@fairdrop/database';
 import type { ProtocolConfig } from '@fairdrop/types/domain';
+import { DEFAULT_ACCOUNTS } from '@fairdrop/config';
 import { getProtocolConfig } from '../queries/config.js';
 import { getCachedConfig, setCachedConfig } from '../lib/config-cache.js';
 import { json } from '../lib/respond.js';
@@ -28,7 +29,7 @@ const CONTRACT_DEFAULTS: ProtocolConfig = {
   referralPoolBps:    500,
   minAuctionDuration: 360,
   paused:             false,
-  protocolAdmin:      '',       // unknown until admin sets it on-chain
+  protocolAdmin:      DEFAULT_ACCOUNTS.defaultAdminAddress, 
   updatedAt:          new Date(0).toISOString(),
 };
 

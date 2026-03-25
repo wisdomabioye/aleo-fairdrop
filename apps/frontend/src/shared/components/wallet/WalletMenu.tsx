@@ -6,10 +6,12 @@ import {
   Gavel,
   ClipboardList,
   PackageCheck,
+  LockIcon,
   LogOut,
   type LucideIcon,
 } from "lucide-react";
 import { truncateAddress } from "@fairdrop/sdk/format";
+import { useProtocolConfig } from '@/shared/hooks/useProtocolConfig';
 import { AppRoutes } from "@/config";
 
 interface WalletMenuProps {
@@ -46,6 +48,7 @@ function MenuItem({
 export function WalletMenu({ address, walletName, walletIcon, onDisconnect }: WalletMenuProps) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const { data: pc }  = useProtocolConfig();
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -120,6 +123,12 @@ export function WalletMenu({ address, walletName, walletIcon, onDisconnect }: Wa
             <MenuItem icon={Gavel} label="My Auctions" onClick={() => go(AppRoutes.myAuctions)} />
             <MenuItem icon={ClipboardList} label="My Bids" onClick={() => go(AppRoutes.myBids)} />
             <MenuItem icon={PackageCheck} label="Claim" onClick={() => go(AppRoutes.claim)} />
+            {/* Admin Area */}
+            {
+              pc && pc.protocolAdmin === address && (
+                <MenuItem icon={LockIcon} label="Admin" onClick={() => go(AppRoutes.admin)} />
+              ) 
+            }
           </div>
 
           {/* Disconnect */}

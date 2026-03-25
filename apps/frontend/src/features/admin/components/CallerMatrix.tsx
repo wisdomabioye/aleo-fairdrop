@@ -3,7 +3,7 @@ import { useWallet }          from '@provablehq/aleo-wallet-adaptor-react';
 import { Button, Spinner, Input, Label } from '@/components';
 import { getAleoClient }      from '@fairdrop/sdk/client';
 import { AuctionType }        from '@fairdrop/types/domain';
-import { config }             from '@/env';
+import { config, TX_DEFAULT_FEE }             from '@/env';
 import { parseExecutionError } from '@/shared/utils/errors';
 import { useTransactionStore } from '@/stores/transaction.store';
 
@@ -79,7 +79,8 @@ function AuctionAuthRow({ row, onUpdate }: AuctionAuthRowProps) {
       program:  utilityProgramId,
       function: 'set_allowed_caller',
       inputs:   [row.programAddress, 'true'],
-      fee:      0.05,
+      fee:      TX_DEFAULT_FEE,
+      privateFee: false
     });
     if (result?.transactionId) {
       setTx(result.transactionId, `Authorize ${row.label} on ${utilityKey}`);
@@ -168,10 +169,12 @@ export function CallerMatrix() {
   const loadRows = useCallback(async () => {
     setLoading(true);
     const loaded = await Promise.all(
-      KNOWN_AUCTIONS.map(async (a) => ({
+      KNOWN_AUCTIONS
+      .filter(p => !!p.programAddress)
+      .map(async (a) => ({
         label:          a.label,
-        programAddress: a.programAddress,
-        status:         await loadRowStatus(a.programAddress),
+        programAddress: a.programAddress as string,
+        status:         await loadRowStatus(a.programAddress as string),
       })),
     );
     setRows(loaded);
@@ -206,7 +209,8 @@ export function CallerMatrix() {
           program:  u.programId,
           function: 'set_allowed_caller',
           inputs:   [addr, 'true'],
-          fee:      0.05,
+          fee:      TX_DEFAULT_FEE,
+          privateFee: false
         });
         if (result?.transactionId) setTx(result.transactionId, `Authorize custom on ${u.label}`);
       }

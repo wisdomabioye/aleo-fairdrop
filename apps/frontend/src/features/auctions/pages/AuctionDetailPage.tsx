@@ -11,7 +11,7 @@ import { useBlockHeight } from '@/shared/hooks/useBlockHeight';
 import { useIndexerStatus } from '@/shared/hooks/useIndexerStatus';
 import { useAuction } from '../hooks/useAuction';
 import { useCurrentPrice } from '../hooks/useCurrentPrice';
-import { useProtocolConfig } from '../hooks/useProtocolConfig';
+import { useProtocolConfig } from '../../../shared/hooks/useProtocolConfig';
 import { AuctionHeader } from '../components/AuctionHeader';
 import { ActionsPanel } from '../components/ActionsPanel';
 import { AuctionInfoTab } from '../components/AuctionInfoTab';

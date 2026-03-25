@@ -2,7 +2,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components';
 import { formatMicrocredits }       from '@fairdrop/sdk/credits';
 import { AuctionStatus }            from '@fairdrop/types/domain';
 import { useAuctions }              from '../../auctions/hooks/useAuctions';
-import { useProtocolConfig }        from '../../auctions/hooks/useProtocolConfig';
+import { useProtocolConfig }        from '../../../shared/hooks/useProtocolConfig';
 import { CloseAuctionsTab }         from '../components/CloseAuctionsTab';
 import { SlashBidsTab }             from '../components/SlashBidsTab';
 import { ReferralCommissionsTab }   from '../components/ReferralCommissionsTab';

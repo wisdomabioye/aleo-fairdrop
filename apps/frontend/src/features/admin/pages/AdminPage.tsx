@@ -7,7 +7,7 @@ import { config }                 from '@/env';
 import { AppRoutes }                 from '@/config';
 import { parseExecutionError }    from '@/shared/utils/errors';
 import { useTransactionStore }    from '@/stores/transaction.store';
-import { useProtocolConfig }      from '../../auctions/hooks/useProtocolConfig';
+import { useProtocolConfig }      from '@/shared/hooks/useProtocolConfig';
 import { ConfigParamRow }         from '../components/ConfigParamRow';
 import { PauseToggle }            from '../components/PauseToggle';
 import { AdminTransfer }          from '../components/AdminTransfer';

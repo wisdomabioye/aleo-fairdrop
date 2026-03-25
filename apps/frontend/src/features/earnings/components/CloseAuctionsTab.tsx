@@ -7,7 +7,7 @@ import type { AuctionListItem, AuctionView } from '@fairdrop/types/domain';
 import { parseExecutionError } from '@/shared/utils/errors';
 import { useTransactionStore } from '@/stores/transaction.store';
 import { useAuctions }         from '../../auctions/hooks/useAuctions';
-import { useProtocolConfig }   from '../../auctions/hooks/useProtocolConfig';
+import { useProtocolConfig }   from '../../../shared/hooks/useProtocolConfig';
 import { auctionsService }     from '@/services/auctions.service';
 import { AUCTION_REGISTRY }    from '../../auctions/registry';
 

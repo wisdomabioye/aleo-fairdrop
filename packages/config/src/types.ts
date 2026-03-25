@@ -2,7 +2,7 @@ export type Network = 'testnet' | 'mainnet';
 
 export interface ProgramEntry {
   programId:      string;
-  programAddress: string;  // aleo1... address derived from programId — fill in programs.json
+  programAddress: string | null;  // aleo1... address derived from programId — fill in programs.json
   salt?:          string;  // present for auction programs; absent for utilities
 }
 
@@ -21,6 +21,7 @@ export interface Programs {
 }
 
 export interface Accounts {
+  defaultAdminAddress: string;
   protocolTreasury: string;
   feeCollector:     string;
   opsMultisig:      string;

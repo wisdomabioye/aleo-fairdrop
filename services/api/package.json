@@ -16,6 +16,7 @@
     "@fairdrop/database": "workspace:*",
     "@fairdrop/sdk": "workspace:*",
     "@fairdrop/types": "workspace:*",
+    "@fairdrop/config": "workspace:*",
     "@hono/node-server": "^1.13.8",
     "dotenv": "^17.3.1",
     "hono": "^4.7.10"

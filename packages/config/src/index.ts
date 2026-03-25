@@ -1,3 +1,3 @@
 export { defineConfig } from './defineConfig';
-export { PROGRAMS } from './programs';
+export { PROGRAMS, DEFAULT_ACCOUNTS } from './programs';
 export type { FairdropConfig, ConfigEnv, Network, Programs, Accounts, ProgramEntry } from './types';

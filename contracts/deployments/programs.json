@@ -1,6 +1,12 @@
 {
   "schemaVersion": 1,
   "$comment": "Single source of truth for all program IDs, program addresses, and deployment salts. Network-specific data lives in testnet/network.json and mainnet/network.json. Validated against contracts/*/program.json by scripts/validate-programs.ts. programAddress is the aleo1... address derived from programId — fill in after deployment.",
+  "accounts": {
+    "defaultAdminAddress": "aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r",
+    "protocolTreasury": "aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r",
+    "feeCollector": "aleo1sn8ns4htf8ryj0dergclrg82fuuztzr67fqc3sakrktcxzc3dqxqm6utkv",
+    "opsMultisig": ""
+  },
   "programs": {
     "dutch": {
       "programId":      "fairdrop_dutch_v1.aleo",
@@ -28,13 +34,13 @@
     },
     "lbp": {
       "programId":      "fairdrop_lbp_v1.aleo",
-      "programAddress": "TODO:aleo1_lbp_address",
+      "programAddress": null,
       "contractPath":   "contracts/auctions/lbp",
       "salt":           "5field"
     },
     "quadratic": {
       "programId":      "fairdrop_quadratic_v1.aleo",
-      "programAddress": "TODO:aleo1_quadratic_address",
+      "programAddress": null,
       "contractPath":   "contracts/auctions/quadratic",
       "salt":           "6field"
     },

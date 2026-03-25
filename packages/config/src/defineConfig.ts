@@ -1,17 +1,10 @@
-import testnetNetwork from '../../../contracts/deployments/testnet/network.json';
-import mainnetNetwork from '../../../contracts/deployments/mainnet/network.json';
-import { PROGRAMS } from './programs';
+import { PROGRAMS, DEFAULT_ACCOUNTS } from './programs';
 import type { ConfigEnv, FairdropConfig, Network } from './types';
 
 const EXPLORER_URLS: Record<Network, string> = {
   testnet: 'https://testnet.explorer.provable.com/transaction',
   mainnet: 'https://explorer.provable.com/transaction',
 };
-
-const NETWORK_DATA = {
-  testnet: testnetNetwork,
-  mainnet: mainnetNetwork,
-} as const;
 
 function requireEnv(name: string, value: string | undefined): string {
   if (!value || value.trim() === '') {
@@ -59,13 +52,11 @@ export function defineConfig(env: ConfigEnv): FairdropConfig {
   const network = requireNetwork(env.network);
   const rpcUrl  = requireEnv('rpcUrl', env.rpcUrl);
 
-  const networkData = NETWORK_DATA[network];
-
   return {
     network,
     rpcUrl,
     explorerUrl: EXPLORER_URLS[network],
     programs:    PROGRAMS,
-    accounts:    networkData.accounts,
+    accounts:    DEFAULT_ACCOUNTS,
   };
 }
