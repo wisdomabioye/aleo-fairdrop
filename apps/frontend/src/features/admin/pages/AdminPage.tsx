@@ -3,7 +3,7 @@ import { useNavigate }            from 'react-router-dom';
 import { useWallet }              from '@provablehq/aleo-wallet-adaptor-react';
 import { Spinner, Card, CardContent, CardHeader, CardTitle } from '@/components';
 import { ConnectWalletPrompt } from '@/shared/components/wallet/ConnectWalletPrompt';
-import { config }                 from '@/env';
+import { config, TX_DEFAULT_FEE }                 from '@/env';
 import { AppRoutes }                 from '@/config';
 import { parseExecutionError }    from '@/shared/utils/errors';
 import { useTransactionStore }    from '@/stores/transaction.store';
@@ -61,7 +61,8 @@ export function AdminPage() {
         program:  CFG_PROGRAM,
         function: fn,
         inputs:   [`${value}${type}`],
-        fee:      0.05,
+        fee:      TX_DEFAULT_FEE,
+        privateFee: false
       });
       if (result?.transactionId) setTx(result.transactionId, fn);
     } catch (err) {

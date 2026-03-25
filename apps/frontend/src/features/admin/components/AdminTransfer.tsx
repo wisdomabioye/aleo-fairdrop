@@ -1,7 +1,7 @@
 import { useState }           from 'react';
 import { useWallet }           from '@provablehq/aleo-wallet-adaptor-react';
 import { Button, Input, Label, Spinner } from '@/components';
-import { config }              from '@/env';
+import { config, TX_DEFAULT_FEE }              from '@/env';
 import { parseExecutionError } from '@/shared/utils/errors';
 import { useTransactionStore } from '@/stores/transaction.store';
 
@@ -36,7 +36,8 @@ export function AdminTransfer() {
         program:  CFG_PROGRAM,
         function: 'set_protocol_admin',
         inputs:   [newAdmin],
-        fee:      0.05,
+        fee:      TX_DEFAULT_FEE,
+        privateFee: false
       });
       if (result?.transactionId) setTx(result.transactionId, 'Transfer protocol admin');
       setDone(true);

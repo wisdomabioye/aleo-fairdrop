@@ -1,7 +1,7 @@
-import { useState }               from 'react';
+import { useState }                from 'react';
 import { useWallet }               from '@provablehq/aleo-wallet-adaptor-react';
 import { Button, Spinner, Badge }  from '@/components';
-import { config }                  from '@/env';
+import { config, TX_DEFAULT_FEE }  from '@/env';
 import { parseExecutionError }     from '@/shared/utils/errors';
 import { useTransactionStore }     from '@/stores/transaction.store';
 
@@ -26,7 +26,8 @@ export function PauseToggle({ paused }: PauseToggleProps) {
         program:  CFG_PROGRAM,
         function: 'set_paused',
         inputs:   [String(next)],
-        fee:      0.05,
+        fee:     TX_DEFAULT_FEE,
+        privateFee: false
       });
       if (result?.transactionId) setTx(result.transactionId, next ? 'Pause protocol' : 'Resume protocol');
     } catch (err) {
