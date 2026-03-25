@@ -10,6 +10,7 @@ import { AuctionType }         from '@fairdrop/types/domain';
 import type { ProtocolConfig } from '@fairdrop/types/domain';
 import type { FairdropConfig } from '@fairdrop/config';
 import {
+  aleou128,
   parseTokenAmount,
   u128, u64, u32, u16, u8,
   toField, leoStruct,
@@ -28,10 +29,6 @@ import { TX_DEFAULT_FEE } from '@/env';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
-/** Convert an ALEO human-unit string to a u128 Leo literal in microcredits. */
-function aleou128(v: string): string {
-  return u128(parseTokenAmount(v || '0', 6));
-}
 
 function buildGate(form: WizardForm): string {
   return leoStruct({
@@ -64,10 +61,10 @@ function commonInputs(form: WizardForm, nonce: bigint): string[] {
   return [
     toField(form.saleTokenId),
     u128(form.supply),
-    u32(form.startBlock || '0'),
-    u32(form.endBlock   || '0'),
-    aleou128(form.maxBidAmount),
-    aleou128(form.minBidAmount),
+    u32(form.startBlock),
+    u32(form.endBlock),
+    u128(parseTokenAmount(form.maxBidAmount, form.tokenDecimals)),
+    u128(parseTokenAmount(form.minBidAmount, form.tokenDecimals)),
     u128(form.saleScale),
     u64(nonce),
     toField(form.metadataHash),
@@ -80,7 +77,6 @@ export interface CreateAuctionTx {
   program:  string;
   function: 'create_auction';
   inputs:   (string | Record<string, unknown>)[];
-  /** ALEO units (not microcredits) — passed directly to executeTransaction.fee */
   fee:      number;
 }
 

@@ -76,7 +76,7 @@ export function parseTokenInfo(raw: string): TokenInfo {
     totalSupply:           BigInt(stripSuffix(stripVisibility(p['supply']     ?? '0'))),
     maxSupply:             BigInt(stripSuffix(stripVisibility(p['max_supply'] ?? '0'))),
     admin:                 parseAddress(p['admin'] ?? ''),
-    externalAuthorization: parseBool(p['external_authorization_required'] ?? 'false'),
+    externalAuthorizationRequired: parseBool(p['external_authorization_required'] ?? 'false'),
   };
 }
 

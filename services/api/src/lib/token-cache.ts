@@ -7,7 +7,7 @@
  * The decodeTokenString helper is also exported for use in routes/tokens.ts
  * so the logic stays in one place.
  */
-import { parseStruct, parseU8 } from '@fairdrop/sdk/parse';
+import { parseTokenInfo } from '@fairdrop/sdk/parse';
 
 export interface TokenInfo {
   symbol:   string;
@@ -20,7 +20,7 @@ interface CacheEntry {
 }
 
 const cache  = new Map<string, CacheEntry>();
-const TOKEN_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const TOKEN_TTL_MS = 500000 * 60 * 1000; // token details live forever
 
 /**
  * Decode a u128 field that encodes an ASCII/UTF-8 string.
@@ -39,15 +39,12 @@ export function decodeTokenString(raw: string): string {
 
 async function fetchTokenInfo(rpcUrl: string, tokenId: string): Promise<TokenInfo | null> {
   try {
-    const url = `${rpcUrl}/program/token_registry.aleo/mapping/registered_tokens/${tokenId}field`;
+    const url = `${rpcUrl}/programs/program/token_registry.aleo/mapping/registered_tokens/${tokenId}`;
     const res = await fetch(url, { headers: { Accept: 'application/json' } });
     if (!res.ok) return null;
     const raw = (await res.json()) as string;
-    const f   = parseStruct(raw);
-    return {
-      symbol:   decodeTokenString(f['symbol']!),
-      decimals: parseU8(f['decimals']!),
-    };
+    const tokenData   = parseTokenInfo(raw);
+    return tokenData;
   } catch {
     return null;
   }
@@ -59,8 +56,8 @@ export async function getTokenInfo(
 ): Promise<TokenInfo | null> {
   const now = Date.now();
   const hit = cache.get(tokenId);
+  
   if (hit && hit.expiry > now) return hit.data;
-
   const data = await fetchTokenInfo(rpcUrl, tokenId);
   cache.set(tokenId, { data, expiry: now + TOKEN_TTL_MS });
   return data;

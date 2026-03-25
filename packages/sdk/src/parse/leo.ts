@@ -9,12 +9,14 @@
  */
 
 /** Strip a Leo numeric/field type suffix and return the bare value string. */
-export function stripSuffix(raw: string): string {
+export function stripSuffix(raw: string | null | undefined): string {
+  if (raw == null) return '';
   return raw.trim().replace(/(?:u\d+|i\d+|field|group|bool|scalar)$/, '').trim();
 }
 
 /** Strip the .private / .public visibility suffix from a Leo record field value. */
-export function stripVisibility(value: string): string {
+export function stripVisibility(value: string | null | undefined): string {
+  if (value == null) return '';
   return value.replace(/\.(private|public)$/, '');
 }
 
@@ -37,10 +39,7 @@ export function parsePlaintext(text: string): Record<string, string> {
 }
 
 export function parseBool(raw: string): boolean {
-  const v = stripVisibility(raw).trim();
-  if (v === 'true')  return true;
-  if (v === 'false') return false;
-  throw new Error(`[leo/parse] Cannot parse bool: "${raw}"`);
+  return stripVisibility(raw).trim() === 'true';
 }
 
 /** Parse u8 / u16 / u32 → number. Safe only when value ≤ Number.MAX_SAFE_INTEGER. */
@@ -100,6 +99,14 @@ export function parseField(raw: string): string {
  */
 export function isValidField(s: string): boolean {
   return /^\d+field$/.test(s.trim());
+}
+
+export function toLeoField(value: string): string {
+  if (isValidField(value)) {
+    return value;
+  }
+
+  return `${value}field`
 }
 
 /**

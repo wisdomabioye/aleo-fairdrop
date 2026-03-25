@@ -12,7 +12,7 @@ export interface TokenInfo {
   totalSupply:  bigint;
   maxSupply:    bigint;
   admin:        string;  // address
-  externalAuthorization: boolean;
+  externalAuthorizationRequired: boolean;
 }
 
 /**

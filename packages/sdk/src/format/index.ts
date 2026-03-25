@@ -111,3 +111,8 @@ export function leoStruct(fields: Record<string, string>): string {
     .join(', ');
   return `{ ${body} }`;
 }
+
+/** Convert an ALEO human-unit string to a u128 Leo literal in microcredits. */
+export function aleou128(v: string): string {
+  return u128(parseTokenAmount(v || '0', 6));
+}

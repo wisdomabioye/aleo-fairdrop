@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { parsePlaintext, parseU128, u128ToBigInt, parseU32, parseField, parseBool } from '@fairdrop/sdk/parse';
+import { parsePlaintext, parseU128, u128ToBigInt, parseU32, parseBool, stripVisibility } from '@fairdrop/sdk/parse';
 import { SYSTEM_PROGRAMS } from '@fairdrop/sdk/constants';
 import type { WalletTokenRecord } from '@fairdrop/types/primitives';
 import { useWalletRecords } from './useWalletRecords';
@@ -21,7 +21,7 @@ export function useTokenRecords(opts: Options = {}) {
         const fields = parsePlaintext(entry.recordPlaintext);
         result.push({
           id:                              entry.commitment,
-          token_id:                        parseField(fields['token_id']  ?? ''),
+          token_id:                        stripVisibility(fields['token_id']), // preserve the 'field' suffix
           amount:                          u128ToBigInt(parseU128(fields['amount'] ?? '0u128')),
           external_authorization_required: parseBool(fields['external_authorization_required'] ?? 'false'),
           authorized_until:                parseU32(fields['authorized_until'] ?? '0u32'),

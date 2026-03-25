@@ -43,7 +43,6 @@ function BlockInput({
 export function TimingStep({ form, onChange, protocolConfig }: TimingStepProps) {
   const { data: currentBlock = 0 } = useBlockHeight();
   const minDuration = protocolConfig.minAuctionDuration;
-
   // Set sensible defaults once block height is known
   useEffect(() => {
     if (form.startBlock || currentBlock === 0) return;
@@ -120,7 +119,7 @@ export function TimingStep({ form, onChange, protocolConfig }: TimingStepProps) 
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label>Min bid amount (ALEO, 0 = none)</Label>
+          <Label>Min bid amount ({form.tokenSymbol}, 0 = none)</Label>
           <Input
             inputMode="decimal"
             value={form.minBidAmount}
@@ -129,7 +128,7 @@ export function TimingStep({ form, onChange, protocolConfig }: TimingStepProps) 
           />
         </div>
         <div className="space-y-1.5">
-          <Label>Max bid amount (ALEO, 0 = no cap)</Label>
+          <Label>Max bid amount ({form.tokenSymbol}, 0 = no cap)</Label>
           <Input
             inputMode="decimal"
             value={form.maxBidAmount}
