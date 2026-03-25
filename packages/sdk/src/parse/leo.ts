@@ -37,7 +37,7 @@ export function parsePlaintext(text: string): Record<string, string> {
 }
 
 export function parseBool(raw: string): boolean {
-  const v = raw.trim();
+  const v = stripVisibility(raw).trim();
   if (v === 'true')  return true;
   if (v === 'false') return false;
   throw new Error(`[leo/parse] Cannot parse bool: "${raw}"`);
@@ -45,15 +45,15 @@ export function parseBool(raw: string): boolean {
 
 /** Parse u8 / u16 / u32 → number. Safe only when value ≤ Number.MAX_SAFE_INTEGER. */
 export function parseU8(raw: string): number {
-  return parseInt(stripSuffix(raw), 10);
+  return parseInt(stripSuffix(stripVisibility(raw)), 10);
 }
 
 export function parseU16(raw: string): number {
-  return parseInt(stripSuffix(raw), 10);
+  return parseInt(stripSuffix(stripVisibility(raw)), 10);
 }
 
 export function parseU32(raw: string): number {
-  return parseInt(stripSuffix(raw), 10);
+  return parseInt(stripSuffix(stripVisibility(raw)), 10);
 }
 
 /**
@@ -62,7 +62,7 @@ export function parseU32(raw: string): number {
  * Number.MAX_SAFE_INTEGER (2^53-1) so number is not safe. bigint handles the full range.
  */
 export function parseU64(raw: string): bigint {
-  return BigInt(stripSuffix(raw));
+  return BigInt(stripSuffix(stripVisibility(raw)));
 }
 
 /**
@@ -71,7 +71,7 @@ export function parseU64(raw: string): bigint {
  * Use u128ToBigInt() when you need to perform arithmetic or comparisons.
  */
 export function parseU128(raw: string): string {
-  return stripSuffix(raw);
+  return stripSuffix(stripVisibility(raw));
 }
 
 /**
@@ -84,12 +84,12 @@ export function u128ToBigInt(s: string): bigint {
 
 /** Return address as-is (aleo1...). */
 export function parseAddress(raw: string): string {
-  return raw.trim();
+  return stripVisibility(raw).trim();
 }
 
 /** Return field value with type suffix stripped. */
 export function parseField(raw: string): string {
-  return stripSuffix(raw);
+  return stripSuffix(stripVisibility(raw));
 }
 
 /**

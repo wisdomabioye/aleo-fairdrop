@@ -17,7 +17,7 @@ export interface WizardForm {
   auctionType: AuctionType | null;
 
   // Step 2 — token record + metadata from registry
-  tokenRecord:   Record<string, unknown> | null; // opaque wallet record
+  tokenRecord:   string | null; // record plaintext — passed directly to executeTransaction
   saleTokenId:   string;  // e.g. "1234...field"
   supply:        string;  // u128 decimal string from record.amount
   saleScale:     string;  // u128 decimal string (10^decimals)

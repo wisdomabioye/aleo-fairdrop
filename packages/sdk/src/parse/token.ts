@@ -9,7 +9,7 @@
  */
 
 import type { TokenInfo } from '@fairdrop/types/domain';
-import { parseStruct, parseField, parseAddress, parseU8, parseU32, parseBool, stripSuffix } from './leo';
+import { parseStruct, parseField, parseAddress, parseU8, parseU32, parseBool, stripSuffix, stripVisibility } from './leo';
 
 // ── ASCII / u128 codec ────────────────────────────────────────────────────────
 
@@ -65,16 +65,16 @@ export function u128ToAscii(value: bigint): string {
 export function parseTokenInfo(raw: string): TokenInfo {
   const p = parseStruct(raw);
 
-  const nameRaw   = BigInt(stripSuffix(p['name']   ?? '0'));
-  const symbolRaw = BigInt(stripSuffix(p['symbol'] ?? '0'));
+  const nameRaw   = BigInt(stripSuffix(stripVisibility(p['name']   ?? '0')));
+  const symbolRaw = BigInt(stripSuffix(stripVisibility(p['symbol'] ?? '0')));
 
   return {
     tokenId:               parseField(p['token_id'] ?? ''),
     name:                  u128ToAscii(nameRaw),
     symbol:                u128ToAscii(symbolRaw),
     decimals:              parseU8(p['decimals'] ?? '0u8'),
-    totalSupply:           BigInt(stripSuffix(p['supply'] ?? '0')),
-    maxSupply:             BigInt(stripSuffix(p['max_supply'] ?? '0')),
+    totalSupply:           BigInt(stripSuffix(stripVisibility(p['supply']     ?? '0'))),
+    maxSupply:             BigInt(stripSuffix(stripVisibility(p['max_supply'] ?? '0'))),
     admin:                 parseAddress(p['admin'] ?? ''),
     externalAuthorization: parseBool(p['external_authorization_required'] ?? 'false'),
   };
@@ -96,7 +96,7 @@ export function parseRawTokenBalance(raw: string): RawTokenBalance {
   return {
     tokenId:         parseField(p['token_id'] ?? ''),
     account:         parseAddress(p['account'] ?? ''),
-    amount:          BigInt(stripSuffix(p['balance'] ?? '0')),
+    amount:          BigInt(stripSuffix(stripVisibility(p['balance'] ?? '0'))),
     authorizedUntil: parseU32(p['authorized_until'] ?? '0u32'),
   };
 }
