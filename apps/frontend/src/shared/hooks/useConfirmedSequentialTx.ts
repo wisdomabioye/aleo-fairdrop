@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTransactionTracker, type TrackedTx } from '@/providers/transaction-tracker';
 
 export interface SequentialStep {
@@ -24,6 +24,8 @@ export interface UseConfirmedSequentialTxResult {
   error: Error | null;
   /** The TrackedTx entry for the currently in-flight step, if any. */
   currentTx: TrackedTx | undefined;
+  /** Internal IDs of every tracker entry created by this wizard instance. */
+  trackedIds: string[];
   /**
    * Trigger the current step. Safe to call while busy or isWaiting — it
    * returns early. Call again after an error to retry the same step.
@@ -44,8 +46,13 @@ export function useConfirmedSequentialTx(
   const [busy,           setBusy]           = useState(false);
   const [error,          setError]          = useState<Error | null>(null);
   const [currentEntryId, setCurrentEntryId] = useState<string | null>(null);
+  const [trackedIds,     setTrackedIds]     = useState<string[]>([]);
 
-  // Derive current tx from the tracker's live list (no extra hook needed)
+  // Ref keeps steps fresh inside advance() without stale-closure issues
+  const stepsRef = useRef(steps);
+  stepsRef.current = steps;
+
+  // Derive current tx from the tracker's live list
   const currentTx = currentEntryId
     ? transactions.find((t) => t.id === currentEntryId)
     : undefined;
@@ -60,15 +67,12 @@ export function useConfirmedSequentialTx(
 
     if (currentTx.status === 'confirmed') {
       setCurrentEntryId(null);
-      if (currentStep + 1 >= steps.length) {
+      if (currentStep + 1 >= stepsRef.current.length) {
         setDone(true);
       } else {
         setCurrentStep((s) => s + 1);
       }
-    } else if (
-      currentTx.status === 'failed' ||
-      currentTx.status === 'rejected'
-    ) {
+    } else if (currentTx.status === 'failed' || currentTx.status === 'rejected') {
       setCurrentEntryId(null);
       setError(new Error(`"${currentTx.label}" transaction failed on-chain`));
     }
@@ -76,23 +80,21 @@ export function useConfirmedSequentialTx(
   }, [currentTx?.status]);
 
   async function advance() {
-    // Guard: don't double-fire
-    if (done || busy || currentEntryId || currentStep >= steps.length) return;
+    if (done || busy || currentEntryId || currentStep >= stepsRef.current.length) return;
 
     setError(null);
     setBusy(true);
 
-    const step    = steps[currentStep]!;
+    const step    = stepsRef.current[currentStep]!;
     const entryId = startSigning(step.label);
     setCurrentEntryId(entryId);
+    setTrackedIds((prev) => [...prev, entryId]);
 
     try {
       const txId = await step.execute();
       if (txId) {
         confirmSigning(entryId, txId);
-        // isWaiting becomes true; useEffect above will advance on confirmation
       } else {
-        // executeTransaction resolved but returned no id — treat as failure
         failEntry(entryId);
         setCurrentEntryId(null);
         setError(new Error(`"${step.label}" returned no transaction ID`));
@@ -112,6 +114,7 @@ export function useConfirmedSequentialTx(
     setBusy(false);
     setError(null);
     setCurrentEntryId(null);
+    setTrackedIds([]);
   }
 
   return {
@@ -122,6 +125,7 @@ export function useConfirmedSequentialTx(
     isWaiting,
     error,
     currentTx,
+    trackedIds,
     advance,
     reset,
   };
