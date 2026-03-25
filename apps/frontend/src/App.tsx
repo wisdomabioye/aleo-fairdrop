@@ -21,7 +21,7 @@ import { ReferralPage }       from '@/features/referral/pages/ReferralPage';
 import { VestingPage }        from '@/features/vesting/pages/VestingPage';
 import { GatePage }           from '@/features/gate/pages/GatePage';
 import { ShieldPage }         from '@/features/shield/pages/ShieldPage';
-import { TokenLaunchPage }    from '@/features/token-launch/pages/TokenLaunchPage';
+import { TokenLaunchPage }    from '@/features/token-manager/pages/TokenLaunchPage';
 import { TokenManagerPage }   from '@/features/token-manager/pages/TokenManagerPage';
 import { AdminPage }          from '@/features/admin/pages/AdminPage';
 
