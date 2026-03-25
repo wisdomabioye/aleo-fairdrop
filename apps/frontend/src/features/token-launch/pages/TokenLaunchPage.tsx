@@ -202,7 +202,7 @@ export function TokenLaunchPage() {
               <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-sm">
                 <span className="font-medium text-primary">Preview: </span>
                 <span className="text-muted-foreground">
-                  {name} <code className="text-foreground">({symbol})</code> · {dec} decimals · max {maxSupply} tokens
+                  {name} <code className="text-foreground">({symbol})</code> · {dec} decimals · max {formatAmount(BigInt(maxSupply))} tokens
                 </span>
               </div>
             )}
