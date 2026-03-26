@@ -11,7 +11,7 @@ import {
   Separator,
   Skeleton,
 } from '@/components';
-import { AuctionStatus } from '@fairdrop/types/domain';
+import { AuctionStatus, AuctionType } from '@fairdrop/types/domain';
 import { AppRoutes } from '@/config';
 import { useBlockHeight } from '@/shared/hooks/useBlockHeight';
 import { useIndexerStatus } from '@/shared/hooks/useIndexerStatus';
@@ -99,6 +99,7 @@ function AuctionDetailContent({ id }: { id: string }) {
     auction.status === AuctionStatus.Active || auction.status === AuctionStatus.Clearing;
 
   const hasOverviewIntro = Boolean(ProgressPanel);
+  const showPricePanel = PricePanel && auction.type !== AuctionType.Dutch;
 
   return (
     <div className="space-y-4 p-4 sm:p-5 lg:p-6">
@@ -157,11 +158,13 @@ function AuctionDetailContent({ id }: { id: string }) {
         <div className="space-y-4 xl:sticky xl:top-4 xl:self-start">
           <Card className="border-sky-500/10 bg-gradient-surface shadow-xs ring-1 ring-white/5">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold">Market & Bid</CardTitle>
+              <CardTitle className="text-sm font-semibold">
+                {auction.type === AuctionType.Dutch ? 'Place Bid' : 'Market & Bid'}
+              </CardTitle>
             </CardHeader>
 
-            <CardContent className="space-y-4">
-              {PricePanel ? (
+            <CardContent className="space-y-3">
+              {showPricePanel ? (
                 <PricePanel
                   auction={auction}
                   blockHeight={blockHeight ?? 0}
@@ -171,24 +174,15 @@ function AuctionDetailContent({ id }: { id: string }) {
 
               {BidForm && protocolConfig ? (
                 <>
-                  {PricePanel ? <Separator /> : null}
+                  {showPricePanel ? <Separator /> : null}
 
                   {isActive ? (
-                    <div className="space-y-3">
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium text-foreground">Place a bid</p>
-                        <p className="text-xs text-muted-foreground">
-                          Submit from your connected wallet.
-                        </p>
-                      </div>
-
-                      <BidForm
-                        auction={auction}
-                        blockHeight={blockHeight ?? 0}
-                        protocolConfig={protocolConfig}
-                        lagBlocks={lagBlocks}
-                      />
-                    </div>
+                    <BidForm
+                      auction={auction}
+                      blockHeight={blockHeight ?? 0}
+                      protocolConfig={protocolConfig}
+                      lagBlocks={lagBlocks}
+                    />
                   ) : (
                     <div className="rounded-lg border border-border/70 bg-background/70 px-3 py-2 text-xs text-muted-foreground">
                       Bidding is currently unavailable for this auction.
