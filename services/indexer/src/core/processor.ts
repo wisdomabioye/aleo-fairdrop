@@ -126,7 +126,6 @@ export class BlockProcessor {
     }
 
     const auctionId = entry.getAuctionId(transition, finalizeOps);
-  
     if (!auctionId) {
       log.warn(`${programId}::${fnName} — could not resolve auction_id`, { txId, blockHeight });
     } else {
