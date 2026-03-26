@@ -1,33 +1,5 @@
-import { CheckCircle2, ChevronRight } from 'lucide-react';
-
-interface StepDotProps {
-  n: number;
-  label: string;
-  current: number;
-  done: boolean;
-  total: number;
-}
-
-function StepDot({ n, label, current, done, total }: StepDotProps) {
-  const active = n === current;
-  const past   = done || n < current;
-
-  return (
-    <div className="flex items-center gap-2">
-      <div className="flex items-center gap-1.5">
-        <div className={`flex size-7 items-center justify-center rounded-full text-xs font-semibold transition-colors
-          ${past ? 'bg-emerald-500 text-white' : active ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
-          {past && !active ? <CheckCircle2 className="size-4" /> : n}
-        </div>
-        <span className={`text-xs font-medium hidden sm:block transition-colors
-          ${active ? 'text-foreground' : past ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`}>
-          {label}
-        </span>
-      </div>
-      {n < total && <ChevronRight className="size-4 text-muted-foreground" />}
-    </div>
-  );
-}
+import { Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface StepIndicatorProps {
   steps: string[];
@@ -38,17 +10,45 @@ interface StepIndicatorProps {
 
 export function StepIndicator({ steps, currentStep, done }: StepIndicatorProps) {
   return (
-    <div className="flex items-center justify-center gap-1 py-2">
-      {steps.map((label, i) => (
-        <StepDot
-          key={i}
-          n={i + 1}
-          label={label}
-          current={done ? steps.length + 1 : currentStep + 1}
-          done={done}
-          total={steps.length}
-        />
-      ))}
+    <div className="overflow-x-auto">
+      <ol className="flex min-w-max items-center gap-2 py-1">
+        {steps.map((label, i) => {
+          const isComplete = done || i < currentStep;
+          const isActive = !done && i === currentStep;
+          const isUpcoming = !isComplete && !isActive;
+
+          return (
+            <li key={label} className="flex items-center gap-2">
+              <div
+                aria-current={isActive ? 'step' : undefined}
+                className={cn(
+                  'inline-flex h-9 items-center gap-2 rounded-full border px-2.5 text-xs font-medium shadow-xs transition-[border-color,background-color,color]',
+                  isComplete && 'border-emerald-500/18 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+                  isActive && 'border-sky-500/18 bg-sky-500/10 text-sky-700 dark:text-sky-300',
+                  isUpcoming && 'border-border bg-background text-muted-foreground'
+                )}
+              >
+                <span
+                  className={cn(
+                    'flex size-5 items-center justify-center rounded-full text-[11px] font-semibold',
+                    isComplete && 'bg-emerald-500 text-white',
+                    isActive && 'bg-sky-500 text-white',
+                    isUpcoming && 'bg-muted text-muted-foreground'
+                  )}
+                >
+                  {isComplete ? <Check className="size-3.5" /> : i + 1}
+                </span>
+
+                <span className="max-w-[8rem] truncate">{label}</span>
+              </div>
+
+              {i < steps.length - 1 ? (
+                <span className="h-px w-4 rounded-full bg-border" aria-hidden="true" />
+              ) : null}
+            </li>
+          );
+        })}
+      </ol>
     </div>
   );
 }
