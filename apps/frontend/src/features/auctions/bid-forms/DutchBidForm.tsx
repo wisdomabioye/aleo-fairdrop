@@ -2,7 +2,17 @@ import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Eye, Shield } from 'lucide-react';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
-import { Button, Input, Label, Spinner } from '@/components';
+import {
+  Button,
+  Input,
+  Label,
+  Spinner,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components';
 import { AppRoutes } from '@/config';
 import { TX_DEFAULT_FEE } from '@/env';
 import { formatMicrocredits } from '@fairdrop/sdk/credits';
@@ -169,6 +179,7 @@ export function DutchBidForm({ auction, protocolConfig }: BidFormProps) {
           inputMode="decimal"
           placeholder="0"
           value={qtyInput}
+          className="h-8 text-xs"
           onBlur={() => setQtyTouched(true)}
           onChange={(e) => {
             if (!qtyTouched) setQtyTouched(true);
@@ -189,35 +200,44 @@ export function DutchBidForm({ auction, protocolConfig }: BidFormProps) {
       </div>
 
       {mode === 'private' && (
-        <div className="space-y-1.5">
-          <Label htmlFor="dutch-record">Payment source</Label>
+        <div className="flex flex-col gap-1">
+          <Label className="text-xs text-muted-foreground">Payment source</Label>
 
           {unspentRecords.length > 0 ? (
             <>
-              <select
-                id="dutch-record"
-                value={selectedRecordId}
-                onBlur={() => setRecordTouched(true)}
-                onChange={(e) => {
+              <Select
+                value={selectedRecordId || undefined}
+                onValueChange={(value) => {
                   if (!recordTouched) setRecordTouched(true);
-                  setSelectedRecordId(e.target.value);
+                  setSelectedRecordId(value);
                 }}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                aria-invalid={!!recordError}
               >
-                <option value="">
-                  {creditsLoading ? 'Loading records…' : 'Select record'}
-                </option>
-                {unspentRecords.map((record, index) => (
-                  <option key={record.id} value={record.id}>
-                    Record {index + 1} • {formatMicrocredits(record.microcredits)} ALEO
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="h-8 w-full text-xs">
+                  <SelectValue
+                    placeholder={creditsLoading ? 'Loading records…' : 'Select record'}
+                  />
+                </SelectTrigger>
+
+                <SelectContent>
+                  {unspentRecords.map((record, index) => (
+                    <SelectItem
+                      key={record.id}
+                      value={record.id}
+                      className="text-xs"
+                    >
+                      {`Record ${index + 1} • ${formatMicrocredits(record.microcredits)} ALEO`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
               {recordError ? (
                 <p className="text-[11px] text-destructive">{recordError}</p>
-              ) : null}
+              ) : (
+                <p className="text-[11px] text-muted-foreground">
+                  Choose the shielded record used to fund this bid.
+                </p>
+              )}
             </>
           ) : (
             <div className="rounded-xl border border-border/70 bg-background/50 px-3 py-2.5 text-xs text-muted-foreground">
@@ -255,6 +275,7 @@ export function DutchBidForm({ auction, protocolConfig }: BidFormProps) {
             id="dutch-ref"
             placeholder="Optional"
             value={codeId}
+            className="h-8 text-xs"
             onChange={(e) => setCodeId(e.target.value)}
           />
         </div>
