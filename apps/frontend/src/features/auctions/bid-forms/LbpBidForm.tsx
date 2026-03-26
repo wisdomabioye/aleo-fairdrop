@@ -1,88 +1,100 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
-import { Button, Input, Label, Switch } from '@/components';
+import { Button, Input, Label, Spinner, Switch } from '@/components';
 import { formatMicrocredits, aleoToMicro } from '@fairdrop/sdk/credits';
-import { useTransactionStore } from '@/stores/transaction.store';
-import { parseExecutionError } from '@/shared/utils/errors';
+import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
 import { TX_DEFAULT_FEE } from '@/env';
 import type { BidFormProps } from './types';
 
 /** LBP bid: payment amount drives the bonding curve swap. */
-export function LbpBidForm({ auction, protocolConfig, lagBlocks }: BidFormProps) {
+export function LbpBidForm({ auction, protocolConfig }: BidFormProps) {
   const { connected, executeTransaction } = useWallet();
-  const { setTx } = useTransactionStore();
   const [searchParams] = useSearchParams();
 
-  const [payInput,   setPayInput]   = useState('');
+  const [payInput, setPayInput] = useState('');
   const [usePrivate, setUsePrivate] = useState(false);
-  const [codeId,     setCodeId]     = useState(searchParams.get('ref') ?? '');
-  const [txError,    setTxError]    = useState<string | null>(null);
-  const [loading,    setLoading]    = useState(false);
+  const [codeId, setCodeId] = useState(searchParams.get('ref') ?? '');
 
-  const payment     = aleoToMicro(payInput) ?? 0n;
+  const payment = aleoToMicro(payInput) ?? 0n;
   const protocolFee = payment * BigInt(protocolConfig.feeBps) / 10_000n;
 
-  const isDisabled = lagBlocks > 10 || !connected || loading || !payment;
+  const bidSteps = [
+    {
+      label: 'Place LBP Bid',
+      execute: async () => {
+        const hasRef = codeId.trim().length > 0;
+        const fn = hasRef
+          ? (usePrivate ? 'place_bid_private_ref' : 'place_bid_public_ref')
+          : (usePrivate ? 'place_bid_private' : 'place_bid_public');
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (isDisabled) return;
-    setTxError(null);
-    setLoading(true);
-    try {
-      const hasRef = codeId.trim().length > 0;
-      const fn = hasRef
-        ? (usePrivate ? 'place_bid_private_ref' : 'place_bid_public_ref')
-        : (usePrivate ? 'place_bid_private'     : 'place_bid_public');
+        const inputs: string[] = [
+          auction.id,
+          `${payment}u64`,
+          ...(hasRef ? [codeId.trim()] : []),
+        ];
 
-      const inputs: string[] = [
-        auction.id, `${payment}u64`,
-        ...(hasRef ? [`${codeId.trim()}`] : []),
-      ];
+        const result = await executeTransaction({
+          program: auction.programId,
+          function: fn,
+          inputs,
+          fee: TX_DEFAULT_FEE,
+          privateFee: false,
+        });
 
-      const result = await executeTransaction({
-        program: auction.programId, 
-        function: fn, 
-        inputs, 
-        fee: TX_DEFAULT_FEE,
-        privateFee: false
-      });
-      if (result?.transactionId) {
-        setTx(result.transactionId, 'Place bid');
-        setPayInput('');
-      }
-    } catch (err) {
-      setTxError(parseExecutionError(err instanceof Error ? err.message : String(err)));
-    } finally {
-      setLoading(false);
+        return result?.transactionId;
+      },
+    },
+  ];
+
+  const {
+    done: bidDone,
+    busy: bidBusy,
+    isWaiting: bidWaiting,
+    error: bidError,
+    advance: placeBid,
+  } = useConfirmedSequentialTx(bidSteps);
+
+  useEffect(() => {
+    if (bidDone) {
+      setPayInput('');
     }
-  }
+  }, [bidDone]);
+
+  const isDisabled = !connected || bidBusy || bidWaiting || !payment;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {lagBlocks > 10 && (
-        <p className="rounded-md bg-yellow-500/10 px-3 py-2 text-xs text-yellow-600 dark:text-yellow-400">
-          Indexer is {lagBlocks} blocks behind — bidding is temporarily disabled.
-        </p>
-      )}
+    <div className="space-y-4">
       <p className="text-xs text-muted-foreground">
         Price shifts dynamically with token weight. Earlier participation typically yields better prices.
       </p>
+
       <div className="space-y-1.5">
         <Label htmlFor="lbp-pay">Amount (ALEO)</Label>
-        <Input id="lbp-pay" inputMode="decimal" placeholder="0.0"
-          value={payInput} onChange={(e) => setPayInput(e.target.value)} />
+        <Input
+          id="lbp-pay"
+          inputMode="decimal"
+          placeholder="0.0"
+          value={payInput}
+          onChange={(e) => setPayInput(e.target.value)}
+        />
       </div>
+
       <div className="flex items-center justify-between">
         <span className="text-sm text-muted-foreground">Use private credits</span>
         <Switch checked={usePrivate} onCheckedChange={setUsePrivate} />
       </div>
+
       <div className="space-y-1.5">
         <Label htmlFor="lbp-ref">Referral code (optional)</Label>
-        <Input id="lbp-ref" placeholder="code_id field"
-          value={codeId} onChange={(e) => setCodeId(e.target.value)} />
+        <Input
+          id="lbp-ref"
+          placeholder="code_id field"
+          value={codeId}
+          onChange={(e) => setCodeId(e.target.value)}
+        />
       </div>
+
       {payment > 0n && (
         <div className="rounded-md border border-border bg-muted/40 p-3 text-xs space-y-1">
           <div className="flex justify-between">
@@ -90,15 +102,36 @@ export function LbpBidForm({ auction, protocolConfig, lagBlocks }: BidFormProps)
             <span>{formatMicrocredits(payment)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Protocol fee ({protocolConfig.feeBps / 100}%)</span>
+            <span className="text-muted-foreground">
+              Protocol fee ({protocolConfig.feeBps / 100}%)
+            </span>
             <span>−{formatMicrocredits(protocolFee)}</span>
           </div>
         </div>
       )}
-      {txError && <p className="text-xs text-destructive">{txError}</p>}
-      <Button type="submit" className="w-full" disabled={isDisabled}>
-        {loading ? 'Submitting…' : 'Swap'}
+
+      <Button
+        type="button"
+        className="w-full"
+        disabled={isDisabled}
+        onClick={() => void placeBid()}
+      >
+        {bidBusy ? (
+          <>
+            <Spinner className="mr-2 h-3 w-3" />
+            Authorizing…
+          </>
+        ) : bidWaiting ? (
+          <>
+            <Spinner className="mr-2 h-3 w-3" />
+            Confirming…
+          </>
+        ) : (
+          'Swap'
+        )}
       </Button>
-    </form>
+
+      {bidError && <p className="text-xs text-destructive">{bidError.message}</p>}
+    </div>
   );
 }

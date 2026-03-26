@@ -67,7 +67,7 @@ export function DutchBidForm({ auction, protocolConfig }: BidFormProps) {
   const isDisabled = !connected || bidBusy || bidWaiting || !qtyRaw || !currentPrice;
 
   return (
-    <form onSubmit={placeBid} className="space-y-4">
+    <div className="space-y-4">
       {/* Quantity */}
       <div className="space-y-1.5">
         <Label htmlFor="dutch-qty">
@@ -124,15 +124,19 @@ export function DutchBidForm({ auction, protocolConfig }: BidFormProps) {
         </div>
       )}
 
-      <Button type="submit" className="w-full" disabled={isDisabled}>
-        {
-          bidBusy ? 
-          <><Spinner className="mr-2 h-3 w-3" />Authorizing…</>
-          : bidWaiting ? <><Spinner className="mr-2 h-3 w-3" />Confirming…</>
-          : 'Place bid'
-        }
+      <Button
+        type="button"
+        className="w-full"
+        disabled={isDisabled}
+        onClick={() => void placeBid()}
+      >
+        {bidBusy
+          ? <><Spinner className="mr-2 h-3 w-3" />Authorizing…</>
+          : bidWaiting
+            ? <><Spinner className="mr-2 h-3 w-3" />Confirming…</>
+            : 'Place bid'}
       </Button>
       {bidError && <p className="text-destructive">{bidError.message}</p>}
-    </form>
+    </div>
   );
 }
