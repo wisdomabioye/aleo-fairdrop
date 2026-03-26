@@ -6,6 +6,7 @@ import { formatMicrocredits } from '@fairdrop/sdk/credits';
 import { parseTokenAmount } from '@fairdrop/sdk/format';
 import { useTransactionStore } from '@/stores/transaction.store';
 import { parseExecutionError } from '@/shared/utils/errors';
+import { TX_DEFAULT_FEE } from '@/env';
 import type { BidFormProps } from './types';
 
 export function DutchBidForm({ auction, protocolConfig, lagBlocks }: BidFormProps) {
@@ -48,14 +49,15 @@ export function DutchBidForm({ auction, protocolConfig, lagBlocks }: BidFormProp
         auction.id,
         `${qtyRaw}u128`,
         `${payment}u64`,
-        ...(hasRef ? [`${codeId.trim()}field`] : []),
+        ...(hasRef ? [`${codeId.trim()}`] : []),
       ];
 
       const result = await executeTransaction({
         program:  auction.programId,
         function: fn,
         inputs,
-        fee: 0.5,
+        fee: TX_DEFAULT_FEE,
+        privateFee: false
       });
 
       if (result?.transactionId) {
