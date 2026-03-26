@@ -10,7 +10,6 @@ import { AppRoutes }                     from '@/config/app.routes';
 import { useTokenRecords }               from '@/shared/hooks/useTokenRecords';
 import { useTokenMetadata }              from '@/shared/hooks/useTokenMetadata';
 import { useConfirmedSequentialTx }      from '@/shared/hooks/useConfirmedSequentialTx';
-import { WizardTxStatus }                from '@/shared/components/WizardTxStatus';
 import { ConnectWalletPrompt }           from '@/shared/components/wallet/ConnectWalletPrompt';
 import type { WalletTokenRecord }        from '@fairdrop/types/primitives';
 import type { TokenMetadata }            from '@fairdrop/types/domain';
@@ -86,7 +85,6 @@ export function TokenStep({ form, onChange }: StepProps) {
   const authSteps = [{
     label: 'Authorize Auction Program',
     execute: async () => {
-      console.log(form.saleTokenId)
       const result = await executeTransaction({
         program:    SYSTEM_PROGRAMS.tokenRegistry,
         function:   'set_role',
@@ -99,7 +97,7 @@ export function TokenStep({ form, onChange }: StepProps) {
   }];
 
   const { done: authDone, busy: authBusy, isWaiting: authWaiting,
-          error: authError, trackedIds: authIds, advance: authorize } =
+          error: authError, advance: authorize } =
     useConfirmedSequentialTx(authSteps);
 
   useEffect(() => { if (authDone) setRoleStatus('ok'); }, [authDone]);
@@ -252,7 +250,6 @@ export function TokenStep({ form, onChange }: StepProps) {
                 : 'Authorize Auction Program'}
               </Button>
               {authError && <p className="text-destructive">{authError.message}</p>}
-              {authIds.length > 0 && <WizardTxStatus trackedIds={authIds} />}
             </div>
           )}
           {programDeployed && roleStatus === 'ok' && (

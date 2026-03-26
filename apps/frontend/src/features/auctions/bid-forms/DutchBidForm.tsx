@@ -1,17 +1,15 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
-import { Button, Input, Label, Switch } from '@/components';
+import { Button, Input, Label, Spinner, Switch } from '@/components';
 import { formatMicrocredits } from '@fairdrop/sdk/credits';
 import { parseTokenAmount } from '@fairdrop/sdk/format';
-import { useTransactionStore } from '@/stores/transaction.store';
-import { parseExecutionError } from '@/shared/utils/errors';
+import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
 import { TX_DEFAULT_FEE } from '@/env';
 import type { BidFormProps } from './types';
 
-export function DutchBidForm({ auction, protocolConfig, lagBlocks }: BidFormProps) {
+export function DutchBidForm({ auction, protocolConfig }: BidFormProps) {
   const { connected, executeTransaction } = useWallet();
-  const { setTx } = useTransactionStore();
   const [searchParams] = useSearchParams();
 
   const decimals      = auction.saleTokenDecimals ?? 0;
@@ -21,8 +19,6 @@ export function DutchBidForm({ auction, protocolConfig, lagBlocks }: BidFormProp
   const [qtyInput,   setQtyInput]   = useState('');
   const [usePrivate, setUsePrivate] = useState(false);
   const [codeId,     setCodeId]     = useState(searchParams.get('ref') ?? '');
-  const [txError,    setTxError]    = useState<string | null>(null);
-  const [loading,    setLoading]    = useState(false);
 
   const qtyRaw      = parseTokenAmount(qtyInput, decimals);
   const qtyHuman    = saleScale > 0n ? qtyRaw / saleScale : 0n;
@@ -32,14 +28,10 @@ export function DutchBidForm({ auction, protocolConfig, lagBlocks }: BidFormProp
     ? protocolFee * BigInt(protocolConfig.referralPoolBps) / 10_000n
     : 0n;
 
-  const isDisabled = lagBlocks > 10 || !connected || loading || !qtyRaw || !currentPrice;
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (isDisabled) return;
-    setTxError(null);
-    setLoading(true);
-    try {
+  const bidSteps = [{
+    label: 'Place Dutch Bid',
+    execute: async () => {      
       const hasRef = codeId.trim().length > 0;
       const fn = hasRef
         ? (usePrivate ? 'place_bid_private_ref' : 'place_bid_public_ref')
@@ -60,25 +52,22 @@ export function DutchBidForm({ auction, protocolConfig, lagBlocks }: BidFormProp
         privateFee: false
       });
 
-      if (result?.transactionId) {
-        setTx(result.transactionId, 'Place bid');
-        setQtyInput('');
-      }
-    } catch (err) {
-      setTxError(parseExecutionError(err instanceof Error ? err.message : String(err)));
-    } finally {
-      setLoading(false);
-    }
-  }
+      return result?.transactionId;
+    },
+  }];
+
+  const { 
+    // done: bidDone, 
+    busy: bidBusy, 
+    isWaiting: bidWaiting,
+    error: bidError, 
+    advance: placeBid 
+  } = useConfirmedSequentialTx(bidSteps);
+
+  const isDisabled = !connected || bidBusy || bidWaiting || !qtyRaw || !currentPrice;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {lagBlocks > 10 && (
-        <p className="rounded-md bg-yellow-500/10 px-3 py-2 text-xs text-yellow-600 dark:text-yellow-400">
-          Indexer is {lagBlocks} blocks behind — bidding is temporarily disabled.
-        </p>
-      )}
-
+    <form onSubmit={placeBid} className="space-y-4">
       {/* Quantity */}
       <div className="space-y-1.5">
         <Label htmlFor="dutch-qty">
@@ -135,13 +124,15 @@ export function DutchBidForm({ auction, protocolConfig, lagBlocks }: BidFormProp
         </div>
       )}
 
-      {txError && (
-        <p className="text-xs text-destructive">{txError}</p>
-      )}
-
       <Button type="submit" className="w-full" disabled={isDisabled}>
-        {loading ? 'Submitting…' : 'Place Bid'}
+        {
+          bidBusy ? 
+          <><Spinner className="mr-2 h-3 w-3" />Authorizing…</>
+          : bidWaiting ? <><Spinner className="mr-2 h-3 w-3" />Confirming…</>
+          : 'Place bid'
+        }
       </Button>
+      {bidError && <p className="text-destructive">{bidError.message}</p>}
     </form>
   );
 }
