@@ -38,6 +38,7 @@ export function AuctionCard({ auction }: AuctionCardProps) {
               <img
                 src={logoUrl}
                 alt={name}
+                crossOrigin="anonymous"
                 className="size-10 shrink-0 rounded-lg object-cover"
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';

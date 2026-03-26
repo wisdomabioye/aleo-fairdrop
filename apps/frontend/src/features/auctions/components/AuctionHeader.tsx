@@ -36,6 +36,7 @@ export function AuctionHeader({ auction }: AuctionHeaderProps) {
         <img
           src={logoUrl}
           alt={name}
+          crossOrigin="anonymous"
           className="size-16 shrink-0 rounded-xl object-cover"
           onError={(e) => { e.currentTarget.style.display = 'none'; }}
         />
