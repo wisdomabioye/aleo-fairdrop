@@ -72,9 +72,6 @@ export const parseAuctionIdFromTransition: AuctionIdExtractor = (
     /auction_id:\s*([0-9]+field)/
   );
   const auctionId = match ? match[1] : null;
-  if (auctionId) {
-    return parseField(auctionId)
-  }
   return auctionId
 };
 

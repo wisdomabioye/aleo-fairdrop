@@ -1,17 +1,19 @@
 import { formatMicrocredits } from '@fairdrop/sdk/credits';
 import type { PricePanelProps } from './types';
 
-export function DutchPricePanel({ auction, currentPrice }: PricePanelProps) {
-  const clearingPrice = auction.clearingPrice;
+export function DutchPricePanel({ auction }: PricePanelProps) {
+  const clearingPrice = BigInt(auction.clearingPrice ?? 0)
+  const currentPrice = BigInt(auction.currentPrice ?? 0)
+  const isClearing = clearingPrice > 0n;
 
   return (
     <div className="space-y-3">
       <div className="flex items-baseline justify-between">
         <span className="text-sm text-muted-foreground">
-          {clearingPrice ? 'Clearing price' : 'Current price'}
+          {isClearing ? 'Clearing price' : 'Current price'}
         </span>
         <span className="text-xl font-semibold">
-          {clearingPrice
+          {isClearing
             ? formatMicrocredits(clearingPrice)
             : currentPrice
               ? formatMicrocredits(currentPrice)

@@ -8,7 +8,7 @@
  * Mapping keys always take the form "<auction_id>field" (Leo field literal).
  */
 import {
-  parseAddress, parseBool, parseField,
+  parseAddress, parseBool,
   parseStruct, parseU128, parseU16, parseU32, parseU8,
 } from '@fairdrop/sdk/parse';
 import type { AleoRpcClient } from '../client/rpc.js';
@@ -27,19 +27,18 @@ export async function fetchConfig(
   programId: string,
   auctionId: string,
 ) {
-  const raw = await rpc.getMappingValue(programId, MAPPING_CONFIGS, `${auctionId}field`);
+  const raw = await rpc.getMappingValue(programId, MAPPING_CONFIGS, `${auctionId}`);
   if (!raw) return null;
 
   const f = parseStruct(raw);
-  const optField = (k: string) => f[k] ? parseField(f[k])  : null;
   const optU128  = (k: string) => f[k] ? parseU128(f[k])   : null;
   const optU32   = (k: string) => f[k] ? parseU32(f[k])    : null;
 
   return {
-    auction_id:         parseField(f['auction_id']),
+    auction_id:         f['auction_id'],
     creator:            parseAddress(f['creator']),
-    sale_token_id:      parseField(f['sale_token_id']),
-    payment_token_id:   parseField(f['payment_token_id']),
+    sale_token_id:      f['sale_token_id'],
+    payment_token_id:   f['payment_token_id'],
     supply:             parseU128(f['supply']),
     start_block:        parseU32(f['start_block']),
     end_block:          parseU32(f['end_block']),
@@ -51,7 +50,7 @@ export async function fetchConfig(
     closer_reward:      parseU128(f['closer_reward']),
     referral_pool_bps:  parseU16(f['referral_pool_bps']),
     // Optional — present in Dutch/Sealed/Ascending, absent in Raise/Quadratic
-    metadata_hash:      optField('metadata_hash'),
+    metadata_hash:      f['metadata_hash'],
     start_price:        optU128('start_price'),
     floor_price:        optU128('floor_price'),
     price_decay_blocks: optU32('price_decay_blocks'),
@@ -85,7 +84,7 @@ export async function fetchState(
   programId: string,
   auctionId: string,
 ) {
-  const raw = await rpc.getMappingValue(programId, MAPPING_STATES, `${auctionId}field`);
+  const raw = await rpc.getMappingValue(programId, MAPPING_STATES, `${auctionId}`);
 
   if (!raw) return null;
   const f = parseStruct(raw);
