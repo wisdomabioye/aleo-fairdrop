@@ -21,8 +21,6 @@ export {
   hasRecordKey,
 } from './leo';
 
-export { parseBaseAuctionConfig, parseAuctionState, parseAuctionStats } from './auction';
-
 export {
   parseTokenInfo,
   parseRawTokenBalance,

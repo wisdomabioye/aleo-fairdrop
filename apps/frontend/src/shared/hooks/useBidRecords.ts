@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { parsePlaintext, parseU128, u128ToBigInt, parseField } from '@fairdrop/sdk/parse';
+import { parsePlaintext, parseU128, u128ToBigInt } from '@fairdrop/sdk/parse';
 import type { WalletBidRecord } from '@fairdrop/types/primitives';
 import { useWalletRecords } from './useWalletRecords';
 
@@ -25,7 +25,7 @@ export function useBidRecords(programId: string, opts: Options = {}) {
         result.push({
           id:             entry.commitment,
           programId,
-          auction_id:     parseField(fields['auction_id']    ?? ''),
+          auction_id:     fields['auction_id'],
           quantity:       u128ToBigInt(parseU128(fields['quantity']       ?? '0u128')),
           payment_amount: u128ToBigInt(parseU128(fields['payment_amount'] ?? '0u128')),
           spent:          entry.spent,
