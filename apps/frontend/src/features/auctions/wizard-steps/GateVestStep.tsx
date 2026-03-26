@@ -1,5 +1,16 @@
 import { useState } from 'react';
-import { Input, Label, Switch, NativeSelect, NativeSelectOption, Button, Spinner } from '@/components';
+import {
+  Input,
+  Label,
+  Switch,
+  Button,
+  Spinner,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { SYSTEM_PROGRAMS } from '@fairdrop/sdk/constants';
 import { config, TX_DEFAULT_FEE } from '@/env';
@@ -32,21 +43,27 @@ export function GateVestStep({ form, onChange }: StepProps) {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
+      <p className="py-4 text-sm text-muted-foreground">
         Optionally restrict participation or enable vesting for token distribution.
       </p>
 
-      {/* Gate mode */}
       <div className="space-y-1.5">
         <Label>Gate mode</Label>
-        <NativeSelect
+        <Select
           value={String(form.gateMode)}
-          onChange={(e) => onChange({ gateMode: parseInt(e.target.value) as 0 | 1 | 2 })}
+          onValueChange={(value) =>
+            onChange({ gateMode: parseInt(value, 10) as 0 | 1 | 2 })
+          }
         >
-          <NativeSelectOption value="0">Open — anyone can bid</NativeSelectOption>
-          <NativeSelectOption value="1">Merkle allowlist — proof required at bid</NativeSelectOption>
-          <NativeSelectOption value="2">Credential — issuer-signed credential required</NativeSelectOption>
-        </NativeSelect>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select gate mode" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="0">Open — anyone can bid</SelectItem>
+            <SelectItem value="1">Merkle allowlist — proof required at bid</SelectItem>
+            <SelectItem value="2">Credential — issuer-signed credential required</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {form.gateMode === 1 && (

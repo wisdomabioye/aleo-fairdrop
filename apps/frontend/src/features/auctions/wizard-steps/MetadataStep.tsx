@@ -50,7 +50,7 @@ export function MetadataStep({ form, onChange }: StepProps) {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground py-4">
         Metadata is pinned to IPFS and its hash committed on-chain.
         Name and description are required.
       </p>

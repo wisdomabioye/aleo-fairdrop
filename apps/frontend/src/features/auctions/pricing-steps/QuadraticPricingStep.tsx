@@ -13,7 +13,7 @@ export function QuadraticPricingStep({ value, onChange }: PricingStepProps<Quadr
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground py-4">
         Quadratic funding: contribution weight = √(amount). Smaller contributors
         receive proportionally more influence. An optional matching pool amplifies
         community support.

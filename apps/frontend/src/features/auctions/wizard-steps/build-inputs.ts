@@ -173,14 +173,21 @@ export function buildCreateAuctionInputs(
 
     case AuctionType.Raise: {
       const p = pricing as RaisePricingValues;
+      const [
+        saleTokenId,
+        supply,
+        ...restArgs
+      ] = common;
       return {
         program:  appConfig.programs.raise.programId,
         function: 'create_auction',
         fee: TX_DEFAULT_FEE,
         inputs: [
           tokenRecord,
-          ...common,
+          saleTokenId,
+          supply,
           aleou128(p.raiseTarget), // Raise has no struct — just raise_target u128
+          ...restArgs,
           ...tail,
         ],
       };

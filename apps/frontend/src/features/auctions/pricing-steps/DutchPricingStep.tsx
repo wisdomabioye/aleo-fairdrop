@@ -19,7 +19,7 @@ export function DutchPricingStep({ value, onChange }: PricingStepProps<DutchPric
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground py-4">
         Price steps down every N blocks until supply is met or the floor is reached.
         All winners pay the same clearing price.
       </p>

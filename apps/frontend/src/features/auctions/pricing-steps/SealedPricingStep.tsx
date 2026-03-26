@@ -31,7 +31,7 @@ export function SealedPricingStep({ value, onChange }: PricingStepProps<SealedPr
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground py-4">
         Bidders commit a hidden payment during the commit window, then reveal
         during the reveal window. Clearing price = Dutch price at{' '}
         <code className="text-xs">commit_end_block</code>. All revealed

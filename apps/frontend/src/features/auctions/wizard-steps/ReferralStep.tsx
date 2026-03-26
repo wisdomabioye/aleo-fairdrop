@@ -12,7 +12,7 @@ export function ReferralStep({ protocolConfig }: ReferralStepProps) {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground py-4">
         Your auction automatically supports referrals. Here's how the economics work.
       </p>
 

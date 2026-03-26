@@ -22,7 +22,7 @@ export function LbpPricingStep({ value, onChange }: PricingStepProps<LbpPricingV
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground py-4">
         Token weight shifts from <code className="text-xs">start_weight</code> to{' '}
         <code className="text-xs">end_weight</code> over the auction duration,
         driving price naturally downward and discouraging front-running bots.

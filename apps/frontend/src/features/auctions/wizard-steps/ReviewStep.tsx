@@ -104,7 +104,7 @@ export function ReviewStep({ form }: StepProps) {
 
   return (
     <div className="space-y-5">
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground py-4">
         Review the full auction configuration before submitting on-chain.
       </p>
 

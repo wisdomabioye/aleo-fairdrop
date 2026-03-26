@@ -116,7 +116,7 @@ export function TokenStep({ form, onChange }: StepProps) {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground py-4">
         Select the token record to auction. Supply equals the record amount —{' '}
         <Link to={AppRoutes.tokenManager} className="text-primary underline">
           split your balance in Token Manager

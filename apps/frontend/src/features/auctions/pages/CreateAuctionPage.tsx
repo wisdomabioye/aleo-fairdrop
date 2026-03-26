@@ -120,7 +120,7 @@ export function CreateAuctionPage() {
     },
   }];
 
-  const { done, busy, isWaiting, error, trackedIds, advance, reset } =
+  const { done, busy, isWaiting, trackedIds, advance, reset } =
     useConfirmedSequentialTx(submitSteps);
 
   const submitting = busy || isWaiting;
@@ -202,12 +202,6 @@ export function CreateAuctionPage() {
           <p className="text-sm text-muted-foreground">Loading protocol config…</p>
         )}
       </div>
-
-      {/* Tx status (visible once submission starts) */}
-      {trackedIds.length > 0 && <WizardTxStatus trackedIds={trackedIds} />}
-
-      {/* Error */}
-      {error && <p className="text-sm text-destructive">{error.message}</p>}
 
       {/* Navigation */}
       <div className="flex justify-between">

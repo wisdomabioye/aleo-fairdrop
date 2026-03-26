@@ -14,7 +14,7 @@ export function RaisePricingStep({ value, onChange, supply }: PricingStepProps<R
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground py-4">
         Fixed-price community raise — no price discovery. Bidders commit any
         amount; tokens are distributed pro-rata by payment when the target is
         met by end_block. The auction voids if the target is not reached.

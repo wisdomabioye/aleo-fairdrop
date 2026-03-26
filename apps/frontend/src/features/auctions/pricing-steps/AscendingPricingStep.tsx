@@ -19,7 +19,7 @@ export function AscendingPricingStep({ value, onChange }: PricingStepProps<Ascen
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground py-4">
         Price rises from floor to ceiling over time. Each bidder pays the price
         at the moment they bid — no uniform clearing price, no refund at claim.
         Early bidders always pay less.

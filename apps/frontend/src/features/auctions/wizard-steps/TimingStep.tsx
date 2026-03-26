@@ -70,7 +70,7 @@ export function TimingStep({ form, onChange, protocolConfig }: TimingStepProps) 
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground py-4">
         Set the auction schedule. Estimates assume 10s per block.
         Minimum duration: <strong>{minDuration} blocks</strong>
         {' '}(~{Math.round(minDuration * 10 / 60)} min).
