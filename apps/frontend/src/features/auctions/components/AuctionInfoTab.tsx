@@ -4,6 +4,7 @@ import { formatMicrocredits } from '@fairdrop/sdk/credits';
 import { AuctionType } from '@fairdrop/types/domain';
 import type { AuctionView, ProtocolConfig } from '@fairdrop/types/domain';
 import { IPFS_GATEWAY } from '@/env';
+import { formatAmount } from '@fairdrop/sdk/format';
 
 interface AuctionInfoTabProps {
   auction:        AuctionView;
@@ -18,7 +19,7 @@ export function AuctionInfoTab({ auction, protocolConfig }: AuctionInfoTabProps)
 
         <div className="divide-y divide-border">
           <InfoRow label="Sale token"   value={auction.saleTokenSymbol ?? auction.saleTokenId} />
-          <InfoRow label="Supply"       value={auction.supply.toLocaleString()} />
+          <InfoRow label="Supply"       value={formatAmount(auction.supply, auction.saleTokenDecimals as number)} />
           <InfoRow label="Start block"  value={auction.startBlock.toLocaleString()} />
           <InfoRow label="End block"    value={auction.endBlock.toLocaleString()} />
           {auction.estimatedStart && (

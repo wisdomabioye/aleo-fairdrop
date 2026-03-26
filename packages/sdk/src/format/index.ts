@@ -31,10 +31,10 @@ export function formatField(field: string): string {
  * @example formatAmount(1_500_000n, 6) → "1.5"
  */
 export function formatAmount(amount: bigint, decimals = 0): string {
-  if (decimals === 0) return amount.toLocaleString();
+  if (decimals === 0) return BigInt(amount).toLocaleString();
   const divisor = 10n ** BigInt(decimals);
-  const whole   = amount / divisor;
-  const frac    = amount % divisor;
+  const whole   = BigInt(amount) / divisor;
+  const frac    = BigInt(amount) % divisor;
   const fracStr = frac.toString().padStart(decimals, '0').replace(/0+$/, '');
   return fracStr ? `${whole.toLocaleString()}.${fracStr}` : whole.toLocaleString();
 }
