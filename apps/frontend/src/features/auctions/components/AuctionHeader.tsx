@@ -20,9 +20,11 @@ import { AppRoutes } from '@/config';
 import { cn } from '@/lib/utils';
 import { getRegistrySlot } from '../registry';
 import { LetterAvatar } from './LetterAvatar';
+import { formatMicrocredits } from '@fairdrop/sdk/credits';
 
 interface AuctionHeaderProps {
   auction: AuctionView;
+  currentPrice?: bigint | number;
 }
 
 function MetaChip({
@@ -71,7 +73,7 @@ function formatBlock(value: number | bigint | undefined) {
   return typeof value === 'bigint' ? value.toString() : value.toLocaleString();
 }
 
-export function AuctionHeader({ auction }: AuctionHeaderProps) {
+export function AuctionHeader({ auction, currentPrice }: AuctionHeaderProps) {
   const slot = getRegistrySlot(auction.type);
   const name = auction.metadata?.name ?? truncateAddress(auction.id);
   const description = auction.metadata?.description;
@@ -107,6 +109,8 @@ export function AuctionHeader({ auction }: AuctionHeaderProps) {
     await navigator.clipboard.writeText(auction.creator);
     setCopied(true);
   };
+
+  const priceLabel = auction.status === 'clearing' ? 'Clearing price' : 'Current price';
 
   return (
     <div className="overflow-hidden rounded-xl border border-sky-500/10 bg-gradient-surface shadow-xs ring-1 ring-white/5">
@@ -242,6 +246,17 @@ export function AuctionHeader({ auction }: AuctionHeaderProps) {
         </div>
 
         <div className="grid shrink-0 gap-2 sm:grid-cols-2 xl:min-w-[14rem] xl:grid-cols-1">
+          {currentPrice != null ? (
+            <div className="rounded-xl border border-sky-500/10 bg-background/60 px-3 py-2.5">
+              <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground/80">
+                {priceLabel}
+              </p>
+              <div className="mt-1 text-sm font-semibold text-foreground">
+                {formatMicrocredits(BigInt(currentPrice))}
+              </div>
+            </div>
+          ) : null}
+
           <div className="rounded-xl border border-sky-500/10 bg-background/60 px-3 py-2.5">
             <div className="flex items-center gap-2">
               <TimerIcon className="size-3.5 text-muted-foreground" />

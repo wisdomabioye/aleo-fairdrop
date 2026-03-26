@@ -71,6 +71,8 @@ export function AuctionInfoTab({ auction, protocolConfig }: AuctionInfoTabProps)
     ? `Cliff ${auction.vestCliffBlocks.toLocaleString()} • Duration ${auction.vestEndBlocks.toLocaleString()}`
     : 'Disabled';
 
+  const tokenDecimals = auction.saleTokenDecimals as number;
+
   return (
     <Card className="border-sky-500/10 bg-gradient-surface shadow-xs ring-1 ring-white/5">
       <CardHeader className="pb-2">
@@ -90,7 +92,7 @@ export function AuctionInfoTab({ auction, protocolConfig }: AuctionInfoTabProps)
             label="Supply"
             value={formatAmount(
               auction.supply,
-              auction.saleTokenDecimals as number
+              tokenDecimals
             )}
           />
 
@@ -156,7 +158,7 @@ export function AuctionInfoTab({ auction, protocolConfig }: AuctionInfoTabProps)
           </div>
 
           <div className="rounded-xl border border-border/70 bg-background/55 px-3 py-2.5">
-            <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-muted-foreground/75">
+            <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground/75">
               Economics
             </p>
 
@@ -164,24 +166,42 @@ export function AuctionInfoTab({ auction, protocolConfig }: AuctionInfoTabProps)
               <Row
                 label="Protocol fee"
                 value={`${auction.feeBps / 100}%`}
-                valueClassName="text-[12px] text-foreground/82"
+                valueClassName="text-[11px] text-foreground/82"
               />
+
               <Row
                 label="Closer reward"
                 value={formatMicrocredits(auction.closerReward)}
-                valueClassName="text-[12px] text-foreground/82"
+                valueClassName="text-[11px] text-foreground/82"
               />
+
+              {auction.minBidAmount > 0n ? (
+                <Row
+                  label="Min bid"
+                  value={`${formatAmount(auction.minBidAmount, tokenDecimals)} ${auction.saleTokenSymbol}`}
+                  valueClassName="text-[11px] text-foreground/82"
+                />
+              ) : null}
+
+              {auction.maxBidAmount > 0n ? (
+                <Row
+                  label="Max bid"
+                  value={`${formatAmount(auction.maxBidAmount, tokenDecimals)} ${auction.saleTokenSymbol}`}
+                  valueClassName="text-[11px] text-foreground/82"
+                />
+              ) : null}
+
               <Row
                 label="Vesting"
                 value={vestingLabel}
-                valueClassName="text-[12px] font-normal text-muted-foreground"
+                valueClassName="text-[11px] font-normal text-muted-foreground"
               />
 
               {auction.type === AuctionType.Sealed && protocolConfig ? (
                 <Row
                   label="Slash reward"
                   value={`${protocolConfig.slashRewardBps / 100}% of collateral`}
-                  valueClassName="text-[12px] font-normal text-muted-foreground"
+                  valueClassName="text-[11px] font-normal text-muted-foreground"
                 />
               ) : null}
 
@@ -189,7 +209,7 @@ export function AuctionInfoTab({ auction, protocolConfig }: AuctionInfoTabProps)
                 <Row
                   label="Referral"
                   value={formatMicrocredits(auction.referralBudget)}
-                  valueClassName="text-[12px] text-foreground/82"
+                  valueClassName="text-[11px] text-foreground/82"
                 />
               ) : null}
 
@@ -201,7 +221,7 @@ export function AuctionInfoTab({ auction, protocolConfig }: AuctionInfoTabProps)
                       href={`${IPFS_GATEWAY}/${auction.metadata.ipfsCid}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-[12px] font-medium text-primary hover:underline"
+                      className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
                     >
                       IPFS
                       <ExternalLink className="size-3" />

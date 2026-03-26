@@ -24,7 +24,6 @@ import { AuctionInfoTab } from '../components/AuctionInfoTab';
 import { AuctionEarnTab } from '../components/AuctionEarnTab';
 import { AuctionReferralTab } from '../components/AuctionReferralTab';
 import { getRegistrySlot } from '../registry';
-import { formatMicrocredits } from '@fairdrop/sdk/credits';
 
 export function AuctionDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -102,9 +101,6 @@ function AuctionDetailContent({ id }: { id: string }) {
   const hasOverviewIntro = Boolean(ProgressPanel);
   const showPricePanel = PricePanel && auction.type !== AuctionType.Dutch;
 
-  const priceLabel =
-    auction.status === AuctionStatus.Clearing ? 'Clearing price' : 'Current price';
-
   return (
     <div className="space-y-4 p-4 sm:p-5 lg:p-6">
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -115,7 +111,10 @@ function AuctionDetailContent({ id }: { id: string }) {
         <span className="truncate text-foreground">Detail</span>
       </div>
 
-      <AuctionHeader auction={auction} />
+      <AuctionHeader
+        auction={auction}
+        currentPrice={currentPrice ?? undefined}
+      />
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="min-w-0 space-y-4">
@@ -161,23 +160,10 @@ function AuctionDetailContent({ id }: { id: string }) {
 
         <div className="space-y-4 xl:sticky xl:top-4 xl:self-start">
           <Card className="border-sky-500/10 bg-gradient-surface shadow-xs ring-1 ring-white/5">
-            <CardHeader className="pb-2">
-              <div className="flex items-start justify-between gap-3">
-                <CardTitle className="text-sm font-semibold">
-                  {auction.type === AuctionType.Dutch ? 'Place Bid' : 'Market & Bid'}
-                </CardTitle>
-
-                {auction.type === AuctionType.Dutch && currentPrice != null ? (
-                  <div className="rounded-lg border border-border/70 bg-background/60 px-2.5 py-1.5 text-right">
-                    <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/75">
-                      {priceLabel}
-                    </p>
-                    <p className="text-xs font-medium text-foreground">
-                      {formatMicrocredits(BigInt(currentPrice))}
-                    </p>
-                  </div>
-                ) : null}
-              </div>
+            <CardHeader className="pb-0 mb-0">
+              <CardTitle className="text-sm font-semibold mb-0 pb-0">
+                {auction.type === AuctionType.Dutch ? 'Place Bid' : 'Market & Bid'}
+              </CardTitle>
             </CardHeader>
 
             <CardContent className="space-y-3">

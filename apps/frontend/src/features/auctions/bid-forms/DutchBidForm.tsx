@@ -31,10 +31,8 @@ export function DutchBidForm({ auction, protocolConfig }: BidFormProps) {
   const saleScale = BigInt(auction.saleScale);
   const currentPrice = BigInt(auction.currentPrice ?? 0);
 
-  const minBidAmount =
-    (auction as typeof auction & { minBidAmount?: bigint }).minBidAmount ?? 0n;
-  const maxBidAmount =
-    (auction as typeof auction & { maxBidAmount?: bigint }).maxBidAmount ?? 0n;
+  const minBidAmount = auction.minBidAmount ?? 0n;
+  const maxBidAmount = auction.maxBidAmount ?? 0n;
 
   const [mode, setMode] = useState<'private' | 'public'>('private');
   const [qtyInput, setQtyInput] = useState('');
