@@ -4,13 +4,20 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "../../lib/utils"
 
 const alertVariants = cva(
-  "group/alert relative grid w-full gap-0.5 rounded-lg border px-4 py-3 text-left text-sm has-data-[slot=alert-action]:relative has-data-[slot=alert-action]:pr-18 has-[>svg]:grid-cols-[auto_1fr] has-[>svg]:gap-x-2.5 *:[svg]:row-span-2 *:[svg]:translate-y-0.5 *:[svg]:text-current *:[svg:not([class*='size-'])]:size-4",
+  "group/alert relative grid w-full gap-0.5 rounded-xl border px-4 py-3 text-left text-sm shadow-xs backdrop-blur-sm has-data-[slot=alert-action]:relative has-data-[slot=alert-action]:pr-18 has-[>svg]:grid-cols-[auto_1fr] has-[>svg]:gap-x-2.5 *:[svg]:row-span-2 *:[svg]:translate-y-0.5 *:[svg]:text-current *:[svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
-        default: "bg-card text-card-foreground",
+        default:
+          "border-sky-500/12 bg-gradient-surface text-card-foreground ring-1 ring-white/5",
+        info:
+          "border-sky-500/16 bg-sky-500/8 text-card-foreground ring-1 ring-sky-500/10 *:[svg]:text-sky-500 dark:*:[svg]:text-sky-400",
+        success:
+          "border-emerald-500/16 bg-emerald-500/8 text-card-foreground ring-1 ring-emerald-500/10 *:[svg]:text-emerald-500 dark:*:[svg]:text-emerald-400",
+        warning:
+          "border-amber-500/18 bg-amber-500/10 text-card-foreground ring-1 ring-amber-500/10 *:[svg]:text-amber-500 dark:*:[svg]:text-amber-400",
         destructive:
-          "bg-card text-destructive *:data-[slot=alert-description]:text-destructive/90 *:[svg]:text-current",
+          "border-destructive/18 bg-destructive/8 text-destructive ring-1 ring-destructive/10 *:data-[slot=alert-description]:text-destructive/90 *:[svg]:text-current",
       },
     },
     defaultVariants: {
