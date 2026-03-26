@@ -138,7 +138,7 @@ function NavGroup({ label, items }: { label: string; items: NavItem[] }) {
 }
 
 function WalletChip() {
-  const { address, connected } = useWallet();
+  const { address, connected, wallet } = useWallet();
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -153,55 +153,57 @@ function WalletChip() {
     setCopied(true);
   };
 
-  return (
-    <div className="relative overflow-hidden rounded-2xl border border-sky-500/12 bg-gradient-surface px-3 py-3 shadow-xs ring-1 ring-white/5 backdrop-blur-sm">
-      <div className="absolute inset-x-0 top-0 h-12 bg-gradient-to-r from-sky-500/10 via-cyan-400/6 to-transparent" />
-
-      <div className="relative flex items-start gap-2.5">
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-sky-500/12 bg-sky-500/10 text-sky-300">
-          <Wallet className="size-4" />
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <div className="mb-0.5 flex items-center gap-2">
-            <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground/80">
-              Wallet
-            </span>
-            <span
-              className={cn(
-                'inline-flex size-1.5 rounded-full',
-                connected && address ? 'bg-emerald-400' : 'bg-slate-400'
-              )}
-            />
+  if (!connected || !address) {
+    return (
+      <div className="rounded-xl border border-sky-500/10 bg-gradient-surface px-3 py-2 shadow-xs ring-1 ring-white/5">
+        <div className="flex items-center gap-2">
+          <div className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-sky-500/10 bg-sky-500/8 text-sky-300">
+            <Wallet className="size-3.5" />
           </div>
-
-          {connected && address ? (
-            <button
-              type="button"
-              onClick={copyAddress}
-              className={cn(
-                'flex w-full items-center gap-2 rounded-lg border border-sky-500/10 bg-background/50 px-2 py-1.5 text-left transition-[border-color,background-color,color]',
-                'hover:border-sky-500/16 hover:bg-background/75',
-                'focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-sky-400/15'
-              )}
-              title={copied ? 'Copied' : 'Copy wallet address'}
-              aria-label={copied ? 'Copied wallet address' : 'Copy wallet address'}
-            >
-              <span className="min-w-0 flex-1 truncate font-mono text-[11px] text-sidebar-foreground">
-                {truncateAddress(address)}
-              </span>
-              {copied ? (
-                <Check className="size-3.5 shrink-0 text-emerald-400" />
-              ) : (
-                <Copy className="size-3.5 shrink-0 text-muted-foreground" />
-              )}
-            </button>
-          ) : (
-            <span className="block text-xs text-muted-foreground">Not connected</span>
-          )}
+          <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+            Wallet not connected
+          </span>
         </div>
       </div>
-    </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={copyAddress}
+      className={cn(
+        'w-full rounded-xl border border-sky-500/10 bg-gradient-surface px-3 py-2 text-left shadow-xs ring-1 ring-white/5 transition-[border-color,background-color]',
+        'hover:border-sky-500/16 hover:bg-background/70',
+        'focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-sky-400/15'
+      )}
+      title={copied ? 'Copied' : 'Copy wallet address'}
+      aria-label={copied ? 'Copied wallet address' : 'Copy wallet address'}
+    >
+      <div className="flex items-center gap-2">
+        <div className="flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-sky-500/10 bg-sky-500/8">
+          {wallet?.adapter.icon ? (
+            <img
+              src={wallet.adapter.icon}
+              alt={wallet.adapter.name}
+              className="size-4 object-contain"
+            />
+          ) : (
+            <Wallet className="size-3.5 text-sky-300" />
+          )}
+        </div>
+
+        <span className="min-w-0 flex-1 truncate font-mono text-[11px] text-sidebar-foreground">
+          {truncateAddress(address)}
+        </span>
+
+        {copied ? (
+          <Check className="size-3.5 shrink-0 text-emerald-400" />
+        ) : (
+          <Copy className="size-3.5 shrink-0 text-muted-foreground" />
+        )}
+      </div>
+    </button>
   );
 }
 
@@ -209,27 +211,19 @@ export function AppSidebar() {
   return (
     <Sidebar className="border-r border-sky-500/10 bg-sidebar/95 backdrop-blur-xl">
       <SidebarHeader className="px-3 py-3">
-        <div className="relative overflow-hidden rounded-2xl border border-sky-500/12 bg-gradient-surface px-3.5 py-3.5 shadow-xs ring-1 ring-white/5">
-          <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-r from-sky-500/12 via-cyan-400/8 to-transparent" />
-
-          <div className="relative flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl border border-sky-500/14 bg-white/90 p-2 shadow-xs dark:bg-white/10">
+        <div className="rounded-2xl border border-sky-500/12 bg-gradient-surface px-3 py-2.5 shadow-xs ring-1 ring-white/5">
+          <div className="flex items-center gap-2.5">
+            <div className="flex size-9 items-center justify-center rounded-xl border border-sky-500/14 bg-white/90 p-2 shadow-xs dark:bg-white/10">
               <img src={fairdropLogo} alt="Fairdrop" className="size-full object-contain" />
             </div>
 
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="truncate text-base font-semibold tracking-tight text-sidebar-foreground">
-                  Fairdrop
-                </span>
-                <span className="rounded-full border border-sky-500/12 bg-sky-500/8 px-2 py-0.5 text-[10px] font-medium text-sky-300">
-                  Aleo
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Private capital coordination
-              </p>
-            </div>
+            <span className="min-w-0 flex-1 truncate text-sm font-semibold tracking-tight text-sidebar-foreground">
+              Fairdrop
+            </span>
+
+            <span className="rounded-full border border-sky-500/12 bg-sky-500/8 px-2 py-0.5 text-[10px] font-medium text-sky-300">
+              Aleo
+            </span>
           </div>
         </div>
       </SidebarHeader>
