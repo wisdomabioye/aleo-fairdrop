@@ -54,10 +54,28 @@ export const auctionIdFromFinalizeKey: AuctionIdExtractor = (
   ops:         FinalizeOperation[],
 ): string | null => {
   for (const op of ops) {
-    const k = op.key?.trim();
+    const k = op.key_id?.trim();
     if (k && k.endsWith('field') && k !== '0field') {
       return parseField(k);
     }
   }
   return null;
 };
+
+
+
+export const parseAuctionIdFromTransition: AuctionIdExtractor = (
+  transition: AleoTransition,
+  _ops:         FinalizeOperation[],
+): string | null => {
+  const match = String(JSON.stringify(transition)).match(
+    /auction_id:\s*([0-9]+field)/
+  );
+  const auctionId = match ? match[1] : null;
+  if (auctionId) {
+    return parseField(auctionId)
+  }
+  return auctionId
+};
+
+

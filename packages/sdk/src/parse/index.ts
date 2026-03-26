@@ -13,7 +13,6 @@ export {
   parseField,
   parseStruct,
   isValidField,
-  toLeoField,
   fieldToHex,
   recStr,
   recField,

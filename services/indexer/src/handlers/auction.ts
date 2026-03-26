@@ -16,8 +16,7 @@ import { auctions }                           from '@fairdrop/database';
 import { AuctionType }                        from '@fairdrop/types/domain';
 import { createLogger }                       from '../logger.js';
 import { fetchConfig, fetchState }            from './mapping.js';
-import { auctionIdFromPublicInput,
-         auctionIdFromFinalizeKey }           from './extractors.js';
+import { parseAuctionIdFromTransition }       from './extractors.js';
 import type {
   HandlerEntry,
   ProgramHandlerMap,
@@ -173,13 +172,13 @@ export function createProgramHandlerMap(
     upsertAuction(ctx, programId, auctionType, auctionId);
 
   const base: ProgramHandlerMap = {
-    create_auction:         { getAuctionId: auctionIdFromFinalizeKey,   handle: upsert },
-    close_auction:          { getAuctionId: auctionIdFromPublicInput,   handle: upsert },
-    cancel_auction:         { getAuctionId: auctionIdFromPublicInput,   handle: upsert },
-    place_bid_private:      { getAuctionId: auctionIdFromPublicInput,   handle: upsert },
-    place_bid_public:       { getAuctionId: auctionIdFromPublicInput,   handle: upsert },
-    place_bid_private_ref:  { getAuctionId: auctionIdFromPublicInput,   handle: upsert },
-    place_bid_public_ref:   { getAuctionId: auctionIdFromPublicInput,   handle: upsert },
+    create_auction:         { getAuctionId: parseAuctionIdFromTransition,   handle: upsert },
+    close_auction:          { getAuctionId: parseAuctionIdFromTransition,   handle: upsert },
+    cancel_auction:         { getAuctionId: parseAuctionIdFromTransition,   handle: upsert },
+    place_bid_private:      { getAuctionId: parseAuctionIdFromTransition,   handle: upsert },
+    place_bid_public:       { getAuctionId: parseAuctionIdFromTransition,   handle: upsert },
+    place_bid_private_ref:  { getAuctionId: parseAuctionIdFromTransition,   handle: upsert },
+    place_bid_public_ref:   { getAuctionId: parseAuctionIdFromTransition,   handle: upsert },
   };
 
   // Sealed auctions replace place_bid_* with commit/reveal transitions.
@@ -187,12 +186,12 @@ export function createProgramHandlerMap(
   if (auctionType === AuctionType.Sealed) {
     return {
       ...base,
-      commit_bid_private:     { getAuctionId: auctionIdFromPublicInput, handle: upsert },
-      commit_bid_public:      { getAuctionId: auctionIdFromPublicInput, handle: upsert },
-      commit_bid_private_ref: { getAuctionId: auctionIdFromPublicInput, handle: upsert },
-      commit_bid_public_ref:  { getAuctionId: auctionIdFromPublicInput, handle: upsert },
+      commit_bid_private:     { getAuctionId: parseAuctionIdFromTransition, handle: upsert },
+      commit_bid_public:      { getAuctionId: parseAuctionIdFromTransition, handle: upsert },
+      commit_bid_private_ref: { getAuctionId: parseAuctionIdFromTransition, handle: upsert },
+      commit_bid_public_ref:  { getAuctionId: parseAuctionIdFromTransition, handle: upsert },
       // reveal_bid: auction_id only in private Commitment record; extract from finalize key.
-      reveal_bid:             { getAuctionId: auctionIdFromFinalizeKey, handle: upsert },
+      reveal_bid:             { getAuctionId: parseAuctionIdFromTransition, handle: upsert },
     };
   }
 

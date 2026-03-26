@@ -77,11 +77,6 @@ export interface TransitionValue {
 export interface FinalizeOperation {
   type:        string;     // "update_key_value" | "insert_key_value" | "remove_key_value" | ...
   mapping_id?: string;
-  index?:      number;
   key_id?:     string;
   value_id?:   string;
-  /** Plaintext key — only present if node exposes it (not guaranteed). */
-  key?:        string;
-  /** Plaintext value — only present if node exposes it (not guaranteed). */
-  value?:      string;
 }

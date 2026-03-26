@@ -101,14 +101,6 @@ export function isValidField(s: string): boolean {
   return /^\d+field$/.test(s.trim());
 }
 
-export function toLeoField(value: string): string {
-  if (isValidField(value)) {
-    return value;
-  }
-
-  return `${value}field`
-}
-
 /**
  * Convert a Leo field literal to a 0x-prefixed hex string.
  * Useful for compact display of auction IDs and other large field values.
