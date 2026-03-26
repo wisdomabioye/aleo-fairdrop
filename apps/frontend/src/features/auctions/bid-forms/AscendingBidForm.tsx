@@ -16,7 +16,7 @@ export function AscendingBidForm({ auction, protocolConfig, lagBlocks }: BidForm
 
   const decimals     = auction.saleTokenDecimals ?? 0;
   const saleScale    = auction.saleScale;
-  const currentPrice = auction.currentPrice ?? 0n;
+  const currentPrice = BigInt(auction.currentPrice ?? 0)
 
   const [qtyInput,   setQtyInput]   = useState('');
   const [usePrivate, setUsePrivate] = useState(false);

@@ -4,7 +4,6 @@ import {
   Tabs, TabsList, TabsTrigger, TabsContent,
   Separator, Skeleton,
 } from '@/components';
-import { isValidField } from '@fairdrop/sdk/parse';
 import { AuctionStatus } from '@fairdrop/types/domain';
 import { AppRoutes } from '@/config';
 import { useBlockHeight } from '@/shared/hooks/useBlockHeight';
@@ -19,11 +18,10 @@ import { AuctionEarnTab } from '../components/AuctionEarnTab';
 import { AuctionReferralTab } from '../components/AuctionReferralTab';
 import { getRegistrySlot } from '../registry';
 
-
 export function AuctionDetailPage() {
   const { id } = useParams<{ id: string }>();
 
-  if (!id || !isValidField(id)) {
+  if (!id) {
     return (
       <div className="p-6 text-center space-y-2">
         <p className="text-sm text-destructive">Invalid auction ID.</p>

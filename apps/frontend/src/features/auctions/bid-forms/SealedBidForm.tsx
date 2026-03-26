@@ -25,7 +25,7 @@ export function SealedBidForm({ auction, blockHeight, protocolConfig, lagBlocks 
   const [searchParams] = useSearchParams();
 
   const saleScale    = auction.saleScale;
-  const currentPrice = auction.currentPrice ?? 0n;
+  const currentPrice = BigInt(auction.currentPrice ?? 0)
 
   // Phase detection: use commit_end_block from params when available
   const commitEndBlock = auction.params.type === 'sealed' ? auction.params.commit_end_block : null;

@@ -14,8 +14,8 @@ export function DutchBidForm({ auction, protocolConfig, lagBlocks }: BidFormProp
   const [searchParams] = useSearchParams();
 
   const decimals      = auction.saleTokenDecimals ?? 0;
-  const saleScale     = auction.saleScale;
-  const currentPrice  = auction.currentPrice ?? 0n;
+  const saleScale     = BigInt(auction.saleScale);
+  const currentPrice = BigInt(auction.currentPrice ?? 0)
 
   const [qtyInput,   setQtyInput]   = useState('');
   const [usePrivate, setUsePrivate] = useState(false);

@@ -37,8 +37,8 @@ export function aleoToMicro(aleo: string | number): bigint | null {
  */
 export function formatMicrocredits(microcredits: bigint, decimals = CREDITS_DECIMALS): string {
   const divisor = 10 ** decimals;
-  const whole = microcredits / BigInt(divisor);
-  const frac  = microcredits % BigInt(divisor);
+  const whole = BigInt(microcredits) / BigInt(divisor);
+  const frac  = BigInt(microcredits) % BigInt(divisor);
   if (frac === 0n) return `${whole} ${CREDITS_SYMBOL}`;
   const fracStr = frac.toString().padStart(decimals, '0').replace(/0+$/, '');
   return `${whole}.${fracStr} ${CREDITS_SYMBOL}`;

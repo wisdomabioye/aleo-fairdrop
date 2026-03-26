@@ -82,7 +82,7 @@ export function AuctionCard({ auction }: AuctionCardProps) {
                 {isClearing ? 'Clearing' : 'Current'} price
               </span>
               <span className="text-sm font-semibold">
-                {formatMicrocredits(BigInt(price))}
+                {formatMicrocredits(price)}
               </span>
             </div>
           )}
