@@ -42,10 +42,12 @@ function Layout() {
       <AppSidebar />
       <SidebarInset>
         <TopBar trigger={<SidebarTrigger />} actions={<ConnectButton />} />
-        <main className="flex-1 overflow-auto p-4">
-          <ErrorBoundary>
-            <Outlet />
-          </ErrorBoundary>
+        <main className="flex-1 overflow-auto">
+          <div className="mx-auto w-full max-w-6xl px-4 py-4 sm:px-5 lg:px-6">
+            <ErrorBoundary>
+              <Outlet />
+            </ErrorBoundary>
+          </div>
         </main>
       </SidebarInset>
       <TxStatusStepper />
