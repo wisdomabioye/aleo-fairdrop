@@ -1,16 +1,23 @@
 import { Link, useParams } from 'react-router-dom';
 import {
-  Card, CardContent, CardHeader, CardTitle,
-  Tabs, TabsList, TabsTrigger, TabsContent,
-  Separator, Skeleton,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+  Separator,
+  Skeleton,
 } from '@/components';
 import { AuctionStatus } from '@fairdrop/types/domain';
 import { AppRoutes } from '@/config';
 import { useBlockHeight } from '@/shared/hooks/useBlockHeight';
 import { useIndexerStatus } from '@/shared/hooks/useIndexerStatus';
+import { useProtocolConfig } from '@/shared/hooks/useProtocolConfig';
 import { useAuction } from '../hooks/useAuction';
 import { useCurrentPrice } from '../hooks/useCurrentPrice';
-import { useProtocolConfig } from '../../../shared/hooks/useProtocolConfig';
 import { AuctionHeader } from '../components/AuctionHeader';
 import { ActionsPanel } from '../components/ActionsPanel';
 import { AuctionInfoTab } from '../components/AuctionInfoTab';
@@ -23,11 +30,15 @@ export function AuctionDetailPage() {
 
   if (!id) {
     return (
-      <div className="p-6 text-center space-y-2">
-        <p className="text-sm text-destructive">Invalid auction ID.</p>
-        <Link to={AppRoutes.auctions} className="text-sm underline">
-          Back to auctions
-        </Link>
+      <div className="p-4 sm:p-5 lg:p-6">
+        <Card className="mx-auto max-w-md border-sky-500/10 bg-gradient-surface shadow-xs ring-1 ring-white/5">
+          <CardContent className="space-y-2 p-4 text-center">
+            <p className="text-sm text-destructive">Invalid auction ID.</p>
+            <Link to={AppRoutes.auctions} className="text-sm text-muted-foreground underline underline-offset-4">
+              Back to auctions
+            </Link>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -37,20 +48,30 @@ export function AuctionDetailPage() {
 
 function AuctionDetailContent({ id }: { id: string }) {
   const { data: auction, isLoading, isError } = useAuction(id);
-  const { data: blockHeight }  = useBlockHeight();
-  const { data: indexerData }  = useIndexerStatus();
+  const { data: blockHeight } = useBlockHeight();
+  const { data: indexerData } = useIndexerStatus();
   const { data: protocolConfig } = useProtocolConfig();
 
-  const lagBlocks    = indexerData?.lagBlocks ?? 0;
+  const lagBlocks = indexerData?.lagBlocks ?? 0;
   const currentPrice = useCurrentPrice(auction, blockHeight);
 
   if (isLoading) {
     return (
-      <div className="p-6 space-y-6">
+      <div className="space-y-4 p-4 sm:p-5 lg:p-6">
+        <Skeleton className="h-5 w-32 rounded-md" />
         <Skeleton className="h-20 w-full rounded-xl" />
-        <div className="grid gap-6 lg:grid-cols-5">
-          <Skeleton className="col-span-3 h-96 rounded-xl" />
-          <Skeleton className="col-span-2 h-96 rounded-xl" />
+
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]">
+          <div className="space-y-4">
+            <Skeleton className="h-44 rounded-xl" />
+            <Skeleton className="h-11 rounded-xl" />
+            <Skeleton className="h-80 rounded-xl" />
+          </div>
+
+          <div className="space-y-4">
+            <Skeleton className="h-96 rounded-xl" />
+            <Skeleton className="h-44 rounded-xl" />
+          </div>
         </div>
       </div>
     );
@@ -58,11 +79,15 @@ function AuctionDetailContent({ id }: { id: string }) {
 
   if (isError || !auction) {
     return (
-      <div className="p-6 text-center space-y-2">
-        <p className="text-sm text-destructive">Auction not found or failed to load.</p>
-        <Link to={AppRoutes.auctions} className="text-sm underline">
-          Back to auctions
-        </Link>
+      <div className="p-4 sm:p-5 lg:p-6">
+        <Card className="mx-auto max-w-md border-sky-500/10 bg-gradient-surface shadow-xs ring-1 ring-white/5">
+          <CardContent className="space-y-2 p-4 text-center">
+            <p className="text-sm text-destructive">Auction not found or failed to load.</p>
+            <Link to={AppRoutes.auctions} className="text-sm text-muted-foreground underline underline-offset-4">
+              Back to auctions
+            </Link>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -73,95 +98,106 @@ function AuctionDetailContent({ id }: { id: string }) {
   const isActive =
     auction.status === AuctionStatus.Active || auction.status === AuctionStatus.Clearing;
 
+  const hasOverviewIntro = Boolean(ProgressPanel);
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-4 p-4 sm:p-5 lg:p-6">
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Link to={AppRoutes.auctions} className="transition-colors hover:text-foreground">
+          Auctions
+        </Link>
+        <span>/</span>
+        <span className="truncate text-foreground">Detail</span>
+      </div>
+
       <AuctionHeader auction={auction} />
 
-      <Separator />
-
-      <div className="grid gap-6 lg:grid-cols-5">
-        {/* ── Left: progress + tabs ── */}
-        <div className="space-y-6 lg:col-span-3">
-          {ProgressPanel && (
-            <Card>
-              <CardContent className="pt-4">
-                <ProgressPanel auction={auction} />
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="min-w-0 space-y-4">
+          {hasOverviewIntro ? (
+            <Card className="border-sky-500/10 bg-gradient-surface shadow-xs ring-1 ring-white/5">
+              <CardHeader className="pb-0 mb-0">
+                <CardTitle className="text-sm font-semibold">Auction Progress</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {ProgressPanel ? (
+                  <ProgressPanel auction={auction} />
+                ) : null}
               </CardContent>
             </Card>
-          )}
+          ) : null}
 
-          {auction.metadata?.description && (
-            <p className="text-sm leading-relaxed text-muted-foreground">
-              {auction.metadata.description}
-            </p>
-          )}
-
-          <Tabs defaultValue="info">
-            <TabsList className="w-full">
-              <TabsTrigger value="info"     className="flex-1">Info</TabsTrigger>
-              <TabsTrigger value="earn"     className="flex-1">Earn</TabsTrigger>
-              <TabsTrigger value="referral" className="flex-1">Referral</TabsTrigger>
-              <TabsTrigger value="receipts" className="flex-1">Your Receipts</TabsTrigger>
+          <Tabs defaultValue="info" className="space-y-3">
+            <TabsList className="grid h-9 w-full grid-cols-3 rounded-xl border border-sky-500/10 bg-gradient-surface p-1 shadow-xs ring-1 ring-white/5">
+              <TabsTrigger value="info" className="rounded-lg text-xs sm:text-sm">
+                Overview
+              </TabsTrigger>
+              <TabsTrigger value="earn" className="rounded-lg text-xs sm:text-sm">
+                Earn
+              </TabsTrigger>
+              <TabsTrigger value="referral" className="rounded-lg text-xs sm:text-sm">
+                Referral
+              </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="info">
+            <TabsContent value="info" className="mt-0">
               <AuctionInfoTab auction={auction} protocolConfig={protocolConfig} />
             </TabsContent>
 
-            <TabsContent value="earn">
+            <TabsContent value="earn" className="mt-0">
               <AuctionEarnTab auction={auction} />
             </TabsContent>
 
-            <TabsContent value="referral">
+            <TabsContent value="referral" className="mt-0">
               <AuctionReferralTab auction={auction} />
-            </TabsContent>
-
-            <TabsContent value="receipts">
-              <Card>
-                <CardContent className="pt-4 space-y-2">
-                  <p className="text-sm font-medium">Your participation receipts</p>
-                  <p className="text-sm text-muted-foreground">
-                    Receipts are private records held in your wallet. Use the{' '}
-                    <Link to={AppRoutes.claim} className="underline">
-                      Claim page
-                    </Link>{' '}
-                    to view and claim all eligible receipts across auctions.
-                  </p>
-                </CardContent>
-              </Card>
             </TabsContent>
           </Tabs>
         </div>
 
-        {/* ── Right: price + bid + actions (sticky) ── */}
-        <div className="space-y-4 lg:col-span-2 lg:sticky lg:top-6 lg:self-start">
-          {PricePanel && (
-            <Card>
-              <CardContent className="pt-4">
+        <div className="space-y-4 xl:sticky xl:top-4 xl:self-start">
+          <Card className="border-sky-500/10 bg-gradient-surface shadow-xs ring-1 ring-white/5">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold">Market & Bid</CardTitle>
+            </CardHeader>
+
+            <CardContent className="space-y-4">
+              {PricePanel ? (
                 <PricePanel
                   auction={auction}
                   blockHeight={blockHeight ?? 0}
                   currentPrice={currentPrice}
                 />
-              </CardContent>
-            </Card>
-          )}
+              ) : null}
 
-          {BidForm && isActive && protocolConfig && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold">Place a Bid</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <BidForm
-                  auction={auction}
-                  blockHeight={blockHeight ?? 0}
-                  protocolConfig={protocolConfig}
-                  lagBlocks={lagBlocks}
-                />
-              </CardContent>
-            </Card>
-          )}
+              {BidForm && protocolConfig ? (
+                <>
+                  {PricePanel ? <Separator /> : null}
+
+                  {isActive ? (
+                    <div className="space-y-3">
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-foreground">Place a bid</p>
+                        <p className="text-xs text-muted-foreground">
+                          Submit from your connected wallet.
+                        </p>
+                      </div>
+
+                      <BidForm
+                        auction={auction}
+                        blockHeight={blockHeight ?? 0}
+                        protocolConfig={protocolConfig}
+                        lagBlocks={lagBlocks}
+                      />
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border border-border/70 bg-background/70 px-3 py-2 text-xs text-muted-foreground">
+                      Bidding is currently unavailable for this auction.
+                    </div>
+                  )}
+                </>
+              ) : null}
+            </CardContent>
+          </Card>
 
           <ActionsPanel auction={auction} blockHeight={blockHeight} />
         </div>
