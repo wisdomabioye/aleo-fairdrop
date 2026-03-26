@@ -268,14 +268,32 @@ export function DutchBidForm({ auction, protocolConfig }: BidFormProps) {
         </button>
       ) : (
         <div className="space-y-1.5">
-          <Label htmlFor="dutch-ref">Referral code</Label>
-          <Input
-            id="dutch-ref"
-            placeholder="Optional"
-            value={codeId}
-            className="h-8 text-xs"
-            onChange={(e) => setCodeId(e.target.value)}
-          />
+          <button
+            type="button"
+            onClick={() => {
+              setShowReferral((prev) => {
+                const next = !prev;
+                if (!next) setCodeId('');
+                return next;
+              });
+            }}
+            className="text-left text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            {showReferral ? '− Hide referral code' : '+ Add referral code'}
+          </button>
+
+          {showReferral ? (
+            <div className="space-y-1.5">
+              <Label htmlFor="dutch-ref">Referral code</Label>
+              <Input
+                id="dutch-ref"
+                placeholder="Optional"
+                value={codeId}
+                className="h-8 text-xs"
+                onChange={(e) => setCodeId(e.target.value)}
+              />
+            </div>
+          ) : null}
         </div>
       )}
 
