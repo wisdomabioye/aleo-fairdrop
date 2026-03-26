@@ -7,6 +7,7 @@ import { parseTokenAmount } from '@fairdrop/sdk/format';
 import { useTransactionStore } from '@/stores/transaction.store';
 import { parseExecutionError } from '@/shared/utils/errors';
 import type { BidFormProps } from './types';
+import { TX_DEFAULT_FEE } from '@/env';
 
 /**
  * Sealed bid form.
@@ -63,16 +64,17 @@ export function SealedBidForm({ auction, blockHeight, protocolConfig, lagBlocks 
       const inputs: string[] = [
         auction.id,
         `${qtyRaw}u128`,
-        `${nonce}field`,
+        `${nonce}`,
         `${paymentMicro}u64`,
-        ...(hasRef ? [`${codeId.trim()}field`] : []),
+        ...(hasRef ? [`${codeId.trim()}`] : []),
       ];
 
       const result = await executeTransaction({
         program:  auction.programId,
         function: fn,
         inputs,
-        fee: 0.5,
+        fee: TX_DEFAULT_FEE,
+        privateFee: false
       });
       if (result?.transactionId) {
         setTx(result.transactionId, 'Commit bid');
@@ -93,14 +95,15 @@ export function SealedBidForm({ auction, blockHeight, protocolConfig, lagBlocks 
       // Commitment record handled by AutoDecrypt — wallet inserts it
       const inputs: string[] = [
         `${qtyRaw}u128`,
-        `${nonce}field`,
+        `${nonce}`,
         `${auction.supply}u128`, // max_bid_amount (D11: config.max_bid_amount)
       ];
       const result = await executeTransaction({
         program:  auction.programId,
         function: 'reveal_bid',
         inputs,
-        fee: 0.5,
+        fee: TX_DEFAULT_FEE,
+        privateFee: false
       });
       if (result?.transactionId) {
         setTx(result.transactionId, 'Reveal bid');

@@ -6,6 +6,7 @@ import { formatMicrocredits } from '@fairdrop/sdk/credits';
 import { parseTokenAmount } from '@fairdrop/sdk/format';
 import { useTransactionStore } from '@/stores/transaction.store';
 import { parseExecutionError } from '@/shared/utils/errors';
+import { TX_DEFAULT_FEE } from '@/env';
 import type { BidFormProps } from './types';
 
 /** Quadratic bid: enter vote quantity; payment = qty * currentPrice. */
@@ -44,11 +45,15 @@ export function QuadraticBidForm({ auction, protocolConfig, lagBlocks }: BidForm
 
       const inputs: string[] = [
         auction.id, `${qtyRaw}u128`, `${payment}u64`,
-        ...(hasRef ? [`${codeId.trim()}field`] : []),
+        ...(hasRef ? [`${codeId.trim()}`] : []),
       ];
 
       const result = await executeTransaction({
-        program: auction.programId, function: fn, inputs, fee: 0.5,
+        program: auction.programId, 
+        function: fn, 
+        inputs, 
+        fee: TX_DEFAULT_FEE,
+        privateFee: false
       });
       if (result?.transactionId) {
         setTx(result.transactionId, 'Cast votes');

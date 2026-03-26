@@ -5,6 +5,7 @@ import { Button, Input, Label, Switch } from '@/components';
 import { formatMicrocredits, aleoToMicro } from '@fairdrop/sdk/credits';
 import { useTransactionStore } from '@/stores/transaction.store';
 import { parseExecutionError } from '@/shared/utils/errors';
+import { TX_DEFAULT_FEE } from '@/env';
 import type { BidFormProps } from './types';
 
 /** LBP bid: payment amount drives the bonding curve swap. */
@@ -37,11 +38,15 @@ export function LbpBidForm({ auction, protocolConfig, lagBlocks }: BidFormProps)
 
       const inputs: string[] = [
         auction.id, `${payment}u64`,
-        ...(hasRef ? [`${codeId.trim()}field`] : []),
+        ...(hasRef ? [`${codeId.trim()}`] : []),
       ];
 
       const result = await executeTransaction({
-        program: auction.programId, function: fn, inputs, fee: 0.5,
+        program: auction.programId, 
+        function: fn, 
+        inputs, 
+        fee: TX_DEFAULT_FEE,
+        privateFee: false
       });
       if (result?.transactionId) {
         setTx(result.transactionId, 'Place bid');
