@@ -35,7 +35,7 @@ indexerRouter.get('/status', async (c) => {
   return json(c, {
     indexedBlock: maxIndexed,
     chainTip,
-    lag:          chainTip != null ? chainTip - maxIndexed : null,
+    lagBlocks:          chainTip != null ? chainTip - maxIndexed : null,
     programs:     checkpoints.map((cp) => ({
       programId:       cp.programId,
       lastBlockHeight: cp.lastBlockHeight,

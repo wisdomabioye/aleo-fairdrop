@@ -49,7 +49,7 @@ function IndexerStatusBadge() {
   const level: StatusLevel =
     isError || !data ? 'offline' : getStatusLevel(data.lagBlocks);
 
-  return (
+    return (
     <span className="hidden items-center gap-1.5 text-xs text-muted-foreground sm:flex">
       <span className={`size-2 rounded-full ${STATUS_DOT[level]}`} aria-hidden="true" />
       {STATUS_LABEL[level]}
