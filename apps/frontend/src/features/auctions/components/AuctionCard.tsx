@@ -19,7 +19,10 @@ interface AuctionCardProps {
 export function AuctionCard({ auction }: AuctionCardProps) {
   const slot  = getRegistrySlot(auction.type);
   const name  = auction.name ?? truncateAddress(auction.id);
-  const price = auction.clearingPrice ?? auction.currentPrice;
+  const clearingPrice = BigInt(auction.clearingPrice ?? 0)
+  const currentPrice = BigInt(auction.currentPrice ?? 0)
+  const isClearing = clearingPrice > 0n;
+  const price = isClearing ? clearingPrice : currentPrice;
 
   const logoUrl = auction.logoIpfs
     ? `${IPFS_GATEWAY}/${auction.logoIpfs}`
@@ -76,10 +79,10 @@ export function AuctionCard({ auction }: AuctionCardProps) {
           {price != null && (
             <div className="flex items-baseline justify-between">
               <span className="text-xs text-muted-foreground">
-                {auction.clearingPrice ? 'Clearing' : 'Current'} price
+                {isClearing ? 'Clearing' : 'Current'} price
               </span>
               <span className="text-sm font-semibold">
-                {formatMicrocredits(price)}
+                {formatMicrocredits(BigInt(price))}
               </span>
             </div>
           )}
