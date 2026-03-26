@@ -104,7 +104,8 @@ export interface AuctionView {
   supply:          bigint;
   totalCommitted:  bigint;
   progressPct:     number;  // 0–100, capped
-
+  minBidAmount: bigint;
+  maxBidAmount: bigint;
   // Price (null until relevant lifecycle stage)
   currentPrice:    bigint | null;  // computed from block height; null if not active
   clearingPrice:   bigint | null;  // set at close_auction

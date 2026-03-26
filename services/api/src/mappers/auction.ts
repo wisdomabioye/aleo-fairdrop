@@ -205,6 +205,8 @@ export function toAuctionView(
     saleScale:          BigInt(row.saleScale ?? '1'),
     supply:             BigInt(row.supply),
     totalCommitted:     BigInt(row.totalCommitted),
+    minBidAmount:       BigInt(row.minBidAmount ?? 0),
+    maxBidAmount:       BigInt(row.maxBidAmount ?? 0),
     progressPct:        progressPct(row.totalCommitted, row.supply),
     currentPrice:       computeCurrentPrice(row, ctx.currentBlock),
     clearingPrice:      bigOrNull(row.clearingPrice),
