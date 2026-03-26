@@ -2,6 +2,7 @@ import * as React from "react"
 import { Timer } from "lucide-react"
 
 import { cn } from "../../lib/utils"
+import { Badge } from "../ui/badge"
 
 type CountdownMode = "compact" | "clock"
 
@@ -81,15 +82,16 @@ export function Countdown({
 
   if (timeLeft.isComplete) {
     return (
-      <div
+      <Badge
+        variant="outline"
         className={cn(
-          "inline-flex items-center gap-2 rounded-full border border-border bg-muted px-3 py-1.5 text-sm text-muted-foreground",
+          "inline-flex items-center gap-2 rounded-full border-slate-500/14 bg-slate-500/8 px-2.5 py-1 text-[11px] font-medium text-muted-foreground ring-1 ring-white/5 backdrop-blur-sm",
           className
         )}
       >
-        <Timer className="size-4" aria-hidden="true" />
+        <Timer className="size-3.5" aria-hidden="true" />
         <span>{completedLabel}</span>
-      </div>
+      </Badge>
     )
   }
 
@@ -113,12 +115,15 @@ export function Countdown({
     <div
       aria-live="polite"
       className={cn(
-        "inline-flex items-center gap-2 rounded-full border border-border bg-background/80 px-3 py-1.5 text-sm",
+        "inline-flex items-center gap-2 rounded-full border border-sky-500/12 bg-gradient-surface px-2.5 py-1 text-[11px] text-foreground shadow-xs ring-1 ring-white/5 backdrop-blur-sm",
         className
       )}
     >
-      <Timer className="size-4 text-muted-foreground" aria-hidden="true" />
-      <span className="font-mono tabular-nums text-foreground">
+      <span className="flex size-5 items-center justify-center rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-300">
+        <Timer className="size-3.5" aria-hidden="true" />
+      </span>
+
+      <span className="font-mono font-medium tabular-nums text-foreground/95">
         {mode === "clock" ? clockValue : compactValue}
       </span>
     </div>

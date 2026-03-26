@@ -1,21 +1,36 @@
 import * as React from "react"
 import { Check, Copy } from "lucide-react"
+
 import { cn } from "../../lib/utils"
 
 export type CopyFieldProps = {
-  label:      string
-  value:      string
-  truncate?:  boolean
+  label: string
+  value: string
+  truncate?: boolean
   className?: string
 }
 
-export function CopyField({ label, value, truncate = true, className }: CopyFieldProps) {
+export function CopyField({
+  label,
+  value,
+  truncate = true,
+  className,
+}: CopyFieldProps) {
   const [copied, setCopied] = React.useState(false)
+  const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  React.useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    }
+  }, [])
 
   const copy = async () => {
     await navigator.clipboard.writeText(value)
     setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+
+    if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    timeoutRef.current = setTimeout(() => setCopied(false), 2000)
   }
 
   const display =
@@ -26,25 +41,33 @@ export function CopyField({ label, value, truncate = true, className }: CopyFiel
   return (
     <div
       className={cn(
-        "flex items-center justify-between rounded-lg bg-secondary px-3 py-2",
-        className,
+        "group flex items-center justify-between gap-3 rounded-xl border border-sky-500/12 bg-gradient-surface px-3 py-2.5 shadow-xs ring-1 ring-white/5 backdrop-blur-sm",
+        className
       )}
     >
-      <div className="min-w-0">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="truncate font-mono text-sm text-foreground">{display}</p>
+      <div className="min-w-0 flex-1">
+        <p className="mb-0.5 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground/80">
+          {label}
+        </p>
+        <p className="truncate font-mono text-sm text-foreground/95">{display}</p>
       </div>
+
       <button
         type="button"
         onClick={copy}
-        className="ml-2 shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        title="Copy to clipboard"
-        aria-label="Copy to clipboard"
+        className={cn(
+          "shrink-0 rounded-lg border border-sky-500/10 bg-background/60 p-2 text-muted-foreground transition-[border-color,background-color,color,box-shadow] outline-none",
+          "hover:border-sky-500/16 hover:bg-sky-500/8 hover:text-foreground",
+          "focus-visible:ring-[3px] focus-visible:ring-sky-400/15",
+          copied && "border-emerald-500/20 bg-emerald-500/10 text-emerald-500"
+        )}
+        title={copied ? "Copied" : "Copy to clipboard"}
+        aria-label={copied ? "Copied" : "Copy to clipboard"}
       >
         {copied ? (
-          <Check className="h-4 w-4 text-emerald-500" aria-hidden="true" />
+          <Check className="size-4" aria-hidden="true" />
         ) : (
-          <Copy className="h-4 w-4" aria-hidden="true" />
+          <Copy className="size-4" aria-hidden="true" />
         )}
       </button>
     </div>

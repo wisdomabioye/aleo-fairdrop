@@ -6,12 +6,14 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-  Command,
-  CommandInput,
-  CommandList,
-  CommandItem,
-  CommandEmpty,
   AuctionStatusBadge,
+  Input,
+  Spinner,
+  ItemGroup,
+  Item,
+  ItemContent,
+  ItemTitle,
+  ItemDescription,
 } from '@/components';
 import { config } from '@/env';
 import { useIndexerStatus } from '@/shared/hooks/useIndexerStatus';
@@ -71,49 +73,49 @@ function StaleBanner({ lagBlocks }: { lagBlocks: number }) {
 // ── AuctionSearchBar ─────────────────────────────────────────────────────────
 
 function AuctionSearchBar() {
-  const [open, setOpen]     = useState(false);
-  const [query, setQuery]   = useState('');
-  const navigate            = useNavigate();
-  const debounceRef         = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const navigate = useNavigate();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [debouncedQ, setDebouncedQ] = useState('');
 
-  // Debounce the search query
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => setDebouncedQ(query), 300);
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
   }, [query]);
 
-  // Cmd+K / Ctrl+K shortcut
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
-        setOpen((v) => !v);
+        setOpen(true);
       }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  // Fetch a pool of recent auctions; client-side filter by name/id
   const { data, isFetching } = useQuery({
-    queryKey:  ['search-auctions-pool'],
-    queryFn:   () => auctionsService.list({ sort: 'created', order: 'desc', pageSize: 50 }),
-    enabled:   open,
+    queryKey: ['search-auctions-pool'],
+    queryFn: () => auctionsService.list({ sort: 'created', order: 'desc', pageSize: 50 }),
+    enabled: open,
     staleTime: 60_000,
   });
 
   const allItems = data?.items ?? [];
-  const results = debouncedQ.length === 0
-    ? allItems.slice(0, 8)
-    : allItems
-        .filter((a) => {
-          const name = (a.name ?? a.id).toLowerCase();
-          const q    = debouncedQ.toLowerCase();
-          return name.includes(q) || a.id.toLowerCase().includes(q);
-        })
-        .slice(0, 8);
+  const results =
+    debouncedQ.length === 0
+      ? allItems.slice(0, 8)
+      : allItems
+          .filter((a) => {
+            const name = (a.name ?? a.id).toLowerCase();
+            const q = debouncedQ.toLowerCase();
+            return name.includes(q) || a.id.toLowerCase().includes(q);
+          })
+          .slice(0, 8);
 
   function handleSelect(id: string) {
     setOpen(false);
@@ -125,63 +127,77 @@ function AuctionSearchBar() {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
-          className="flex h-8 items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 text-sm text-muted-foreground transition-colors hover:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="group flex h-9 min-w-[220px] items-center gap-2 rounded-xl border border-sky-500/12 bg-background/70 px-3 text-sm text-muted-foreground shadow-xs backdrop-blur-sm transition-[border-color,background-color,box-shadow] hover:border-sky-500/20 hover:bg-background/90 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-sky-400/15"
           aria-label="Search auctions"
         >
-          <Search className="size-3.5 shrink-0" />
-          <span className="hidden sm:inline">Search auctions…</span>
-          <kbd className="hidden rounded border border-border bg-background px-1 text-[10px] font-mono leading-none sm:inline">
+          <Search className="size-4 shrink-0 text-sky-500/80 dark:text-sky-400/80" />
+          <span className="hidden flex-1 text-left sm:inline">Search auctions...</span>
+          <kbd className="hidden rounded-md border border-sky-500/10 bg-background/80 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground sm:inline">
             ⌘K
           </kbd>
         </button>
       </PopoverTrigger>
-      <PopoverContent
-        className="w-[380px] p-0"
-        align="start"
-        sideOffset={8}
-      >
-        <Command shouldFilter={false}>
-          <CommandInput
-            placeholder="Search by name or ID…"
-            value={query}
-            onValueChange={setQuery}
-            className="border-none focus:ring-0"
-          />
-          <CommandList className="max-h-72">
-            {!isFetching && results.length === 0 && (
-              <CommandEmpty>
-                {debouncedQ.length < 1 ? 'Type to search auctions…' : 'No auctions found.'}
-              </CommandEmpty>
-            )}
-            {results.map((auction) => {
-              const slot = AUCTION_REGISTRY[auction.type];
-              return (
-                <CommandItem
-                  key={auction.id}
-                  value={auction.id}
-                  onSelect={() => handleSelect(auction.id)}
-                  className="flex items-center gap-3 px-3 py-2.5 cursor-pointer"
-                >
-                  {/* Type color swatch */}
-                  <span className={`size-2 rounded-full shrink-0 ${slot?.color ?? 'bg-muted'}`} />
-                  <div className="flex-1 min-w-0">
-                    <p className="truncate text-sm font-medium">
-                      {auction.name ?? `${auction.id.slice(0, 20)}…`}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {slot?.label ?? auction.type}
-                    </p>
-                  </div>
-                  <AuctionStatusBadge status={auction.status} />
-                </CommandItem>
-              );
-            })}
-          </CommandList>
-        </Command>
+
+      <PopoverContent className="w-[420px] gap-0 overflow-hidden p-0" align="start" sideOffset={10}>
+        <div className="border-b border-sky-500/10 p-3">
+          <div className="relative">
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-sky-500/75 dark:text-sky-400/75" />
+            <Input
+              autoFocus
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search by name or auction ID..."
+              className="border-sky-500/10 bg-sky-950/10 pl-9 shadow-none"
+            />
+          </div>
+        </div>
+
+        <div className="max-h-80 overflow-y-auto p-2">
+          {isFetching ? (
+            <div className="flex items-center justify-center py-8 text-muted-foreground">
+              <Spinner className="mr-2" />
+              <span className="text-sm">Searching auctions...</span>
+            </div>
+          ) : results.length === 0 ? (
+            <div className="py-8 text-center text-sm text-muted-foreground">
+              {debouncedQ.length < 1 ? 'Type to search auctions...' : 'No auctions found.'}
+            </div>
+          ) : (
+            <ItemGroup className="gap-1">
+              {results.map((auction) => {
+                const slot = AUCTION_REGISTRY[auction.type];
+
+                return (
+                  <Item
+                    key={auction.id}
+                    asChild
+                    variant="default"
+                    size="sm"
+                    className="rounded-lg border-transparent px-3 py-2.5 hover:bg-sky-500/8"
+                  >
+                    <button type="button" onClick={() => handleSelect(auction.id)}>
+                      <span className={`size-2 shrink-0 rounded-full ${slot?.color ?? 'bg-muted'}`} />
+                      <ItemContent className="min-w-0">
+                        <ItemTitle className="truncate text-sm">
+                          {auction.name ?? `${auction.id.slice(0, 20)}…`}
+                        </ItemTitle>
+                        <ItemDescription className="truncate text-xs">
+                          {slot?.label ?? auction.type}
+                        </ItemDescription>
+                      </ItemContent>
+                      <AuctionStatusBadge status={auction.status} />
+                    </button>
+                  </Item>
+                );
+              })}
+            </ItemGroup>
+          )}
+        </div>
       </PopoverContent>
     </Popover>
   );
 }
+
 
 // ── TopBar ───────────────────────────────────────────────────────────────────
 
