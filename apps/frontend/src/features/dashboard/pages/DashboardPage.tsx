@@ -1,55 +1,67 @@
 import { Link } from 'react-router-dom';
+import { Button, Skeleton } from '@/components';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import {
-  Button,
-  MetricCard,
-  Skeleton,
-} from '@/components';
-import {
-  Zap,
+  Activity,
+  ArrowRight,
+  BarChart3,
   Gavel,
   PlusCircle,
-  Activity,
-  BarChart3,
-  Users,
+  ShieldCheck,
   TrendingUp,
 } from 'lucide-react';
+import fairdropLogo from '@/assets/fairdrop.svg';
 import { AuctionStatus } from '@fairdrop/types/domain';
-import { useAuctions }   from '@/features/auctions/hooks/useAuctions';
-import { AuctionCard }   from '@/features/auctions/components/AuctionCard';
-import { AppRoutes }        from '@/config';
+import { useAuctions } from '@/features/auctions/hooks/useAuctions';
+import { AuctionCard } from '@/features/auctions/components/AuctionCard';
+import { AppRoutes } from '@/config';
+import { cn } from '@/lib/utils';
 
 // ── Hero ──────────────────────────────────────────────────────────────────────
 
 function Hero() {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/10 via-background to-background px-8 py-10">
-      {/* Decorative glow */}
-      <div className="pointer-events-none absolute -top-24 -right-24 size-72 rounded-full bg-primary/5 blur-3xl" />
-
-      <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <div className="flex size-9 items-center justify-center rounded-xl bg-primary/15 text-primary">
-              <Zap className="size-5" />
-            </div>
-            <h1 className="text-3xl font-bold tracking-tight">Fairdrop</h1>
+    <div className="overflow-hidden rounded-xl border border-sky-500/10 bg-gradient-surface shadow-xs ring-1 ring-white/5">
+      <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-sky-500/12 bg-white/90 p-2 shadow-xs dark:bg-white/10">
+            <img src={fairdropLogo} alt="Fairdrop" className="size-full object-contain" />
           </div>
-          <p className="max-w-md text-base text-muted-foreground">
-            Privacy-preserving token launches on the Aleo network.
-            Fair distribution, sealed bids, on-chain guarantees.
-          </p>
+
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge
+                variant="outline"
+                className="h-5 rounded-full border-sky-500/14 bg-sky-500/8 px-1.5 text-[10px] font-medium text-sky-700 dark:text-sky-300"
+              >
+                Aleo
+              </Badge>
+              <Badge
+                variant="outline"
+                className="h-5 rounded-full border-border bg-background/70 px-1.5 text-[10px] font-medium text-muted-foreground"
+              >
+                Sealed bids
+              </Badge>
+            </div>
+
+            <p className="mt-1 truncate text-sm font-medium text-foreground">
+              Privacy-preserving token launches and capital formation on Aleo.
+            </p>
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-2 sm:shrink-0">
-          <Button asChild size="sm">
+          <Button asChild size="sm" className="h-8 rounded-lg px-3">
             <Link to={AppRoutes.auctions}>
-              <Gavel className="mr-1.5 size-4" />
-              Browse Auctions
+              <Gavel className="mr-1.5 size-3.5" />
+              Browse
             </Link>
           </Button>
-          <Button asChild variant="outline" size="sm">
+
+          <Button asChild variant="outline" size="sm" className="h-8 rounded-lg px-3">
             <Link to={AppRoutes.createAuction}>
-              <PlusCircle className="mr-1.5 size-4" />
+              <PlusCircle className="mr-1.5 size-3.5" />
               Create Auction
             </Link>
           </Button>
@@ -61,41 +73,83 @@ function Hero() {
 
 // ── StatsRow ──────────────────────────────────────────────────────────────────
 
+function StatCard({
+  label,
+  value,
+  hint,
+  icon,
+  loading,
+}: {
+  label: string;
+  value: string | number;
+  hint: string;
+  icon: React.ReactNode;
+  loading?: boolean;
+}) {
+  return (
+    <Card className="border-sky-500/10 bg-gradient-surface shadow-xs ring-1 ring-white/5">
+      <CardContent className="flex items-center gap-3 p-3">
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-sky-500/12 bg-sky-500/8 text-sky-600 dark:text-sky-300">
+          {icon}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground/80">
+            {label}
+          </p>
+          {loading ? (
+            <Skeleton className="mt-1 h-5 w-14 rounded-md" />
+          ) : (
+            <p className="mt-0.5 text-base font-semibold leading-none text-foreground">
+              {value}
+            </p>
+          )}
+          <p className="mt-1 truncate text-xs text-muted-foreground">{hint}</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function StatsRow() {
   const { data: active, isLoading: loadingActive } = useAuctions({
-    status: AuctionStatus.Active, pageSize: 1,
+    status: AuctionStatus.Active,
+    pageSize: 1,
   });
   const { data: all, isLoading: loadingAll } = useAuctions({
     pageSize: 1,
   });
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <MetricCard
-        label="Active Auctions"
-        value={loadingActive ? '—' : (active?.total ?? 0)}
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <StatCard
+        label="Active"
+        value={loadingActive ? '—' : active?.total ?? 0}
         icon={<Activity className="size-4" />}
         loading={loadingActive}
         hint="Live right now"
       />
-      <MetricCard
-        label="Total Auctions"
-        value={loadingAll ? '—' : (all?.total ?? 0)}
+
+      <StatCard
+        label="Auctions"
+        value={loadingAll ? '—' : all?.total ?? 0}
         icon={<BarChart3 className="size-4" />}
         loading={loadingAll}
         hint="All time"
       />
-      <MetricCard
-        label="Auction Types"
+
+      <StatCard
+        label="Formats"
         value="6"
         icon={<TrendingUp className="size-4" />}
-        hint="Dutch · Sealed · Raise · Ascending · LBP · Quadratic"
+        hint="Dutch, sealed, raise, LBP"
       />
-      <MetricCard
+
+      <StatCard
         label="Network"
         value="Aleo"
-        icon={<Users className="size-4" />}
-        hint="Privacy-first L1"
+        icon={<ShieldCheck className="size-4" />}
+        hint="Privacy-first execution"
       />
     </div>
   );
@@ -105,52 +159,73 @@ function StatsRow() {
 
 function LiveAuctions() {
   const { data, isLoading } = useAuctions({
-    status:   AuctionStatus.Active,
-    sort:     'created',
-    order:    'desc',
+    status: AuctionStatus.Active,
+    sort: 'created',
+    order: 'desc',
     pageSize: 6,
   });
 
   const items = data?.items ?? [];
 
   return (
-    <section className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold">Live Auctions</h2>
-          <p className="text-sm text-muted-foreground">Currently accepting bids</p>
+    <section className="space-y-3">
+      <div className="flex items-end justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold tracking-tight text-foreground">
+            Live Auctions
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            Currently accepting bids
+          </p>
         </div>
-        <Button asChild variant="ghost" size="sm">
-          <Link to={AppRoutes.auctions}>View all →</Link>
+
+        <Button asChild variant="ghost" size="sm" className="h-8 rounded-lg px-2.5">
+          <Link to={AppRoutes.auctions}>
+            View all
+            <ArrowRight className="ml-1 size-3.5" />
+          </Link>
         </Button>
       </div>
 
       {isLoading ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-52 rounded-xl" />
+            <Skeleton key={i} className="h-48 rounded-xl" />
           ))}
         </div>
       ) : items.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border py-14 text-center">
-          <Gavel className="size-8 text-muted-foreground/40" />
-          <div>
-            <p className="text-sm font-medium">No live auctions yet</p>
-            <p className="text-xs text-muted-foreground">
-              Be the first — create an auction to get started.
-            </p>
+        <div className="rounded-xl border border-dashed border-sky-500/12 bg-gradient-surface px-4 py-8 text-center shadow-xs ring-1 ring-white/5">
+          <div className="mx-auto flex size-10 items-center justify-center rounded-xl border border-sky-500/10 bg-sky-500/8 text-sky-500 dark:text-sky-300">
+            <Gavel className="size-4.5" />
           </div>
-          <Button asChild size="sm" variant="outline">
-            <Link to={AppRoutes.createAuction}>
-              <PlusCircle className="mr-1.5 size-4" />
-              Create Auction
-            </Link>
-          </Button>
+
+          <p className="mt-3 text-sm font-medium text-foreground">
+            No live auctions yet
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Create the first auction to get started.
+          </p>
+
+          <div className="mt-4">
+            <Button asChild size="sm" variant="outline" className="h-8 rounded-lg px-3">
+              <Link to={AppRoutes.createAuction}>
+                <PlusCircle className="mr-1.5 size-3.5" />
+                Create Auction
+              </Link>
+            </Button>
+          </div>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {items.map((auction) => (
-            <AuctionCard key={auction.id} auction={auction} />
+            <div
+              key={auction.id}
+              className={cn(
+                'rounded-xl border border-transparent transition-[transform,border-color] hover:border-sky-500/10 hover:-translate-y-0.5'
+              )}
+            >
+              <AuctionCard auction={auction} />
+            </div>
           ))}
         </div>
       )}
@@ -162,7 +237,7 @@ function LiveAuctions() {
 
 export function DashboardPage() {
   return (
-    <div className="space-y-8 p-6">
+    <div className="space-y-5 p-4 sm:p-5 lg:p-6">
       <Hero />
       <StatsRow />
       <LiveAuctions />
