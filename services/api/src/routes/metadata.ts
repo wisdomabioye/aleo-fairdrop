@@ -1,10 +1,11 @@
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
+import { toFieldLiteral } from '@fairdrop/sdk/format';
 import type { Db } from '@fairdrop/database';
 import type { MetadataCreateRequest, MetadataCreateResponse, LogoUploadResponse, MetadataResponse } from '@fairdrop/types/api';
 import { insertMetadata, getMetadataByHash } from '../queries/metadata.js';
 import { createPinataClient } from '../lib/ipfs.js';
-import { computeMetadataHash, toFieldLiteral } from '../lib/hash.js';
+import { computeMetadataHash } from '../lib/hash.js';
 import { json } from '../lib/respond.js';
 import { env } from '../env.js';
 
@@ -94,9 +95,10 @@ metadataRouter.post('/', async (c) => {
     computeMetadataHash(canonical),
     ipfs.pin(canonical, `fairdrop-metadata-${name.slice(0, 40)}`),
   ]);
+  const metadataHash = toFieldLiteral(hash)
 
   await insertMetadata(db, {
-    hash,
+    hash: metadataHash,
     ipfsCid,
     name,
     description,
@@ -109,7 +111,7 @@ metadataRouter.post('/', async (c) => {
   });
 
   const response: MetadataCreateResponse = {
-    metadata_hash: toFieldLiteral(hash),
+    metadata_hash: metadataHash,
     ipfs_cid:      ipfsCid,
   };
 

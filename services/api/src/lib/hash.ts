@@ -38,11 +38,3 @@ export async function computeMetadataHash(obj: Record<string, unknown>): Promise
   const big    = arr.reduce((acc, byte) => (acc << 8n) | BigInt(byte), 0n);
   return (big % FIELD_ORDER).toString();
 }
-
-/**
- * Format a field value as the "Nfield" string the Leo contract expects as input.
- * Pass this to create_auction's metadata_hash parameter.
- */
-export function toFieldLiteral(fieldDecimal: string): string {
-  return `${fieldDecimal}field`;
-}

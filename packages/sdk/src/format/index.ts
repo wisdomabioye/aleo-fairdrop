@@ -93,16 +93,16 @@ export const i64  = (v: string | bigint | number): string => `${v}i64`;
  * Ensure a value already has a `field` suffix.
  * Pass through if it already ends with "field", otherwise append it.
  */
-export function toField(v: string): string {
+export function toFieldLiteral(v: string): string {
   return v.endsWith('field') ? v : `${v}field`;
 }
 
 /**
  * Serialise a plain JS object into a Leo struct literal string.
- * All values must already be Leo-typed strings (e.g. from u128(), toField()).
+ * All values must already be Leo-typed strings (e.g. from u128(), toFieldLiteral()).
  *
  * @example
- *   leoStruct({ amount: u128('100'), nonce: toField('42') })
+ *   leoStruct({ amount: u128('100'), nonce: toFieldLiteral('42') })
  *   // → '{ amount: 100u128, nonce: 42field }'
  */
 export function leoStruct(fields: Record<string, string>): string {

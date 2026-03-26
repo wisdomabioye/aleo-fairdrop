@@ -13,7 +13,7 @@ import {
   aleou128,
   parseTokenAmount,
   u128, u64, u32, u16, u8,
-  toField, leoStruct,
+  toFieldLiteral, leoStruct,
 } from '@fairdrop/sdk/format';
 import { ZERO_ADDRESS } from '@fairdrop/sdk/constants';
 import type { WizardForm } from './types';
@@ -33,7 +33,7 @@ import { TX_DEFAULT_FEE } from '@/env';
 function buildGate(form: WizardForm): string {
   return leoStruct({
     gate_mode:   u8(form.gateMode),
-    merkle_root: form.gateMode === 1 ? toField(form.merkleRoot) : '0field',
+    merkle_root: form.gateMode === 1 ? toFieldLiteral(form.merkleRoot) : '0field',
     issuer:      form.gateMode === 2 ? form.issuerAddress : ZERO_ADDRESS,
   });
 }
@@ -59,7 +59,7 @@ function buildSnapshot(pc: ProtocolConfig): string {
 /** Shared positional inputs that come before the type-specific param. */
 function commonInputs(form: WizardForm, nonce: bigint): string[] {
   return [
-    toField(form.saleTokenId),
+    form.saleTokenId,
     u128(form.supply),
     u32(form.startBlock),
     u32(form.endBlock),
@@ -67,7 +67,7 @@ function commonInputs(form: WizardForm, nonce: bigint): string[] {
     u128(parseTokenAmount(form.minBidAmount, form.tokenDecimals)),
     u128(form.saleScale),
     u64(nonce),
-    toField(form.metadataHash),
+    form.metadataHash,
   ];
 }
 

@@ -9,7 +9,7 @@
  */
 
 import type { TokenInfo } from '@fairdrop/types/domain';
-import { parseStruct, parseField, parseAddress, parseU8, parseU32, parseBool, stripSuffix, stripVisibility } from './leo';
+import { parseStruct, parseAddress, parseU8, parseU32, parseBool, stripSuffix, stripVisibility } from './leo';
 
 // ── ASCII / u128 codec ────────────────────────────────────────────────────────
 
@@ -69,7 +69,7 @@ export function parseTokenInfo(raw: string): TokenInfo {
   const symbolRaw = BigInt(stripSuffix(stripVisibility(p['symbol'] ?? '0')));
 
   return {
-    tokenId:               parseField(p['token_id'] ?? ''),
+    tokenId:               p['token_id'],
     name:                  u128ToAscii(nameRaw),
     symbol:                u128ToAscii(symbolRaw),
     decimals:              parseU8(p['decimals'] ?? '0u8'),
@@ -94,7 +94,7 @@ export interface RawTokenBalance {
 export function parseRawTokenBalance(raw: string): RawTokenBalance {
   const p = parseStruct(raw);
   return {
-    tokenId:         parseField(p['token_id'] ?? ''),
+    tokenId:         p['token_id'],
     account:         parseAddress(p['account'] ?? ''),
     amount:          BigInt(stripSuffix(stripVisibility(p['balance'] ?? '0'))),
     authorizedUntil: parseU32(p['authorized_until'] ?? '0u32'),
