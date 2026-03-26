@@ -5,7 +5,7 @@ import type { ProgressPanelProps } from './types';
 /** Supply bar with a raise-target threshold marker. */
 export function RaiseProgressPanel({ auction }: ProgressPanelProps) {
   const target    = auction.params.type === 'raise' ? BigInt(auction.params.raise_target) : 0n;
-  const committed = auction.totalCommitted;
+  const committed = BigInt(auction.totalCommitted);
   const supplyPct = auction.progressPct;
   const targetPct = target > 0n && auction.supply > 0n
     ? Math.min(100, Number((target * 100n) / auction.supply))
@@ -14,8 +14,8 @@ export function RaiseProgressPanel({ auction }: ProgressPanelProps) {
   return (
     <div className="space-y-2">
       <div className="flex justify-between text-xs text-muted-foreground">
-        <span>{formatMicrocredits(committed)} raised</span>
-        {target > 0n && <span>Target: {formatMicrocredits(target)}</span>}
+        <span>{formatMicrocredits(committed, auction.saleTokenDecimals as number)} raised</span>
+        {target > 0n && <span>Target: {formatMicrocredits(target, auction.saleTokenDecimals as number)}</span>}
       </div>
 
       {/* Progress bar with threshold line */}
