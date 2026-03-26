@@ -1,0 +1,7 @@
+<svg width="180" height="180" viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg" fill="none">
+
+  <!-- Outer outline for visibility -->
+  <rect x="45" y="60" width="90" height="14" rx="7" fill="#FFFFFF" stroke="#111111" stroke-width="3"></rect>
+  <rect x="55" y="90" width="70" height="14" rx="7" fill="#FFFFFF" stroke="#111111" stroke-width="3"></rect>
+  <rect x="65" y="120" width="50" height="14" rx="7" fill="#FFFFFF" stroke="#111111" stroke-width="3"></rect>
+</svg>
