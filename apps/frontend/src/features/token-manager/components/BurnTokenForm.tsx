@@ -144,7 +144,6 @@ export function BurnTokenForm() {
               max={recAmount}
               maxLabel="Burn all"
               error={rawAmount > recAmount ? 'Exceeds record amount' : undefined}
-              disabled={blocked}
             />
           )}
 

@@ -58,7 +58,6 @@ export function MintTokenForm({
           maxLabel="Full supply"
           placeholder={formatAmount(maxRaw, decimals)}
           error={mintRaw > maxRaw ? 'Exceeds max supply' : undefined}
-          disabled={blocked}
         />
 
         {error && <p className="text-xs text-destructive">{parseExecutionError(error)}</p>}

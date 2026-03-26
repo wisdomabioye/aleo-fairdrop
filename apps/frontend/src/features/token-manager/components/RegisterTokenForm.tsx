@@ -103,7 +103,6 @@ export function RegisterTokenForm({
             decimals={isNaN(dec) ? 0 : dec}
             placeholder="1000000"
             hint="Human-readable total supply"
-            disabled={blocked}
           />
         </div>
 
