@@ -167,24 +167,35 @@ export function ActionsPanel({ auction, blockHeight }: ActionsPanelProps) {
     });
   }
 
+  const unsold = auction.supply - auction.totalCommitted;
+
   if (canWithdraw) {
     actions.push({
-      key:          'withdraw-revenue',
+      key:          'withdraw-payments',
       label:        'Withdraw Revenue',
       pendingLabel: 'Submitting…',
       description:  'Claim settled proceeds as the auction creator.',
       icon:    HandCoins,
-      onClick: () => runAction('withdraw-revenue', 'Withdraw revenue', 'withdraw_revenue', [auction.id]),
+      onClick: () => runAction('withdraw-payments', 'Withdraw revenue', 'withdraw_payments', [
+        auction.id,
+        `${auction.creatorRevenue}u128`,
+      ]),
     });
 
-    actions.push({
-      key:          'withdraw-unsold',
-      label:        'Withdraw Unsold',
-      pendingLabel: 'Submitting…',
-      description:  'Recover unsold inventory after clearing.',
-      icon:    Coins,
-      onClick: () => runAction('withdraw-unsold', 'Withdraw unsold', 'withdraw_unsold', [auction.id]),
-    });
+    if (unsold > 0n) {
+      actions.push({
+        key:          'withdraw-unsold',
+        label:        'Withdraw Unsold',
+        pendingLabel: 'Submitting…',
+        description:  'Recover unsold inventory after clearing.',
+        icon:    Coins,
+        onClick: () => runAction('withdraw-unsold', 'Withdraw unsold', 'withdraw_unsold', [
+          auction.id,
+          `${unsold}u128`,
+          auction.saleTokenId,
+        ]),
+      });
+    }
   }
 
   if (canPushReferral) {
@@ -194,7 +205,10 @@ export function ActionsPanel({ auction, blockHeight }: ActionsPanelProps) {
       pendingLabel: 'Submitting…',
       description:  'Move referral budget into the distribution flow.',
       icon:    Send,
-      onClick: () => runAction('push-referral', 'Push referral budget', 'push_referral_budget', [auction.id]),
+      onClick: () => runAction('push-referral', 'Push referral budget', 'push_referral_budget', [
+        auction.id,
+        `${auction.referralBudget}u128`,
+      ]),
     });
   }
 
@@ -206,7 +220,11 @@ export function ActionsPanel({ auction, blockHeight }: ActionsPanelProps) {
       description:  'Available while the auction is still upcoming or active.',
       icon:    Ban,
       variant: 'destructive',
-      onClick: () => runAction('cancel', 'Cancel auction', 'cancel_auction', [auction.id]),
+      onClick: () => runAction('cancel', 'Cancel auction', 'cancel_auction', [
+        auction.id,
+        auction.saleTokenId,
+        `${auction.supply}u128`,
+      ]),
     });
   }
 

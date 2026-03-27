@@ -14,6 +14,7 @@ import { AuctionListPage }    from '@/features/auctions/pages/AuctionListPage';
 import { AuctionDetailPage }  from '@/features/auctions/pages/AuctionDetailPage';
 import { CreateAuctionPage }  from '@/features/auctions/pages/CreateAuctionPage';
 import { MyAuctionsPage }     from '@/features/creator/pages/MyAuctionsPage';
+import { AuctionManagePage } from '@/features/creator/pages/AuctionManagePage';
 import { MyBidsPage }         from '@/features/bids/pages/MyBidsPage';
 import { ClaimPage }          from '@/features/claim/pages/ClaimPage';
 import { EarningsPage }       from '@/features/earnings/pages/EarningsPage';
@@ -73,6 +74,7 @@ export function App() {
 
           {/* Creator / Bidder */}
           <Route path={AppRoutes.myAuctions}         element={<MyAuctionsPage />} />
+          <Route path={AppRoutes.creatorAuction}     element={<AuctionManagePage />} />
           <Route path={AppRoutes.myBids}             element={<MyBidsPage />} />
           <Route path={AppRoutes.claim}              element={<ClaimPage />} />
 

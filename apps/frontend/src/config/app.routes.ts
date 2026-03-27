@@ -12,7 +12,8 @@ export const AppRoutes = {
   createAuction:  '/auctions/new',
 
   // Creator
-  myAuctions: '/creator',
+  myAuctions:      '/creator',
+  creatorAuction:  '/creator/auctions/:auctionId',
 
   // Bidder
   myBids: '/bids',
@@ -43,6 +44,11 @@ export type AppRoute = (typeof AppRoutes)[keyof typeof AppRoutes];
 /** Build a concrete auction detail URL from an auction ID. */
 export function auctionDetailUrl(id: string): string {
   return `/auctions/${id}`;
+}
+
+/** Build a concrete creator auction management URL from an auction ID. */
+export function creatorAuctionUrl(id: string): string {
+  return `/creator/auctions/${id}`;
 }
 
 /** Build a concrete gate URL for an auction. */

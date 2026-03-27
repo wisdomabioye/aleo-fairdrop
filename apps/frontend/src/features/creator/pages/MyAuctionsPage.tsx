@@ -9,11 +9,11 @@ import {
   AuctionStatusBadge,
   PageHeader,
 } from '@/components';
-import { PlusCircle, ExternalLink } from 'lucide-react';
+import { PlusCircle } from 'lucide-react';
 import { ConnectWalletPrompt } from '@/shared/components/wallet/ConnectWalletPrompt';
 import { usersService }       from '@/services/users.service';
 import { AUCTION_REGISTRY }   from '@/features/auctions/registry';
-import { auctionDetailUrl, AppRoutes } from '@/config';
+import { creatorAuctionUrl, AppRoutes } from '@/config';
 
 export function MyAuctionsPage() {
   const { address, connected } = useWallet();
@@ -76,7 +76,7 @@ export function MyAuctionsPage() {
                 const slot = AUCTION_REGISTRY[auction.type];
                 return (
                   <Card key={auction.id} className="hover:bg-card/80 transition-colors">
-                    <CardContent className="flex items-center gap-4 py-4">
+                    <CardContent className="flex items-center gap-4">
                       {/* Type badge */}
                       <span className={`hidden shrink-0 rounded-full px-2.5 py-1 text-xs font-medium sm:inline ${slot?.color ?? 'bg-muted text-muted-foreground'}`}>
                         {slot?.label ?? auction.type}
@@ -97,8 +97,7 @@ export function MyAuctionsPage() {
 
                       {/* Manage link */}
                       <Button asChild variant="ghost" size="sm">
-                        <Link to={auctionDetailUrl(auction.id)}>
-                          <ExternalLink className="mr-1.5 size-3.5" />
+                        <Link to={creatorAuctionUrl(auction.id)}>
                           Manage
                         </Link>
                       </Button>
