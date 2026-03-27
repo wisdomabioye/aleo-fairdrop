@@ -6,7 +6,7 @@ import type { PricePanelProps } from './types';
 export function RaisePricePanel({ auction }: PricePanelProps) {
   const target    = auction.params.type === AuctionType.Raise ? BigInt(auction.params.raise_target) : 0n;
   const committed = BigInt(auction.totalCommitted);
-  const pct = target > 0n
+  const raisePct = target > 0n
     ? Math.min(100, Number((committed * 100n) / target))
     : 0;
 
@@ -20,10 +20,10 @@ export function RaisePricePanel({ auction }: PricePanelProps) {
       </div>
       {target > 0n && (
         <>
-          <Progress value={pct} className="h-2" />
+          <Progress value={raisePct} className="h-2" />
           <div className="flex justify-between text-xs text-muted-foreground">
             <span>{formatMicrocredits(committed)} raised</span>
-            <span>{pct.toFixed(1)}%</span>
+            <span>{raisePct.toFixed(1)}%</span>
           </div>
         </>
       )}

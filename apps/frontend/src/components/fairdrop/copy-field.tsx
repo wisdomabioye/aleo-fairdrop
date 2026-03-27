@@ -49,7 +49,7 @@ export function CopyField({
         <p className="mb-0.5 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground/80">
           {label}
         </p>
-        <p className="truncate font-mono text-sm text-foreground/95">{display}</p>
+        <p className="truncate font-mono text-[13px] text-foreground/85">{display}</p>
       </div>
 
       <button

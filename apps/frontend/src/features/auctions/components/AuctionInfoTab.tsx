@@ -72,6 +72,8 @@ export function AuctionInfoTab({ auction, protocolConfig }: AuctionInfoTabProps)
     : 'Disabled';
 
   const tokenDecimals = auction.saleTokenDecimals as number;
+  const isSealed = auction.type === AuctionType.Sealed;
+  const isRaise = auction.type === AuctionType.Raise;
 
   return (
     <Card className="border-sky-500/10 bg-gradient-surface shadow-xs ring-1 ring-white/5">
@@ -133,12 +135,30 @@ export function AuctionInfoTab({ auction, protocolConfig }: AuctionInfoTabProps)
                 value={auction.startBlock.toLocaleString()}
                 valueClassName="font-mono text-[12px] text-foreground/80"
               />
-              <Row
-                label="End block"
-                value={auction.endBlock.toLocaleString()}
-                valueClassName="font-mono text-[12px] text-foreground/80"
-              />
+              
 
+              { 
+                isSealed ? 
+                <>
+                  <Row
+                    label="Commit End block"
+                    value={auction.commitEndBlock?.toLocaleString()}
+                    valueClassName="font-mono text-[12px] text-foreground/80"
+                  />
+                  <Row
+                    label="Reveal End block"
+                    value={auction.endBlock.toLocaleString()}
+                    valueClassName="font-mono text-[12px] text-foreground/80"
+                  />
+                </>
+                :
+                <Row
+                  label="Reveal End block"
+                  value={auction.endBlock.toLocaleString()}
+                  valueClassName="font-mono text-[12px] text-foreground/80"
+                />
+              }
+              
               {auction.estimatedStart ? (
                 <Row
                   label="Est. start"
@@ -178,7 +198,12 @@ export function AuctionInfoTab({ auction, protocolConfig }: AuctionInfoTabProps)
               {auction.minBidAmount > 0n ? (
                 <Row
                   label="Min bid"
-                  value={`${formatAmount(auction.minBidAmount, tokenDecimals)} ${auction.saleTokenSymbol}`}
+                  value={
+                    isRaise ?
+                    `${formatAmount(auction.minBidAmount, tokenDecimals)} ALEO` // minAmount contribution is ALEO
+                    :
+                    `${formatAmount(auction.minBidAmount, tokenDecimals)} ${auction.saleTokenSymbol}`
+                  }
                   valueClassName="text-[11px] text-foreground/82"
                 />
               ) : null}
@@ -186,7 +211,12 @@ export function AuctionInfoTab({ auction, protocolConfig }: AuctionInfoTabProps)
               {auction.maxBidAmount > 0n ? (
                 <Row
                   label="Max bid"
-                  value={`${formatAmount(auction.maxBidAmount, tokenDecimals)} ${auction.saleTokenSymbol}`}
+                  value={
+                    isRaise ?
+                    `${formatAmount(auction.maxBidAmount, tokenDecimals)} ALEO` // minAmount contribution is ALEO
+                    :
+                    `${formatAmount(auction.maxBidAmount, tokenDecimals)} ${auction.saleTokenSymbol}`
+                  }
                   valueClassName="text-[11px] text-foreground/82"
                 />
               ) : null}
@@ -197,7 +227,7 @@ export function AuctionInfoTab({ auction, protocolConfig }: AuctionInfoTabProps)
                 valueClassName="text-[11px] font-normal text-muted-foreground"
               />
 
-              {auction.type === AuctionType.Sealed && protocolConfig ? (
+              {isSealed && protocolConfig ? (
                 <Row
                   label="Slash reward"
                   value={`${protocolConfig.slashRewardBps / 100}% of collateral`}

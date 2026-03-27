@@ -106,6 +106,7 @@ async function upsertAuction(
       saleScale:        config.sale_scale,
       startBlock:       config.start_block,
       endBlock:         config.end_block,
+      commitEndBlock:   config.commit_end_block,
       endedAtBlock,
       creatorRevenue:   state.creator_revenue,
       protocolFee:      state.protocol_fee,

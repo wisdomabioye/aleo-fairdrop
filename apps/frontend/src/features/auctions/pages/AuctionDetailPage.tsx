@@ -133,13 +133,13 @@ function AuctionDetailContent({ id }: { id: string }) {
 
           <Tabs defaultValue="info" className="space-y-3">
             <TabsList className="grid h-9 w-full grid-cols-3 rounded-xl border border-sky-500/10 bg-gradient-surface p-1 shadow-xs ring-1 ring-white/5">
-              <TabsTrigger value="info" className="rounded-lg text-xs sm:text-sm">
+              <TabsTrigger value="info" className="rounded-md text-xs sm:text-sm">
                 Overview
               </TabsTrigger>
-              <TabsTrigger value="earn" className="rounded-lg text-xs sm:text-sm">
+              <TabsTrigger value="earn" className="rounded-md text-xs sm:text-sm">
                 Earn
               </TabsTrigger>
-              <TabsTrigger value="referral" className="rounded-lg text-xs sm:text-sm">
+              <TabsTrigger value="referral" className="rounded-md text-xs sm:text-sm">
                 Referral
               </TabsTrigger>
             </TabsList>

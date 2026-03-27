@@ -8,6 +8,13 @@
       "when": 1774314282337,
       "tag": "0000_safe_miracleman",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1774604530087,
+      "tag": "0001_nasty_captain_stacy",
+      "breakpoints": true
     }
   ]
 }

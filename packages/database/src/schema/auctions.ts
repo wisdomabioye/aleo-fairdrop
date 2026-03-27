@@ -43,6 +43,8 @@ export const auctions = pgTable('auctions', {
 
   // Raise-specific — null for all other auction types
   raiseTarget:     text('raise_target'),
+  // Sealed-specific - null for all other auction types
+  commitEndBlock: integer('commit_end_block'),
 
   // Bid constraints — u128 as decimal strings
   minBidAmount:    text('min_bid_amount'),

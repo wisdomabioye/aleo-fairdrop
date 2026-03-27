@@ -1,0 +1,1 @@
+ALTER TABLE "auctions" ADD COLUMN "commit_end_block" integer;
