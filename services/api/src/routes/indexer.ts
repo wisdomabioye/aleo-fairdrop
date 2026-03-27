@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { indexerCheckpoints } from '@fairdrop/database';
+import type { IndexerStatus, SyncStatus } from '@fairdrop/types/indexer';
 import type { Db } from '@fairdrop/database';
 import { json } from '../lib/respond.js';
 import { env } from '../env.js';
@@ -41,8 +42,8 @@ indexerRouter.get('/status', async (c) => {
       lastBlockHeight: cp.lastBlockHeight,
       lastBlockHash:   cp.lastBlockHash,
       lastProcessedAt: cp.lastProcessedAt,
-      status:          cp.status,
+      status:          cp.status as SyncStatus,
       lag:             cp.lag,
     })),
-  });
+  } satisfies IndexerStatus);
 });

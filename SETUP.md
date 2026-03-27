@@ -4,6 +4,7 @@
 - deploy others - ascending, sealed, raise (in any order) - the utilities are network referenced, not local in program.json
 - update programs.json in deployments/program.json with program addresses and program Id
 - setup envs in services/api, services/indexer, apps/frontend, use .env.example as guide
+- in the services/api, run db migrations
 - run indexer, run api, and start the frontend
 - on the frontend, connect your admin-address, click on the top-righ user drop and navigate to '/admin' route
 - set approved caller contract in each utility contract - each auction contract must be approved in each utilities.

@@ -18,3 +18,11 @@ export interface IndexerCheckpoint {
   /** Blocks behind chain tip. 0 when synced. */
   lag:              number;
 }
+
+export interface IndexerStatus {
+  indexedBlock:  number;
+  chainTip:      number | null;
+  /** Blocks behind chain tip across all programs (max lag). */
+  lagBlocks:     number | null;
+  programs: IndexerCheckpoint[]
+}

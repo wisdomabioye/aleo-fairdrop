@@ -1,7 +1,7 @@
 import { type ReactNode, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Search } from 'lucide-react';
+import { Search, Activity } from 'lucide-react';
 import {
   Popover,
   PopoverContent,
@@ -46,18 +46,38 @@ const STATUS_LABEL: Record<StatusLevel, string> = {
   offline: 'Offline',
 };
 
-function IndexerStatusBadge() {
-  const { data, isError } = useIndexerStatus();
-  const level: StatusLevel =
-    isError || !data ? 'offline' : getStatusLevel(data.lagBlocks);
+// ── TopBar ───────────────────────────────────────────────────────────────────
 
-    return (
-    <span className="hidden items-center gap-1.5 text-xs text-muted-foreground sm:flex">
-      <span className={`size-2 rounded-full ${STATUS_DOT[level]}`} aria-hidden="true" />
-      {STATUS_LABEL[level]}
-    </span>
+interface TopBarProps {
+  trigger?: ReactNode;
+  actions?: ReactNode;
+}
+
+export function TopBar({ trigger, actions }: TopBarProps) {
+  const { data } = useIndexerStatus();
+
+  return (
+    <>
+      {data?.lagBlocks && <StaleBanner lagBlocks={data.lagBlocks} />}
+      <header className="flex h-14 items-center gap-3 border-b border-border bg-background/95 px-4 backdrop-blur-md">
+        {trigger}
+
+        {/* Network badge */}
+        <span className="rounded-md border border-border px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {config.network}
+        </span>
+
+        <AuctionSearchBar />
+
+        <div className="flex-1" />
+        <ChainStatusBadge />
+
+        {actions}
+      </header>
+    </>
   );
 }
+
 
 // ── StaleBanner ──────────────────────────────────────────────────────────────
 
@@ -198,36 +218,44 @@ function AuctionSearchBar() {
   );
 }
 
+function ChainStatusBadge() {
+  const { data, isError } = useIndexerStatus();
 
-// ── TopBar ───────────────────────────────────────────────────────────────────
+  const lagBlocks = data?.lagBlocks ?? null;
+  const chainTip = data?.chainTip ?? null;
 
-interface TopBarProps {
-  trigger?: ReactNode;
-  actions?: ReactNode;
-}
+  const level: StatusLevel =
+    isError || lagBlocks == null ? 'offline' : getStatusLevel(lagBlocks);
 
-export function TopBar({ trigger, actions }: TopBarProps) {
-  const { data } = useIndexerStatus();
+  const text =
+    level === 'offline'
+      ? 'Indexer offline'
+      : level === 'live'
+        ? 'Indexer live'
+        : `Indexer +${lagBlocks}`;
+
+  const title =
+    level === 'offline'
+      ? 'Indexer offline'
+      : `Indexer status: ${STATUS_LABEL[level]}${lagBlocks != null ? ` • ${lagBlocks} blocks behind` : ''}${chainTip != null ? ` • Block ${Number(chainTip).toLocaleString()}` : ''}`;
 
   return (
-    <>
-      {data && <StaleBanner lagBlocks={data.lagBlocks} />}
-      <header className="flex h-14 items-center gap-3 border-b border-border bg-background/95 px-4 backdrop-blur-md">
-        {trigger}
+    <span
+      title={title}
+      className="hidden h-8 items-center gap-1.5 rounded-lg border border-border/60 bg-background/60 px-2.5 text-[11px] font-medium sm:inline-flex"
+    >
+      <Activity className="size-3.5 text-muted-foreground/75" />
+      <span className={`size-2 rounded-full ${STATUS_DOT[level]}`} aria-hidden="true" />
+      <span className="text-foreground/90">{text}</span>
 
-        {/* Network badge */}
-        <span className="rounded-md border border-border px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          {config.network}
-        </span>
-
-        <AuctionSearchBar />
-
-        <div className="flex-1" />
-
-        <IndexerStatusBadge />
-
-        {actions}
-      </header>
-    </>
+      {chainTip != null ? (
+        <>
+          <span className="text-muted-foreground/45">•</span>
+          <span className="text-muted-foreground/80">
+            Block <span className="text-foreground/90">{Number(chainTip).toLocaleString()}</span>
+          </span>
+        </>
+      ) : null}
+    </span>
   );
 }
