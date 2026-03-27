@@ -223,7 +223,7 @@ export function AuctionEarnTab({ auction }: AuctionEarnTabProps) {
 
         <EarnItem
           title="Referral Commission"
-          value={`up to ${(maxReferralBudget).toString()}%`}
+          value={`up to ${(maxReferralBudget).toString()}% commission`}
           icon={Gift}
           description={referralDescription}
           muted={!isActive || !hasBudget}
