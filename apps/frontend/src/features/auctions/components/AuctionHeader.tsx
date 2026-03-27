@@ -13,7 +13,7 @@ import {
 import { AuctionStatusBadge, Countdown } from '@/components';
 import { Badge } from '@/components/ui/badge';
 import { truncateAddress, sanitizeExternalUrl } from '@fairdrop/sdk/format';
-import { GateMode } from '@fairdrop/types/domain';
+import { AuctionType, GateMode } from '@fairdrop/types/domain';
 import type { AuctionView } from '@fairdrop/types/domain';
 import { IPFS_GATEWAY } from '@/env';
 import { AppRoutes } from '@/config';
@@ -108,16 +108,16 @@ export function AuctionHeader({ auction, currentPrice }: AuctionHeaderProps) {
   const twitter = auction.metadata?.twitter
     ? sanitizeExternalUrl(auction.metadata.twitter)
     : null;
-
+  
   const [copied, setCopied] = useState(false);
   const [imageError, setImageError] = useState(false);
 
+  const isRaise = auction.type === AuctionType.Raise;
   const isActive =
     auction.status === 'active' || auction.status === 'clearing';
 
   const commitEndBlock = useMemo(() => {
-    const candidate = (auction as AuctionView & { commitEndBlock?: number | bigint })
-      .commitEndBlock;
+    const candidate = auction.commitEndBlock;
     return candidate;
   }, [auction]);
 
@@ -214,13 +214,7 @@ export function AuctionHeader({ auction, currentPrice }: AuctionHeaderProps) {
                 label="Start"
                 value={formatBlock(auction.startBlock)}
               />
-
-              <MetaChip
-                icon={Hash}
-                label="End"
-                value={formatBlock(auction.endBlock)}
-              />
-
+              
               {commitEndBlock != null ? (
                 <MetaChip
                   icon={Hash}
@@ -228,6 +222,13 @@ export function AuctionHeader({ auction, currentPrice }: AuctionHeaderProps) {
                   value={formatBlock(commitEndBlock)}
                 />
               ) : null}
+
+              <MetaChip
+                icon={Hash}
+                label="End"
+                value={formatBlock(auction.endBlock)}
+              />
+
 
               <Link
                 to={`${AppRoutes.auctions}?creator=${auction.creator}`}
@@ -266,13 +267,26 @@ export function AuctionHeader({ auction, currentPrice }: AuctionHeaderProps) {
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5 border-t border-border/50 pt-2.5">
-          {currentPrice != null ? (
-            <InlineStat
-              label={priceLabel}
-              value={formatMicrocredits(BigInt(currentPrice))}
-              icon={Hash}
-            />
-          ) : null}
+          {
+            currentPrice != null ? (
+              <InlineStat
+                label={priceLabel}
+                value={formatMicrocredits(BigInt(currentPrice))}
+                icon={Hash}
+              />
+            ) 
+            :
+            isRaise ?
+            (
+              <InlineStat
+                label={priceLabel}
+                value={"N/A"}
+                icon={Hash}
+              />
+            )
+            :
+            null
+          }
 
           <InlineStat
             label={isActive ? 'Ends in' : 'Status'}
