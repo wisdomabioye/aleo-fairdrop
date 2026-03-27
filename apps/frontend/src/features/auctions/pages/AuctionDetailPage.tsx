@@ -23,6 +23,7 @@ import { ActionsPanel } from '../components/ActionsPanel';
 import { AuctionInfoTab } from '../components/AuctionInfoTab';
 import { AuctionEarnTab } from '../components/AuctionEarnTab';
 import { AuctionReferralTab } from '../components/AuctionReferralTab';
+import { DefaultPostAuctionPanel } from '../post-auction-panels/DefaultPostAuctionPanel';
 import { getRegistrySlot } from '../registry';
 
 export function AuctionDetailPage() {
@@ -100,6 +101,18 @@ function AuctionDetailContent({ id }: { id: string }) {
   const isActive =
     auction.status === AuctionStatus.Active || auction.status === AuctionStatus.Clearing;
 
+  const isPostAuction =
+    auction.status === AuctionStatus.Ended   ||
+    auction.status === AuctionStatus.Clearing ||
+    auction.status === AuctionStatus.Cleared  ||
+    auction.status === AuctionStatus.Voided;
+
+  const bidPanelTitle =
+    auction.status === AuctionStatus.Cleared ? 'Claim Tokens' :
+    auction.status === AuctionStatus.Voided  ? 'Claim Refund' :
+    auction.type   === AuctionType.Dutch     ? 'Place Bid'    :
+                                               'Market & Bid';
+
   const hasOverviewIntro = Boolean(ProgressPanel);
   const showPricePanel = PricePanel && auction.type !== AuctionType.Dutch;
 
@@ -164,7 +177,7 @@ function AuctionDetailContent({ id }: { id: string }) {
           <Card className="border-sky-500/10 bg-gradient-surface shadow-xs ring-1 ring-white/5">
             <CardHeader className="pb-0 mb-0">
               <CardTitle className="text-sm font-semibold mb-0 pb-0">
-                {auction.type === AuctionType.Dutch ? 'Place Bid' : 'Market & Bid'}
+                {bidPanelTitle}
               </CardTitle>
             </CardHeader>
 
@@ -177,24 +190,24 @@ function AuctionDetailContent({ id }: { id: string }) {
                 />
               ) : null}
 
-              {BidForm && protocolConfig ? (
-                <>
-                  {showPricePanel ? <Separator /> : null}
+              <>
+                {showPricePanel ? <Separator /> : null}
 
-                  {isActive ? (
-                    <BidForm
-                      auction={auction}
-                      blockHeight={blockHeight ?? 0}
-                      protocolConfig={protocolConfig}
-                      lagBlocks={lagBlocks}
-                    />
-                  ) : (
-                    <div className="rounded-lg border border-border/70 bg-background/70 px-3 py-2 text-xs text-muted-foreground">
-                      Bidding is currently unavailable for this auction.
-                    </div>
-                  )}
-                </>
-              ) : null}
+                {isActive && BidForm && protocolConfig ? (
+                  <BidForm
+                    auction={auction}
+                    blockHeight={blockHeight ?? 0}
+                    protocolConfig={protocolConfig}
+                    lagBlocks={lagBlocks}
+                  />
+                ) : isPostAuction ? (
+                  <DefaultPostAuctionPanel auction={auction} />
+                ) : (
+                  <div className="rounded-lg border border-border/70 bg-background/70 px-3 py-2 text-xs text-muted-foreground">
+                    Bidding is currently unavailable for this auction.
+                  </div>
+                )}
+              </>
             </CardContent>
           </Card>
 

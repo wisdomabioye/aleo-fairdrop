@@ -28,8 +28,9 @@ function useMyCode(auctionId: string) {
   useEffect(() => {
     if (!connected) { setCodeId(null); return; }
     setChecking(true);
-    (requestRecords as (p: string) => Promise<Record<string, unknown>[]>)(REF_PROGRAM)
+    (requestRecords as (p: string, plain: boolean) => Promise<Record<string, unknown>[]>)(REF_PROGRAM, true)
       .then((recs) => {
+        console.log('recs', recs)
         const found = (recs ?? []).find((r) => recField(r, 'auction_id') === auctionId);
         setCodeId(found ? recField(found, 'code_id') : null);
       })
