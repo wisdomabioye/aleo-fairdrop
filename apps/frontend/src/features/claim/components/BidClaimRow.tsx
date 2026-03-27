@@ -1,12 +1,12 @@
-import { useState }            from 'react';
-import { useWallet }            from '@provablehq/aleo-wallet-adaptor-react';
+import { useWallet }             from '@provablehq/aleo-wallet-adaptor-react';
 import { Button, Spinner, Badge } from '@/components';
-import { formatMicrocredits }   from '@fairdrop/sdk/credits';
-import { AuctionStatus }        from '@fairdrop/types/domain';
-import type { AuctionView }     from '@fairdrop/types/domain';
-import { parseExecutionError }  from '@/shared/utils/errors';
-import { useTransactionStore }  from '@/stores/transaction.store';
-import type { ClaimableRecord } from '../hooks/useClaimable';
+import { formatMicrocredits }    from '@fairdrop/sdk/credits';
+import { AuctionStatus }         from '@fairdrop/types/domain';
+import type { AuctionView }      from '@fairdrop/types/domain';
+import { parseExecutionError }   from '@/shared/utils/errors';
+import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
+import type { ClaimableRecord }  from '../hooks/useClaimable';
+import { TX_DEFAULT_FEE } from '@/env';
 
 interface Props {
   record:  ClaimableRecord;
@@ -34,11 +34,28 @@ const ACTION_LABELS: Record<ClaimAction, string> = {
 
 export function BidClaimRow({ record, auction }: Props) {
   const { executeTransaction } = useWallet();
-  const { setTx }              = useTransactionStore();
 
-  const [busy,  setBusy]  = useState(false);
-  const [error, setError] = useState('');
-  const [done,  setDone]  = useState(false);
+  // Derived before hooks so the step closure captures the latest values via stepsRef
+  const action = auction ? resolveAction(record, auction) : null;
+  const label  = action ? ACTION_LABELS[action] : null;
+
+  const tx = useConfirmedSequentialTx([{
+    label: label ?? 'Claim',
+    execute: async () => {
+      if (!action || !auction) throw new Error('Nothing to claim');
+      const needsScale = action === 'claim' || action === 'claim_vested';
+      const inputs: (string | Record<string, unknown>)[] = needsScale
+        ? [record.raw, auction.id, `${record.paymentAmount}u128`, `${auction.saleScale}u128`]
+        : [record.raw, auction.id, `${record.paymentAmount}u128`];
+      const result = await executeTransaction({
+        program:  record.programId,
+        function: action,
+        inputs:   inputs as string[],
+        fee:      TX_DEFAULT_FEE,
+      });
+      return result?.transactionId;
+    },
+  }]);
 
   if (!auction) {
     return (
@@ -48,7 +65,7 @@ export function BidClaimRow({ record, auction }: Props) {
     );
   }
 
-  if (done) {
+  if (tx.done) {
     return (
       <div className="rounded-md border border-border px-4 py-3 flex items-center gap-2 text-sm">
         <Badge variant="outline" className="text-xs text-emerald-600 dark:text-emerald-400">
@@ -61,33 +78,8 @@ export function BidClaimRow({ record, auction }: Props) {
     );
   }
 
-  const action = resolveAction(record, auction);
-  const label  = action ? ACTION_LABELS[action] : null;
-
-  async function handleClaim() {
-    if (!action) return;
-    setError('');
-    setBusy(true);
-    try {
-      const needsScale = action === 'claim' || action === 'claim_vested';
-      const inputs: (string | Record<string, unknown>)[] = needsScale
-        ? [record.raw, auction!.id, `${record.paymentAmount}u128`, `${auction!.saleScale}u128`]
-        : [record.raw, auction!.id, `${record.paymentAmount}u128`];
-
-      const result = await executeTransaction({
-        program:  record.programId,
-        function: action,
-        inputs:   inputs as string[],
-        fee:      0.3,
-      });
-      if (result?.transactionId) setTx(result.transactionId, label ?? action);
-      setDone(true);
-    } catch (err) {
-      setError(parseExecutionError(err));
-    } finally {
-      setBusy(false);
-    }
-  }
+  const busy     = tx.busy || tx.isWaiting;
+  const errorMsg = tx.error ? parseExecutionError(tx.error) : '';
 
   return (
     <div className="rounded-md border border-border px-4 py-3 space-y-2">
@@ -103,7 +95,7 @@ export function BidClaimRow({ record, auction }: Props) {
         </div>
 
         {action ? (
-          <Button size="sm" disabled={busy} onClick={handleClaim}>
+          <Button size="sm" disabled={busy} onClick={tx.advance}>
             {busy ? <><Spinner className="mr-2 h-3 w-3" />Claiming…</> : label}
           </Button>
         ) : (
@@ -113,7 +105,7 @@ export function BidClaimRow({ record, auction }: Props) {
         )}
       </div>
 
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      {errorMsg && <p className="text-xs text-destructive">{errorMsg}</p>}
     </div>
   );
 }

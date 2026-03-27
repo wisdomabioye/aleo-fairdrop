@@ -3,9 +3,9 @@ import { useWallet }           from '@provablehq/aleo-wallet-adaptor-react';
 import { Button, Spinner, Badge } from '@/components';
 import { recField, recU128, recU32 } from '@fairdrop/sdk/parse';
 import { formatMicrocredits }  from '@fairdrop/sdk/credits';
-import { config }              from '@/env';
+import { config, TX_DEFAULT_FEE }              from '@/env';
 import { parseExecutionError } from '@/shared/utils/errors';
-import { useTransactionStore } from '@/stores/transaction.store';
+import { useTransactionTracker } from '@/providers/transaction-tracker';
 import { useBlockHeight }      from '@/shared/hooks/useBlockHeight';
 import { auctionsService }     from '@/services/auctions.service';
 import { ConnectWalletPrompt } from '@/shared/components/wallet/ConnectWalletPrompt';
@@ -57,7 +57,7 @@ function vestStatus(v: VestRecord, currentBlock: number): string {
 
 export function VestingPage() {
   const { connected, requestRecords, executeTransaction } = useWallet();
-  const { setTx }                    = useTransactionStore();
+  const { track }                    = useTransactionTracker();
   const { data: blockHeight = 0 }    = useBlockHeight();
 
   const [records,    setRecords]    = useState<VestRecord[]>([]);
@@ -120,9 +120,9 @@ export function VestingPage() {
           v.tokenId,
           `${releasable}u128`,
         ],
-        fee: 0.3,
+        fee: TX_DEFAULT_FEE,
       });
-      if (result?.transactionId) setTx(result.transactionId, 'Release vested tokens');
+      if (result?.transactionId) track(result.transactionId, 'Release vested tokens');
     } catch (err) {
       setErrors((e) => ({ ...e, [key]: parseExecutionError(err) }));
     } finally {

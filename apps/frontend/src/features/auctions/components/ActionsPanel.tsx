@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import {
@@ -18,7 +18,7 @@ import { AuctionStatus, AuctionType } from '@fairdrop/types/domain';
 import type { AuctionView } from '@fairdrop/types/domain';
 import { AppRoutes } from '@/config';
 import { TX_DEFAULT_FEE } from '@/env';
-import { useTransactionStore } from '@/stores/transaction.store';
+import { useConfirmedSequentialTx, type SequentialStep } from '@/shared/hooks/useConfirmedSequentialTx';
 import { parseExecutionError } from '@/shared/utils/errors';
 import { cn } from '@/lib/utils';
 
@@ -83,12 +83,24 @@ function ActionButton({
 
 export function ActionsPanel({ auction, blockHeight }: ActionsPanelProps) {
   const { connected, address, executeTransaction } = useWallet();
-  const { setTx } = useTransactionStore();
-  const [actionError, setActionError] = useState<string | null>(null);
-  const [loading, setLoading] = useState<string | null>(null);
+
+  const [activeKey,   setActiveKey]   = useState<string | null>(null);
+  const [pendingStep, setPendingStep] = useState<SequentialStep | null>(null);
+
+  const tx = useConfirmedSequentialTx(pendingStep ? [pendingStep] : []);
+
+  // Trigger advance() after pendingStep state + stepsRef are both updated (post-render)
+  useEffect(() => {
+    if (pendingStep) tx.advance();
+  }, [pendingStep]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Release the active button once the action settles (confirmed or failed)
+  useEffect(() => {
+    if (tx.done || tx.error) setActiveKey(null);
+  }, [tx.done, tx.error]);
 
   const isCreator = connected && address === auction.creator;
-  const pastEnd = blockHeight != null && blockHeight > auction.endBlock;
+  const pastEnd   = blockHeight != null && blockHeight > auction.endBlock;
 
   const canClose =
     auction.status === AuctionStatus.Ended || auction.status === AuctionStatus.Clearing;
@@ -109,87 +121,86 @@ export function ActionsPanel({ auction, blockHeight }: ActionsPanelProps) {
 
   if (!canClose && !canCancel && !canSlash && !canWithdraw && !canPushReferral) return null;
 
-  async function runAction(label: string, fn: string, inputs: string[]) {
-    setActionError(null);
-    setLoading(label);
-
-    try {
-      const result = await executeTransaction({
-        program: auction.programId,
-        function: fn,
-        inputs,
-        fee: TX_DEFAULT_FEE,
-        privateFee: true
-      });
-
-      if (result?.transactionId) {
-        setTx(result.transactionId, label);
-      }
-    } catch (err) {
-      setActionError(parseExecutionError(err));
-    } finally {
-      setLoading(null);
-    }
+  function runAction(key: string, label: string, fn: string, inputs: string[]) {
+    if (tx.busy || tx.isWaiting) return;
+    tx.reset();
+    setActiveKey(key);
+    setPendingStep({
+      label,
+      execute: async () => {
+        const result = await executeTransaction({
+          program:    auction.programId,
+          function:   fn,
+          inputs,
+          fee:        TX_DEFAULT_FEE,
+          privateFee: false,
+        });
+        return result?.transactionId;
+      },
+    });
   }
+
+  const anyBusy  = tx.busy || tx.isWaiting;
+  const errorMsg = tx.error ? parseExecutionError(tx.error) : null;
 
   const actions: ActionItem[] = [];
 
   if (canClose) {
     const label = isCreator ? 'Close Auction' : 'Claim Closer Reward';
     actions.push({
-      key: 'close',
-      label: isCreator
+      key:          'close',
+      label:        isCreator
         ? 'Close Auction'
         : `Claim Reward · ${formatMicrocredits(auction.closerReward)}`,
       pendingLabel: 'Submitting…',
-      description: isCreator
+      description:  isCreator
         ? 'Finalize this auction and progress settlement.'
         : 'Close the auction and receive the closer reward.',
-      icon: Gavel,
-      onClick: () => runAction(label, 'close_auction', [auction.id]),
+      icon:    Gavel,
+      onClick: () => runAction('close', label, 'close_auction', [auction.id]),
     });
   }
 
   if (canWithdraw) {
     actions.push({
-      key: 'withdraw-revenue',
-      label: 'Withdraw Revenue',
+      key:          'withdraw-revenue',
+      label:        'Withdraw Revenue',
       pendingLabel: 'Submitting…',
-      description: 'Claim settled proceeds as the auction creator.',
-      icon: HandCoins,
-      onClick: () => runAction('Withdraw revenue', 'withdraw_revenue', [auction.id]),
+      description:  'Claim settled proceeds as the auction creator.',
+      icon:    HandCoins,
+      onClick: () => runAction('withdraw-revenue', 'Withdraw revenue', 'withdraw_revenue', [auction.id]),
     });
 
     actions.push({
-      key: 'withdraw-unsold',
-      label: 'Withdraw Unsold',
+      key:          'withdraw-unsold',
+      label:        'Withdraw Unsold',
       pendingLabel: 'Submitting…',
-      description: 'Recover unsold inventory after clearing.',
-      icon: Coins,
-      onClick: () => runAction('Withdraw unsold', 'withdraw_unsold', [auction.id]),
+      description:  'Recover unsold inventory after clearing.',
+      icon:    Coins,
+      onClick: () => runAction('withdraw-unsold', 'Withdraw unsold', 'withdraw_unsold', [auction.id]),
     });
   }
 
   if (canPushReferral) {
     actions.push({
-      key: 'push-referral',
-      label: 'Push Referral Budget',
+      key:          'push-referral',
+      label:        'Push Referral Budget',
       pendingLabel: 'Submitting…',
-      description: 'Move referral budget into the distribution flow.',
-      icon: Send,
-      onClick: () => runAction('Push referral budget', 'push_referral_budget', [auction.id]),
+      description:  'Move referral budget into the distribution flow.',
+      icon:    Send,
+      onClick: () => runAction('push-referral', 'Push referral budget', 'push_referral_budget', [auction.id]),
     });
   }
 
   if (canCancel) {
     actions.push({
-      key: 'cancel',
-      label: 'Cancel Auction',
+      key:          'cancel',
+      label:        'Cancel Auction',
       pendingLabel: 'Submitting…',
-      description: 'Available while the auction is still upcoming or active.',
-      icon: Ban,
+      description:  'Available while the auction is still upcoming or active.',
+      icon:    Ban,
       variant: 'destructive',
-      onClick: () => runAction('Cancel auction', 'cancel_auction', [auction.id]),
+      onClick: () => runAction('cancel', 'Cancel auction', 'cancel_auction', [auction.id]),
     });
   }
 
@@ -212,8 +223,8 @@ export function ActionsPanel({ auction, blockHeight }: ActionsPanelProps) {
             <ActionButton
               key={item.key}
               item={item}
-              disabled={!connected}
-              loading={loading === item.pendingLabel || loading === item.label}
+              disabled={!connected || anyBusy}
+              loading={activeKey === item.key && anyBusy}
             />
           ))}
         </div>
@@ -231,9 +242,9 @@ export function ActionsPanel({ auction, blockHeight }: ActionsPanelProps) {
           </div>
         ) : null}
 
-        {actionError ? (
+        {errorMsg ? (
           <div className="rounded-lg border border-destructive/15 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-            {actionError}
+            {errorMsg}
           </div>
         ) : null}
       </CardContent>

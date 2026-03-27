@@ -5,12 +5,12 @@ import { getAleoClient }      from '@fairdrop/sdk/client';
 import { formatMicrocredits } from '@fairdrop/sdk/credits';
 import { recStr, recField, stripSuffix } from '@fairdrop/sdk/parse';
 import { computeRefListKey }  from '@fairdrop/sdk/hash';
-import { config }             from '@/env';
+import { config, TX_DEFAULT_FEE }             from '@/env';
 import { 
   ConnectWalletPrompt
 } from '@/shared/components/wallet/ConnectWalletPrompt';
 import { parseExecutionError } from '@/shared/utils/errors';
-import { useTransactionStore } from '@/stores/transaction.store';
+import { useTransactionTracker } from '@/providers/transaction-tracker';
 
 // ── on-chain helpers ───────────────────────────────────────────────────────────
 
@@ -65,7 +65,7 @@ interface RefCodeStatus {
 
 export function ReferralCommissionsTab() {
   const { connected, requestRecords, executeTransaction } = useWallet();
-  const { setTx } = useTransactionStore();
+  const { track } = useTransactionTracker();
 
   const [codes,     setCodes]     = useState<RefCodeStatus[]>([]);
   const [loading,   setLoading]   = useState(false);
@@ -122,9 +122,9 @@ export function ReferralCommissionsTab() {
           program:  REF_PROGRAM,
           function: 'credit_commission',
           inputs:   [codeId, bidderKey],
-          fee:      0.05,
+          fee:      TX_DEFAULT_FEE,
         });
-        if (result?.transactionId) setTx(result.transactionId, 'Credit bidder');
+        if (result?.transactionId) track(result.transactionId, 'Credit bidder');
         setCodes((prev) => prev.map((s) =>
           s.codeId === codeId
             ? { ...s, uncredited: s.uncredited.filter((k) => k !== bidderKey) }
@@ -161,12 +161,12 @@ export function ReferralCommissionsTab() {
         program:  REF_PROGRAM,
         function: 'claim_commission',
         inputs:   [raw as unknown as string, `${amount}u128`],
-        fee:      0.1,
+        fee:      TX_DEFAULT_FEE,
       });
 
     try {
       const result = await attempt(latestEarned);
-      if (result?.transactionId) setTx(result.transactionId, 'Claim commission');
+      if (result?.transactionId) track(result.transactionId, 'Claim commission');
       setCodes((prev) => prev.map((s) => s.codeId === codeId ? { ...s, earned: 0n } : s));
     } catch (err) {
       const msg = parseExecutionError(err);
@@ -175,7 +175,7 @@ export function ReferralCommissionsTab() {
         try {
           const retry  = await fetchEarned(codeId);
           const result2 = await attempt(retry);
-          if (result2?.transactionId) setTx(result2.transactionId, 'Claim commission (retry)');
+          if (result2?.transactionId) track(result2.transactionId, 'Claim commission (retry)');
           setCodes((prev) => prev.map((s) => s.codeId === codeId ? { ...s, earned: 0n } : s));
         } catch (err2) {
           setErrors((e) => ({ ...e, [codeId]: parseExecutionError(err2) }));

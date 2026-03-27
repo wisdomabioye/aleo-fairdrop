@@ -5,15 +5,16 @@ import { formatMicrocredits }  from '@fairdrop/sdk/credits';
 import { AuctionStatus }       from '@fairdrop/types/domain';
 import type { AuctionListItem, AuctionView } from '@fairdrop/types/domain';
 import { parseExecutionError } from '@/shared/utils/errors';
-import { useTransactionStore } from '@/stores/transaction.store';
+import { useTransactionTracker } from '@/providers/transaction-tracker';
 import { useAuctions }         from '../../auctions/hooks/useAuctions';
 import { useProtocolConfig }   from '../../../shared/hooks/useProtocolConfig';
 import { auctionsService }     from '@/services/auctions.service';
 import { AUCTION_REGISTRY }    from '../../auctions/registry';
+import { TX_DEFAULT_FEE } from '@/env';
 
 export function CloseAuctionsTab() {
   const { connected, executeTransaction } = useWallet();
-  const { setTx }     = useTransactionStore();
+  const { track }     = useTransactionTracker();
   const { data: pc }  = useProtocolConfig();
 
   const ended   = useAuctions({ status: AuctionStatus.Ended,   sort: 'endBlock', order: 'asc', pageSize: 50 });
@@ -44,9 +45,9 @@ export function CloseAuctionsTab() {
           `${full.totalCommitted}u128`,                    // volume
           `${full.closerReward}u128`,                      // closer_reward
         ],
-        fee: 0.5,
+        fee: TX_DEFAULT_FEE,
       });
-      if (result?.transactionId) setTx(result.transactionId, 'Close auction');
+      if (result?.transactionId) track(result.transactionId, 'Close auction');
     } catch (err) {
       setErrors((e) => ({ ...e, [auction.id]: parseExecutionError(err) }));
     } finally {

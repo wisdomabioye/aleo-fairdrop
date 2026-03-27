@@ -6,12 +6,12 @@ import { recField, recU128 }         from '@fairdrop/sdk/parse';
 import { computeBidderKey }    from '@fairdrop/sdk/hash';
 import { AuctionType }         from '@fairdrop/types/domain';
 import type { AuctionView }    from '@fairdrop/types/domain';
-import { config }              from '@/env';
+import { config, TX_DEFAULT_FEE }              from '@/env';
 import { parseExecutionError } from '@/shared/utils/errors';
 import { 
   ConnectWalletPrompt
 } from '@/shared/components/wallet/ConnectWalletPrompt';
-import { useTransactionStore } from '@/stores/transaction.store';
+import { useTransactionTracker } from '@/providers/transaction-tracker';
 import { useBlockHeight }      from '@/shared/hooks/useBlockHeight';
 import { auctionsService }     from '@/services/auctions.service';
 
@@ -27,7 +27,7 @@ interface CommitmentRecord {
 
 export function SlashBidsTab() {
   const { connected, address, requestRecords, executeTransaction } = useWallet();
-  const { setTx }                    = useTransactionStore();
+  const { track }                    = useTransactionTracker();
   const { data: blockHeight = 0 }    = useBlockHeight();
 
   const [commitments, setCommitments] = useState<CommitmentRecord[]>([]);
@@ -94,9 +94,9 @@ export function SlashBidsTab() {
           `${c.paymentAmount}u128`,
           `${slashBps}u16`,
         ],
-        fee: 0.3,
+        fee: TX_DEFAULT_FEE,
       });
-      if (result?.transactionId) setTx(result.transactionId, 'Slash unrevealed');
+      if (result?.transactionId) track(result.transactionId, 'Slash unrevealed');
     } catch (err) {
       setErrors((e) => ({ ...e, [commitmentKey]: parseExecutionError(err) }));
     } finally {

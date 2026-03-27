@@ -1,9 +1,9 @@
 import { useState }               from 'react';
 import { useWallet }               from '@provablehq/aleo-wallet-adaptor-react';
 import { Button, Input, Label, Spinner } from '@/components';
-import { config }                  from '@/env';
+import { config, TX_DEFAULT_FEE }                  from '@/env';
 import { parseExecutionError }     from '@/shared/utils/errors';
-import { useTransactionStore }     from '@/stores/transaction.store';
+import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
 import { ConnectWalletPrompt }     from '@/shared/components/wallet/ConnectWalletPrompt';
 import { ReferralCommissionsTab }  from '../../earnings/components/ReferralCommissionsTab';
 
@@ -11,39 +11,33 @@ const REF_PROGRAM = config.programs.ref.programId;
 
 export function ReferralPage() {
   const { connected, executeTransaction } = useWallet();
-  const { setTx } = useTransactionStore();
+  const [auctionId, setAuctionId] = useState('');
 
-  const [auctionId,     setAuctionId]     = useState('');
-  const [creating,      setCreating]      = useState(false);
-  const [createError,   setCreateError]   = useState('');
-  const [createSuccess, setCreateSuccess] = useState(false);
-
-  async function handleCreate(e: React.FormEvent) {
-    e.preventDefault();
-    if (!auctionId.trim()) return;
-
-    setCreateError('');
-    setCreateSuccess(false);
-    setCreating(true);
-    try {
+  const tx = useConfirmedSequentialTx([{
+    label: 'Create referral code',
+    execute: async () => {
       const id = auctionId.trim().endsWith('field')
         ? auctionId.trim()
         : `${auctionId.trim()}field`;
-
       const result = await executeTransaction({
         program:  REF_PROGRAM,
         function: 'create_code',
         inputs:   [id],
-        fee:      0.05,
+        fee:      TX_DEFAULT_FEE,
       });
-      if (result?.transactionId) setTx(result.transactionId, 'Create referral code');
-      setCreateSuccess(true);
-      setAuctionId('');
-    } catch (err) {
-      setCreateError(parseExecutionError(err));
-    } finally {
-      setCreating(false);
-    }
+      return result?.transactionId;
+    },
+  }]);
+
+  function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!auctionId.trim()) return;
+    tx.advance();
+  }
+
+  function handleCreateAnother() {
+    tx.reset();
+    setAuctionId('');
   }
 
   if (!connected) {
@@ -54,6 +48,9 @@ export function ReferralPage() {
       </div>
     );
   }
+
+  const busy     = tx.busy || tx.isWaiting;
+  const errorMsg = tx.error ? parseExecutionError(tx.error) : '';
 
   return (
     <div className="max-w-3xl mx-auto space-y-8 py-6 px-4">
@@ -70,33 +67,41 @@ export function ReferralPage() {
         <p className="text-xs text-muted-foreground">
           Your commission rate is set by the auction configuration and applied automatically.
         </p>
-        <form onSubmit={handleCreate} className="space-y-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="ref-auction-id">Auction ID</Label>
-            <Input
-              id="ref-auction-id"
-              placeholder="Paste the auction field ID (e.g. 1234…field)"
-              value={auctionId}
-              onChange={(e) => setAuctionId(e.target.value)}
-            />
-          </div>
 
-          {createError && <p className="text-xs text-destructive">{createError}</p>}
-          {createSuccess && (
+        {tx.done ? (
+          <div className="space-y-3">
             <p className="text-xs text-emerald-600 dark:text-emerald-400">
-              Code submitted — it will appear below once confirmed on-chain.
+              Code confirmed on-chain — it will appear below shortly.
             </p>
-          )}
+            <Button size="sm" variant="outline" onClick={handleCreateAnother}>
+              Create another
+            </Button>
+          </div>
+        ) : (
+          <form onSubmit={handleCreate} className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="ref-auction-id">Auction ID</Label>
+              <Input
+                id="ref-auction-id"
+                placeholder="Paste the auction field ID (e.g. 1234…field)"
+                value={auctionId}
+                onChange={(e) => setAuctionId(e.target.value)}
+                disabled={busy}
+              />
+            </div>
 
-          <Button type="submit" size="sm" disabled={creating || !auctionId.trim()}>
-            {creating
-              ? <><Spinner className="mr-2 h-3 w-3" />Creating…</>
-              : 'Create Code'}
-          </Button>
-        </form>
+            {errorMsg && <p className="text-xs text-destructive">{errorMsg}</p>}
+
+            <Button type="submit" size="sm" disabled={busy || !auctionId.trim()}>
+              {busy
+                ? <><Spinner className="mr-2 h-3 w-3" />{tx.isWaiting ? 'Confirming…' : 'Creating…'}</>
+                : 'Create Code'}
+            </Button>
+          </form>
+        )}
       </section>
 
-      {/* ── Existing codes (Phase 4 component) ──────────────────────────────── */}
+      {/* ── Existing codes ───────────────────────────────────────────────────── */}
       <section className="space-y-3">
         <h2 className="text-sm font-semibold">Your Codes</h2>
         <ReferralCommissionsTab />
