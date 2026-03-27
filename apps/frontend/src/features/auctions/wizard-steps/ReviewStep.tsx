@@ -1,6 +1,7 @@
 import { AuctionType } from '@fairdrop/types/domain';
 import { AUCTION_REGISTRY } from '../registry';
 import type { StepProps } from './types';
+import { GATE_LABEL } from './types';
 import type {
   DutchPricingValues,
   SealedPricingValues,
@@ -9,6 +10,8 @@ import type {
   LbpPricingValues,
   QuadraticPricingValues,
 } from '../pricing-steps/types';
+import { useProtocolConfig } from '@/shared/hooks/useProtocolConfig';
+import { formatAmount } from '@fairdrop/sdk/format';
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -95,12 +98,11 @@ function PricingSummary({ form }: { form: StepProps['form'] }) {
 }
 
 export function ReviewStep({ form }: StepProps) {
+  const protocolConfig = useProtocolConfig();
   const slot       = form.auctionType ? AUCTION_REGISTRY[form.auctionType] : null;
   const startBlock = parseInt(form.startBlock) || 0;
   const endBlock   = parseInt(form.endBlock)   || 0;
   const duration   = endBlock - startBlock;
-
-  const gateLabel = ['Open — anyone can bid', 'Merkle allowlist', 'Credential issuer'][form.gateMode];
 
   return (
     <div className="space-y-5">
@@ -121,13 +123,21 @@ export function ReviewStep({ form }: StepProps) {
           }
         />
         {slot && <Row label="Mechanism" value={<span className="font-sans">{slot.description}</span>} />}
+        {
+          protocolConfig &&
+          <Row 
+            label="Create fee" 
+            value={<span className="font-sans">
+              {formatAmount(BigInt(protocolConfig.data?.creationFee ?? 0), 6)} ALEO</span>} 
+          />
+        }
       </Section>
 
       {/* Token */}
       <Section title="Sale token">
         <Row label="Symbol"   value={form.tokenSymbol   || '—'} />
         <Row label="Token ID" value={form.saleTokenId   || '—'} />
-        <Row label="Supply"   value={form.supply        ? `${form.supply} (base units)` : '—'} />
+        <Row label="Supply"   value={form.supply        ? `${formatAmount(BigInt(form.supply), form.tokenDecimals)}` : '—'} />
         <Row label="Scale"    value={form.saleScale     || '—'} />
       </Section>
 
@@ -147,9 +157,9 @@ export function ReviewStep({ form }: StepProps) {
 
       {/* Gate & Vest */}
       <Section title="Access & vesting">
-        <Row label="Gate mode" value={gateLabel} />
+        <Row label="Gate mode" value={GATE_LABEL[form.gateMode]} />
         {form.gateMode === 1 && (
-          <Row label="Merkle root"    value={form.merkleRoot} />
+          <Row label="Merkle root" value={form.merkleRoot} />
         )}
         {form.gateMode === 2 && (
           <Row label="Issuer address" value={form.issuerAddress} />

@@ -16,6 +16,7 @@ import { SYSTEM_PROGRAMS } from '@fairdrop/sdk/constants';
 import { fetchTokenRole }  from '@fairdrop/sdk/registry';
 import { config, TX_DEFAULT_FEE } from '@/env';
 import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
+import { GATE_LABEL } from './types';
 import type { StepProps } from './types';
 
 export function GateVestStep({ form, onChange }: StepProps) {
@@ -78,7 +79,12 @@ export function GateVestStep({ form, onChange }: StepProps) {
             <SelectValue placeholder="Select gate mode" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="0">Open — anyone can bid</SelectItem>
+            {
+              GATE_LABEL.map((gate, gateMode) => (
+                <SelectItem key={gate} value={gateMode.toString()}>{gate}</SelectItem>
+              ))
+            }
+            
             <SelectItem value="1">Merkle allowlist — proof required at bid</SelectItem>
             <SelectItem value="2">Credential — issuer-signed credential required</SelectItem>
           </SelectContent>

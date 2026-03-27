@@ -54,6 +54,16 @@ export interface WizardForm {
   metadataIpfsCid:     string; // full metadata CID
 }
 
+/**
+ * Each index mapped correctly to GateMode Enum
+ */
+export const GATE_LABEL = [
+  'Open — anyone can bid', 
+  'Merkle allowlist — proof required at bid', 
+  'Credential — issuer-signed credential'
+];
+
+
 export const DEFAULT_FORM: WizardForm = {
   auctionType:         null,
   tokenRecord:         null,
