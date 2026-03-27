@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Input,
   Label,
@@ -13,33 +13,52 @@ import {
 } from '@/components';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { SYSTEM_PROGRAMS } from '@fairdrop/sdk/constants';
+import { fetchTokenRole }  from '@fairdrop/sdk/registry';
 import { config, TX_DEFAULT_FEE } from '@/env';
-import { parseExecutionError } from '@/shared/utils/errors';
+import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
 import type { StepProps } from './types';
 
 export function GateVestStep({ form, onChange }: StepProps) {
   const { executeTransaction } = useWallet();
-  const [vestAuthStatus, setVestAuthStatus] = useState<'idle' | 'loading' | 'done'>('idle');
-  const [txError,        setTxError]        = useState<string | null>(null);
+  const [vestAuthStatus, setVestAuthStatus] = useState<'idle' | 'checking' | 'ok' | 'missing'>('idle');
 
-  async function handleVestAuth() {
-    if (!form.saleTokenId) return;
-    setTxError(null);
-    setVestAuthStatus('loading');
-    try {
-      await executeTransaction({
+  const vestProgramAddress = config.programs.vest.programAddress as string;
+  
+  // ── Authorization ─────────────────────────────────────────────────────────────
+
+  const vestAuthSteps = [{
+    label: 'Authorize Vest Program',
+    execute: async () => {
+      const result = await executeTransaction({
         program:  SYSTEM_PROGRAMS.tokenRegistry,
         function: 'set_role',
-        inputs:   [form.saleTokenId, config.programs.vest.programAddress as string, '3u8'],
+        inputs:   [form.saleTokenId, vestProgramAddress, '3u8'],
         fee:      TX_DEFAULT_FEE,
         privateFee: false
       });
-      setVestAuthStatus('done');
-    } catch (err) {
-      setTxError(parseExecutionError(err instanceof Error ? err.message : String(err)));
-      setVestAuthStatus('idle');
-    }
-  }
+      return result?.transactionId;
+    },
+  }];
+
+  const { 
+    done: vestAuthDone, 
+    busy: vestAuthBusy, 
+    isWaiting: vestAuthWaiting,
+    error: vestAuthError, 
+    advance: vestAuthorize 
+  } = useConfirmedSequentialTx(vestAuthSteps);
+
+  const vestAuthBlocked = vestAuthBusy || vestAuthWaiting;
+
+  useEffect(() => {
+    if (!form.saleTokenId || !vestProgramAddress) return;
+    setVestAuthStatus('checking');
+    fetchTokenRole(vestProgramAddress, form.saleTokenId)
+      .then((role) => {
+        setVestAuthStatus(role != null && role >= 1 ? 'ok' : 'missing')
+      })
+      .catch(() => setVestAuthStatus('missing'));
+  }, [form.saleTokenId, vestProgramAddress, vestAuthDone]);
 
   return (
     <div className="space-y-4">
@@ -133,27 +152,33 @@ export function GateVestStep({ form, onChange }: StepProps) {
             </div>
           </div>
 
-          {vestAuthStatus !== 'done' ? (
+          {vestAuthStatus === 'checking' && (
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <Spinner className="h-3 w-3" /> Checking authorization…
+            </div>
+          )}
+
+          {vestAuthStatus === 'missing' && (
             <div className="space-y-2">
-              <p className="text-xs text-yellow-600 dark:text-yellow-400">
+              <p className="text-xs text-yellow-600 dark:text-yellow-400 py-2">
                 The vest program needs mint permission to release tokens to recipients.
               </p>
               <Button
                 type="button"
-                disabled={vestAuthStatus === 'loading' || !form.saleTokenId}
-                onClick={handleVestAuth}
+                disabled={vestAuthBlocked || !form.saleTokenId}
+                onClick={vestAuthorize}
               >
-                {vestAuthStatus === 'loading' ? (
-                  <><Spinner className="mr-2 h-3 w-3" />Authorizing…</>
-                ) : (
-                  'Authorize Vest Program'
-                )}
+                {vestAuthBusy ? <><Spinner className="mr-2 h-3 w-3" />Authorizing…</>
+                : vestAuthWaiting ? <><Spinner className="mr-2 h-3 w-3" />Confirming…</>
+                : 'Authorize Vest Program'}
               </Button>
-              {txError && <p className="text-xs text-destructive">{txError}</p>}
+              {vestAuthError && <p className="text-xs text-destructive pt-1">{vestAuthError.message}</p>}
             </div>
-          ) : (
-            <p className="text-xs text-emerald-600 dark:text-emerald-400">
-              ✓ Vest program is authorized
+          )}
+
+          {vestAuthStatus === 'ok' && (
+            <p className="text-emerald-600 dark:text-emerald-400">
+              ✓ Vest program is authorized to mint this token
             </p>
           )}
         </div>

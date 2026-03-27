@@ -44,7 +44,7 @@ function canAdvance(step: number, form: WizardForm): boolean {
     case 3: {
       const start = parseInt(form.startBlock);
       const end   = parseInt(form.endBlock);
-      return start > 0 && end > start;
+      return start > 0 && end > start && parseFloat(form.minBidAmount) > 0;
     }
     case 4: {
       if (form.gateMode === 1 && (!form.merkleRoot || form.merkleRoot === '0field')) return false;

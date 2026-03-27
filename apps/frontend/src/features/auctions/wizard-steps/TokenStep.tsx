@@ -241,7 +241,7 @@ export function TokenStep({ form, onChange }: StepProps) {
           )}
           {programDeployed && roleStatus === 'missing' && (
             <div className="space-y-2">
-              <p className="text-yellow-600 dark:text-yellow-400">
+              <p className="text-yellow-600 dark:text-yellow-400 py-2">
                 The auction program needs mint permission for this token.
               </p>
               <Button type="button" size="sm" disabled={authBlocked} onClick={authorize}>
@@ -249,7 +249,7 @@ export function TokenStep({ form, onChange }: StepProps) {
                 : authWaiting ? <><Spinner className="mr-2 h-3 w-3" />Confirming…</>
                 : 'Authorize Auction Program'}
               </Button>
-              {authError && <p className="text-destructive">{authError.message}</p>}
+              {authError && <p className="text-destructive pt-1">{authError.message}</p>}
             </div>
           )}
           {programDeployed && roleStatus === 'ok' && (

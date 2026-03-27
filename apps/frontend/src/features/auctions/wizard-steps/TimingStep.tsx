@@ -58,6 +58,8 @@ export function TimingStep({ form, onChange, protocolConfig }: TimingStepProps) 
   const duration   = endBlock - startBlock;
 
   const isSealed = form.auctionType === AuctionType.Sealed;
+  const isRaise = form.auctionType === AuctionType.Raise;
+
   const commitOffset = isSealed
     ? parseInt((form.pricing as { commitEndBlockOffset?: string })?.commitEndBlockOffset ?? '0') || 0
     : 0;
@@ -118,24 +120,53 @@ export function TimingStep({ form, onChange, protocolConfig }: TimingStepProps) 
       )}
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <Label>Min bid amount ({form.tokenSymbol}, 0 = none)</Label>
-          <Input
-            inputMode="decimal"
-            value={form.minBidAmount}
-            onChange={(e) => onChange({ minBidAmount: e.target.value })}
-            placeholder="0"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Max bid amount ({form.tokenSymbol}, 0 = no cap)</Label>
-          <Input
-            inputMode="decimal"
-            value={form.maxBidAmount}
-            onChange={(e) => onChange({ maxBidAmount: e.target.value })}
-            placeholder="0"
-          />
-        </div>
+        {
+          /* For Raise Auction, the min & max bid amount is the min-max ALEO to contribute */
+          isRaise ?
+          <>
+            <div className="space-y-1.5">
+              <Label>Min bid amount (ALEO, required)</Label>
+              <Input
+                inputMode="numeric"
+                value={form.minBidAmount}
+                onChange={(e) => onChange({ minBidAmount: e.target.value })}
+                placeholder="0.01"
+                step={"0.001"}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Max bid amount (ALEO, 0 = no cap)</Label>
+              <Input
+                inputMode="numeric"
+                value={form.maxBidAmount}
+                onChange={(e) => onChange({ maxBidAmount: e.target.value })}
+                placeholder="0"
+                step={"0.001"}
+              />
+            </div>
+          </>
+          :
+          <>
+            <div className="space-y-1.5">
+              <Label>Min bid amount ({form.tokenSymbol}, required)</Label>
+              <Input
+                inputMode="decimal"
+                value={form.minBidAmount}
+                onChange={(e) => onChange({ minBidAmount: e.target.value })}
+                placeholder="1"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Max bid amount ({form.tokenSymbol}, 0 = no cap)</Label>
+              <Input
+                inputMode="decimal"
+                value={form.maxBidAmount}
+                onChange={(e) => onChange({ maxBidAmount: e.target.value })}
+                placeholder="0"
+              />
+            </div>
+          </>
+        }
       </div>
     </div>
   );

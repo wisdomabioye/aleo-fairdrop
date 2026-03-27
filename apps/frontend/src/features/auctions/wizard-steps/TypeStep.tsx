@@ -24,7 +24,7 @@ export function TypeStep({ form, onChange }: StepProps) {
             <button
               key={slot.type}
               type="button"
-              onClick={() => onChange({ auctionType: slot.type, pricing: null })}
+              onClick={() => onChange({ auctionType: slot.type, pricing: null, minBidAmount: "0" })}
               className={[
                 'flex flex-col gap-2 rounded-lg border p-4 text-left transition-colors',
                 isSelected

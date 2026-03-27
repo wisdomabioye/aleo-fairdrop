@@ -65,7 +65,7 @@ export const DEFAULT_FORM: WizardForm = {
   pricing:             null,
   startBlock:          '',
   endBlock:            '',
-  minBidAmount:        '0',
+  minBidAmount:        '1',
   maxBidAmount:        '0',
   gateMode:            0,
   merkleRoot:          '0field',

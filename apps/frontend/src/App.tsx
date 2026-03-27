@@ -43,7 +43,7 @@ function Layout() {
       <SidebarInset>
         <TopBar trigger={<SidebarTrigger />} actions={<ConnectButton />} />
         <main className="flex-1 overflow-auto">
-          <div className="mx-auto w-full max-w-6xl px-4 py-4 sm:px-5 lg:px-6 pb-20">
+          <div className="mx-auto w-full max-w-5xl px-4 py-4 sm:px-5 lg:px-6 pb-20">
             <ErrorBoundary>
               <Outlet />
             </ErrorBoundary>
