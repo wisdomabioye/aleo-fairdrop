@@ -157,7 +157,13 @@ export function ActionsPanel({ auction, blockHeight }: ActionsPanelProps) {
         ? 'Finalize this auction and progress settlement.'
         : 'Close the auction and receive the closer reward.',
       icon:    Gavel,
-      onClick: () => runAction('close', label, 'close_auction', [auction.id]),
+      onClick: () => runAction('close', label, 'close_auction', [
+        auction.id,
+        auction.creator,
+        String(auction.status === AuctionStatus.Clearing),
+        `${auction.totalCommitted}u128`,
+        `${auction.closerReward}u128`,
+      ]),
     });
   }
 

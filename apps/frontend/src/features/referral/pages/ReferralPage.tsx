@@ -4,6 +4,7 @@ import { Button, Input, Label, Spinner } from '@/components';
 import { config, TX_DEFAULT_FEE }                  from '@/env';
 import { parseExecutionError }     from '@/shared/utils/errors';
 import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
+import { useProtocolConfig }       from '@/shared/hooks/useProtocolConfig';
 import { ConnectWalletPrompt }     from '@/shared/components/wallet/ConnectWalletPrompt';
 import { ReferralCommissionsTab }  from '../../earnings/components/ReferralCommissionsTab';
 
@@ -11,18 +12,20 @@ const REF_PROGRAM = config.programs.ref.programId;
 
 export function ReferralPage() {
   const { connected, executeTransaction } = useWallet();
+  const { data: pc } = useProtocolConfig();
   const [auctionId, setAuctionId] = useState('');
 
   const tx = useConfirmedSequentialTx([{
     label: 'Create referral code',
     execute: async () => {
+      if (!pc) throw new Error('Protocol config not loaded');
       const id = auctionId.trim().endsWith('field')
         ? auctionId.trim()
         : `${auctionId.trim()}field`;
       const result = await executeTransaction({
         program:  REF_PROGRAM,
         function: 'create_code',
-        inputs:   [id],
+        inputs:   [id, `${pc.maxReferralBps}u16`],
         fee:      TX_DEFAULT_FEE,
       });
       return result?.transactionId;
@@ -92,7 +95,7 @@ export function ReferralPage() {
 
             {errorMsg && <p className="text-xs text-destructive">{errorMsg}</p>}
 
-            <Button type="submit" size="sm" disabled={busy || !auctionId.trim()}>
+            <Button type="submit" size="sm" disabled={busy || !auctionId.trim() || !pc}>
               {busy
                 ? <><Spinner className="mr-2 h-3 w-3" />{tx.isWaiting ? 'Confirming…' : 'Creating…'}</>
                 : 'Create Code'}

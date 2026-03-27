@@ -1,12 +1,17 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, Coins, Gift, Gavel } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components';
+import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+import { Button, Spinner, Card, CardContent } from '@/components';
 import { Badge } from '@/components/ui/badge';
 import { formatMicrocredits } from '@fairdrop/sdk/credits';
 import { AuctionStatus, AuctionType } from '@fairdrop/types/domain';
 import type { AuctionView } from '@fairdrop/types/domain';
+import { useBlockHeight } from '@/shared/hooks/useBlockHeight';
+import { useProtocolConfig } from '@/shared/hooks/useProtocolConfig';
 import { AppRoutes } from '@/config';
+import { TX_DEFAULT_FEE } from '@/env';
 import { cn } from '@/lib/utils';
+import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
 
 interface AuctionEarnTabProps {
   auction: AuctionView;
@@ -18,6 +23,7 @@ function EarnItem({
   value,
   icon: Icon,
   href,
+  action,
   muted,
 }: {
   title: string;
@@ -25,6 +31,7 @@ function EarnItem({
   value?: string;
   icon: typeof Gavel;
   href?: string;
+  action?: React.ReactNode;
   muted?: boolean;
 }) {
   return (
@@ -54,17 +61,18 @@ function EarnItem({
             {value ? (
               <Badge
                 variant="outline"
-                className="h-5 rounded-full border-sky-500/14 bg-sky-500/8 px-1.5 text-[10px] font-medium text-sky-700 dark:text-sky-300"
+                className={cn(
+                  'h-5 rounded-full px-1.5 text-[10px] font-medium',
+                  muted
+                    ? ''
+                    : 'border-sky-500/14 bg-sky-500/8 text-sky-700 dark:text-sky-300'
+                )}
               >
                 {value}
               </Badge>
             ) : null}
           </div>
-
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            {description}
-          </p>
-
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">{description}</p>
           {href ? (
             <Link
               to={href}
@@ -73,6 +81,8 @@ function EarnItem({
               Open
               <ArrowRight className="size-3.5" />
             </Link>
+          ) : action ? (
+            <div className="mt-2">{action}</div>
           ) : null}
         </div>
       </div>
@@ -81,75 +91,144 @@ function EarnItem({
 }
 
 export function AuctionEarnTab({ auction }: AuctionEarnTabProps) {
-  const closeable =
-    auction.status === AuctionStatus.Ended || auction.status === AuctionStatus.Clearing;
+  const { data: blockHeight = 0 } = useBlockHeight();
+  const { connected, executeTransaction } = useWallet();
+  const protocolConfig = useProtocolConfig();
 
-  const slashable =
-    auction.type === AuctionType.Sealed && auction.status === AuctionStatus.Ended;
+  // ── close auction ──────────────────────────────────────────────────────────
 
-  const hasReferral =
-    auction.referralBudget != null &&
-    auction.referralBudget > 0n &&
-    auction.status === AuctionStatus.Active;
+  const isCloseable =
+    auction.status === AuctionStatus.Active   ||
+    auction.status === AuctionStatus.Ended    ||
+    auction.status === AuctionStatus.Clearing;
 
-  const isClosed =
-    auction.status === AuctionStatus.Cleared || auction.status === AuctionStatus.Voided;
+  const canCloseNow =
+    auction.status === AuctionStatus.Ended    ||
+    auction.status === AuctionStatus.Clearing ||
+    (auction.status === AuctionStatus.Active && blockHeight > 0 && blockHeight >= auction.endBlock);
 
-  const hasItems = closeable || slashable || hasReferral;
+  const blocksLeft =
+    auction.status === AuctionStatus.Active && blockHeight > 0
+      ? Math.max(0, auction.endBlock - blockHeight)
+      : null;
+
+  const closeDescription =
+    auction.status === AuctionStatus.Cleared || auction.status === AuctionStatus.Voided
+      ? 'Auction is already finalized.'
+      : canCloseNow
+      ? auction.status === AuctionStatus.Clearing
+        ? 'Supply target met — finalize this auction to claim the closer reward.'
+        : 'Auction period has ended — finalize it to claim the closer reward.'
+      : blocksLeft !== null
+      ? `Closes at block #${auction.endBlock} · ${blocksLeft} blocks remaining`
+      : `Available once the auction period ends (block #${auction.endBlock}).`;
+
+  // ── slash unrevealed ───────────────────────────────────────────────────────
+
+  const isSealed = auction.type === AuctionType.Sealed;
+  const canSlash  = isSealed && blockHeight >= auction.endBlock;
+  const slashBps  =
+    isSealed && auction.params.type === AuctionType.Sealed
+      ? parseInt(String(auction.params.slash_reward_bps))
+      : 0;
+
+  const slashDescription = !isSealed
+    ? 'Only available for sealed commitment auctions.'
+    : canSlash
+    ? slashBps > 0
+      ? `${(slashBps / 100).toFixed(2)}% of each slashed stake paid to the reporter.`
+      : 'Slash uncommitted bids after the reveal window.'
+    : auction.status === AuctionStatus.Cleared || auction.status === AuctionStatus.Voided
+    ? 'Auction finalized.'
+    : 'Available after the sealed auction ends and the reveal window closes.';
+
+  // ── referral commission ────────────────────────────────────────────────────
+  const maxReferralBudget = BigInt(protocolConfig.data?.maxReferralBps ?? 0) / 100n;
+  const hasBudget = maxReferralBudget > 0n;
+  const isActive  = auction.status === AuctionStatus.Active;
+
+  const referralDescription = !hasBudget
+    ? 'No referral budget configured for this auction.'
+    : isActive
+    ? 'Earn a share of each bid placed through your referral link.'
+    : auction.status === AuctionStatus.Cleared || auction.status === AuctionStatus.Voided
+    ? 'Auction closed — check Earnings for any claimable commissions.'
+    : 'Available once the auction becomes active.';
+
+  // ── close handler ──────────────────────────────────────────────────────────
+  const closeAuctionStep = [
+    {
+      label: "Close Auction",
+      execute: async () => {
+        const result = await executeTransaction({
+          program:  auction.programId,
+          function: 'close_auction',
+          inputs: [
+            auction.id,
+            auction.creator,
+            String(auction.status === AuctionStatus.Clearing),
+            `${auction.totalCommitted}u128`,
+            `${auction.closerReward}u128`,
+          ],
+          fee: TX_DEFAULT_FEE,
+          privateFee: false
+        });
+      
+        return result?.transactionId;
+      }
+    }
+  ]
+
+  const {
+    busy: auctionCloseSiging,
+    isWaiting: auctionCloseConfirming,
+    error: auctionCloseError,
+    advance: handleCloseAuction,
+  } = useConfirmedSequentialTx(closeAuctionStep);
+
+  const isAuctionClosing = auctionCloseConfirming || auctionCloseSiging
 
   return (
     <Card className="border-sky-500/10 bg-gradient-surface shadow-xs ring-1 ring-white/5">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-semibold">Earn</CardTitle>
-      </CardHeader>
-
       <CardContent className="space-y-2.5">
-        {!hasItems ? (
-          <div className="rounded-xl border border-border/70 bg-background/50 px-3 py-3 text-sm text-muted-foreground">
-            {isClosed ? (
-              <>
-                This auction is closed. Check{' '}
-                <Link
-                  to={AppRoutes.earnings}
-                  className="font-medium text-foreground underline underline-offset-4"
-                >
-                  Earnings
-                </Link>{' '}
-                for any claimable referral commissions.
-              </>
-            ) : (
-              'No earning opportunities are available yet.'
-            )}
-          </div>
+        <EarnItem
+          title="Close Auction"
+          value={formatMicrocredits(auction.closerReward)}
+          icon={Gavel}
+          description={closeDescription}
+          muted={!isCloseable}
+          action={
+            canCloseNow && connected ? (
+              <Button size="sm" disabled={isAuctionClosing} onClick={handleCloseAuction}>
+                {isAuctionClosing ? (
+                  <><Spinner className="mr-2 h-3 w-3" />Submitting…</>
+                ) : (
+                  `Close & Earn ${formatMicrocredits(auction.closerReward)}`
+                )}
+              </Button>
+            ) : undefined
+          }
+        />
+        {auctionCloseError ? (
+          <p className="px-1 pb-2 text-xs text-destructive">{auctionCloseError.message}</p>
         ) : null}
 
-        {closeable ? (
-          <EarnItem
-            title="Close auction"
-            description="Anyone can finalize the auction once the sale period has ended."
-            value={formatMicrocredits(auction.closerReward)}
-            icon={Gavel}
-          />
-        ) : null}
+        <EarnItem
+          title="Slash Unrevealed Bids"
+          icon={Coins}
+          description={slashDescription}
+          muted={!canSlash}
+          href={canSlash ? AppRoutes.earnings : undefined}
+        />
 
-        {slashable ? (
-          <EarnItem
-            title="Slash unrevealed bids"
-            description="Sealed auctions may allow slashing after the reveal window. Manage this from Earnings."
-            icon={Coins}
-            href={AppRoutes.earnings}
-          />
-        ) : null}
-
-        {hasReferral ? (
-          <EarnItem
-            title="Referral commission"
-            description="Create a referral code and earn from bids placed through your link."
-            value={formatMicrocredits(auction.referralBudget!)}
-            icon={Gift}
-            href={AppRoutes.referral}
-          />
-        ) : null}
+        <EarnItem
+          title="Referral Commission"
+          value={`up to ${(maxReferralBudget).toString()}%`}
+          icon={Gift}
+          description={referralDescription}
+          muted={!isActive || !hasBudget}
+          href={isActive && hasBudget ? '?tab=referral' : undefined}
+        />
       </CardContent>
     </Card>
   );

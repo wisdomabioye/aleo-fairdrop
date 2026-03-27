@@ -1,4 +1,4 @@
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import {
   Card,
   CardContent,
@@ -51,6 +51,8 @@ function AuctionDetailContent({ id }: { id: string }) {
   const { data: blockHeight } = useBlockHeight();
   const { data: indexerData } = useIndexerStatus();
   const { data: protocolConfig } = useProtocolConfig();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') ?? 'info';
 
   const lagBlocks = indexerData?.lagBlocks ?? 0;
   const currentPrice = useCurrentPrice(auction, blockHeight);
@@ -131,7 +133,7 @@ function AuctionDetailContent({ id }: { id: string }) {
             </Card>
           ) : null}
 
-          <Tabs defaultValue="info" className="space-y-3">
+          <Tabs value={activeTab} onValueChange={(tab) => setSearchParams({ tab }, { replace: true })} className="space-y-3">
             <TabsList className="grid h-9 w-full grid-cols-3 rounded-xl border border-sky-500/10 bg-gradient-surface p-1 shadow-xs ring-1 ring-white/5">
               <TabsTrigger value="info" className="rounded-md text-xs sm:text-sm">
                 Overview

@@ -76,7 +76,7 @@ program fairdrop_config_v1.aleo {
     const MAX_REFERRAL_BPS_CAP: u16 = 5000u16;
 
     // Share of protocol_fee allocated as the auction-level referral budget at close_auction.
-    // 500 bps = 5% of protocol_fee. Conservative default — increase once referral
+    // 500 bps = 5% of protocol_fee. Conservative default — to be increased once referral
     // programme proves volume uplift. Hard ceiling: 20%.
     const DEFAULT_REFERRAL_POOL_BPS: u16 = 500u16;
     const MAX_REFERRAL_POOL_BPS: u16 = 2000u16;
