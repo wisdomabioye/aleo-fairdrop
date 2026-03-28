@@ -23,7 +23,7 @@ export function SealedBidForm({ auction, blockHeight, protocolConfig, onBidSucce
   const { connected, executeTransaction } = useWallet();
   const [searchParams] = useSearchParams();
 
-  const saleScale = auction.saleScale;
+  const saleScale = BigInt(auction.saleScale);
   const currentPrice = BigInt(auction.currentPrice ?? 0);
 
   const commitEndBlock = auction.params.type === 'sealed' ? auction.params.commit_end_block : null;
