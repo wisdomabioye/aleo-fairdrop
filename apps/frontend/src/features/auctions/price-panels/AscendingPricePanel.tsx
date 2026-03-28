@@ -10,9 +10,6 @@ export function AscendingPricePanel({ currentPrice }: PricePanelProps) {
           {currentPrice ? formatMicrocredits(currentPrice) : '—'}
         </span>
       </div>
-      <p className="text-xs text-muted-foreground">
-        Price rises with each block step. Early bidders pay less — no refund at claim.
-      </p>
     </div>
   );
 }
