@@ -33,7 +33,7 @@ Requires Node ≥ 22, pnpm ≥ 10, and the [Leo CLI](https://developer.aleo.org/
 
 ## Deployment
 
-For a full walkthrough — deploying contracts, running the indexer and API, and admin setup — see [`SETUP.md`](SETUP.md).
+See [`SETUP.md`](SETUP.md) for full walkthrough — deploying contracts, running the indexer and API, and admin setup.
 
 ## Architecture
 
