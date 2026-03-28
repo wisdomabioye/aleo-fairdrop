@@ -1,10 +1,10 @@
 import { useState }                   from 'react';
 import { useNavigate }                from 'react-router-dom';
+import { X }                          from 'lucide-react';
 import { useBlockHeight }            from '@/shared/hooks/useBlockHeight';
 import { useWallet }                  from '@provablehq/aleo-wallet-adaptor-react';
 import { Button, Spinner }            from '@/components';
 import { fetchMappingBigInt }         from '@/lib/mapping';
-import { AuctionType }                from '@fairdrop/types/domain';
 import { config }                     from '@/env';
 import { AppRoutes }                  from '@/config/app.routes';
 import { useProtocolConfig }          from '@/shared/hooks/useProtocolConfig';
@@ -18,11 +18,10 @@ import { GateVestStep }               from '../wizard-steps/GateVestStep';
 import { ReferralStep }               from '../wizard-steps/ReferralStep';
 import { MetadataStep }               from '../wizard-steps/MetadataStep';
 import { ReviewStep }                 from '../wizard-steps/ReviewStep';
-import { DEFAULT_FORM, DEFAULT_PRICING } from '../wizard-steps/types';
 import { buildCreateAuctionInputs }   from '../wizard-steps/build-inputs';
 import { isPricingComplete }          from '../pricing-steps/validation';
 import { metadataService }           from '@/services/metadata.service';
-import type { WizardForm }            from '../wizard-steps/types';
+import { useDraftAuction }            from '../hooks/useDraftAuction';
 
 // ── step definitions ──────────────────────────────────────────────────────────
 
@@ -41,7 +40,7 @@ const STEPS = [
 
 function canAdvance(
   step: number,
-  form: WizardForm,
+  form: ReturnType<typeof useDraftAuction>['form'],
   opts: { currentBlock: number; minDuration: number } = { currentBlock: 0, minDuration: 0 },
 ): boolean {
   switch (step) {
@@ -67,9 +66,7 @@ function canAdvance(
       return true;
     }
     case 5: return true;
-    case 6: {
-      return !!form.metadataName.trim() && !!form.metadataDescription.trim();
-    }
+    case 6: return !!form.metadataName.trim() && !!form.metadataDescription.trim();
     case 7: {
       const start    = parseInt(form.startBlock);
       const end      = parseInt(form.endBlock);
@@ -81,6 +78,37 @@ function canAdvance(
   }
 }
 
+// ── draft banner ──────────────────────────────────────────────────────────────
+
+interface DraftBannerProps {
+  onDismiss:   () => void;
+  onStartOver: () => void;
+}
+
+function DraftBanner({ onDismiss, onStartOver }: DraftBannerProps) {
+  return (
+    <div className="flex items-start justify-between gap-3 rounded-lg border border-sky-500/20 bg-sky-500/5 px-4 py-3 text-sm">
+      <div className="space-y-0.5">
+        <p className="font-medium text-foreground">Draft restored</p>
+        <p className="text-xs text-muted-foreground">
+          Your previous progress was saved. Token records are session-only and must be re-selected on the Token step.
+        </p>
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        <button
+          onClick={onStartOver}
+          className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+        >
+          Start over
+        </button>
+        <button onClick={onDismiss} className="text-muted-foreground hover:text-foreground">
+          <X className="size-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── component ─────────────────────────────────────────────────────────────────
 
 export function CreateAuctionPage() {
@@ -89,21 +117,16 @@ export function CreateAuctionPage() {
   const { data: protocolConfig, isLoading: configLoading } = useProtocolConfig();
   const { data: currentBlock = 0 } = useBlockHeight();
 
-  const [step, setStep] = useState(0);
-  const [form, setForm] = useState<WizardForm>(DEFAULT_FORM);
-
-  function handleChange(updates: Partial<WizardForm>) {
-    setForm((prev) => {
-      const next = { ...prev, ...updates };
-      if ('auctionType' in updates && updates.auctionType && updates.auctionType !== prev.auctionType) {
-        next.pricing = DEFAULT_PRICING[updates.auctionType as AuctionType] ?? null;
-      }
-      return next;
-    });
-  }
+  const { form, step, setStep, update, isRestored, hasDraft, clearDraft } = useDraftAuction();
+  const [bannerVisible, setBannerVisible] = useState(isRestored);
 
   function goNext() { if (step < STEPS.length - 1) setStep((s) => s + 1); }
   function goBack()  { if (step > 0) setStep((s) => s - 1); }
+
+  function handleStartOver() {
+    clearDraft();
+    setBannerVisible(false);
+  }
 
   // ── submission ───────────────────────────────────────────────────────────────
 
@@ -169,7 +192,7 @@ export function CreateAuctionPage() {
           <Button variant="outline" onClick={() => navigate(AppRoutes.auctions)}>
             View auctions
           </Button>
-          <Button onClick={() => { reset(); setForm(DEFAULT_FORM); setStep(0); }}>
+          <Button onClick={() => { reset(); clearDraft(); setBannerVisible(false); }}>
             Create another
           </Button>
         </div>
@@ -187,6 +210,14 @@ export function CreateAuctionPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 py-6 px-4">
+      {/* Draft restored banner */}
+      {bannerVisible && hasDraft && (
+        <DraftBanner
+          onDismiss={() => setBannerVisible(false)}
+          onStartOver={handleStartOver}
+        />
+      )}
+
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold">Create Auction</h1>
@@ -214,18 +245,18 @@ export function CreateAuctionPage() {
 
       {/* Step content */}
       <div className="rounded-lg border border-border bg-card p-6">
-        {step === 0 && <TypeStep     form={form} onChange={handleChange} />}
-        {step === 1 && <TokenStep    form={form} onChange={handleChange} />}
-        {step === 2 && <PricingStep  form={form} onChange={handleChange} />}
+        {step === 0 && <TypeStep     form={form} onChange={update} />}
+        {step === 1 && <TokenStep    form={form} onChange={update} />}
+        {step === 2 && <PricingStep  form={form} onChange={update} />}
         {step === 3 && protocolConfig && (
-          <TimingStep form={form} onChange={handleChange} protocolConfig={protocolConfig} />
+          <TimingStep form={form} onChange={update} protocolConfig={protocolConfig} />
         )}
-        {step === 4 && <GateVestStep  form={form} onChange={handleChange} />}
+        {step === 4 && <GateVestStep  form={form} onChange={update} />}
         {step === 5 && protocolConfig && (
-          <ReferralStep form={form} onChange={handleChange} protocolConfig={protocolConfig} />
+          <ReferralStep form={form} onChange={update} protocolConfig={protocolConfig} />
         )}
-        {step === 6 && <MetadataStep  form={form} onChange={handleChange} />}
-        {step === 7 && <ReviewStep    form={form} onChange={handleChange} />}
+        {step === 6 && <MetadataStep  form={form} onChange={update} />}
+        {step === 7 && <ReviewStep    form={form} onChange={update} />}
 
         {(configLoading && (step === 3 || step === 5)) && (
           <p className="text-sm text-muted-foreground">Loading protocol config…</p>
