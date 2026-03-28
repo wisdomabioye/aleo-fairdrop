@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useWallet }   from '@provablehq/aleo-wallet-adaptor-react';
 import { Button, Spinner, Input, Label } from '@/components';
-import { getAleoClient } from '@fairdrop/sdk/client';
 import { AuctionType }   from '@fairdrop/types/domain';
+import { fetchMappingBool } from '@/lib/mapping';
 import { config, TX_DEFAULT_FEE } from '@/env';
 import { WizardTxStatus }          from '@/shared/components/WizardTxStatus';
 import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
@@ -38,14 +38,7 @@ interface AuctionRow {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 async function readAllowed(utilityProgramId: string, auctionProgramAddress: string): Promise<boolean> {
-  try {
-    const raw = await getAleoClient().getProgramMappingValue(
-      utilityProgramId, 'allowed_callers', auctionProgramAddress,
-    );
-    return String(raw).trim() === 'true';
-  } catch {
-    return false;
-  }
+  return fetchMappingBool(utilityProgramId, 'allowed_callers', auctionProgramAddress);
 }
 
 async function loadRowStatus(programAddress: string): Promise<Record<UtilityKey, boolean>> {

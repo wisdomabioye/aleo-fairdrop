@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useWallet }          from '@provablehq/aleo-wallet-adaptor-react';
 import { Button, Spinner, Badge } from '@/components';
-import { getAleoClient }      from '@fairdrop/sdk/client';
 import { formatMicrocredits } from '@fairdrop/sdk/credits';
 import { recStr, recField, stripSuffix } from '@fairdrop/sdk/parse';
+import { fetchMapping, fetchMappingBigInt } from '@/lib/mapping';
 import { computeRefListKey }  from '@fairdrop/sdk/hash';
 import { config }                from '@/env';
 import { creditCommission, claimCommission } from '@/lib/auctionTx';
@@ -18,34 +18,22 @@ import { useTransactionTracker } from '@/providers/transaction-tracker';
 const REF_PROGRAM = config.programs.ref.programId;
 
 async function fetchEarned(codeId: string): Promise<bigint> {
-  try {
-    const raw = await getAleoClient().getProgramMappingValue(REF_PROGRAM, 'earned', codeId);
-    if (!raw) return 0n;
-    return BigInt(stripSuffix(String(raw)));
-  } catch { return 0n; }
+  return fetchMappingBigInt(REF_PROGRAM, 'earned', codeId);
 }
 
 async function fetchRefCount(codeId: string): Promise<bigint> {
-  try {
-    const raw = await getAleoClient().getProgramMappingValue(REF_PROGRAM, 'referral_count', codeId);
-    if (!raw) return 0n;
-    return BigInt(stripSuffix(String(raw)));
-  } catch { return 0n; }
+  return fetchMappingBigInt(REF_PROGRAM, 'referral_count', codeId);
 }
 
 async function fetchUncreditedKeys(codeId: string, count: bigint): Promise<string[]> {
   const keys: string[] = [];
   for (let i = 0n; i < count; i++) {
-    try {
-      const listKey   = computeRefListKey(codeId, i);
-      const bidderKey = await getAleoClient().getProgramMappingValue(REF_PROGRAM, 'referral_list', listKey);
-      if (!bidderKey) continue;
-      const bk  = String(bidderKey);
-      const rec = await getAleoClient().getProgramMappingValue(REF_PROGRAM, 'referral_records', bk);
-      if (!rec) continue;
-      const credited = /credited:\s*true/.test(String(rec));
-      if (!credited) keys.push(bk);
-    } catch { /* skip */ }
+    const listKey   = computeRefListKey(codeId, i);
+    const bidderKey = await fetchMapping(REF_PROGRAM, 'referral_list', listKey);
+    if (!bidderKey) continue;
+    const rec = await fetchMapping(REF_PROGRAM, 'referral_records', bidderKey);
+    if (!rec) continue;
+    if (!/credited:\s*true/.test(rec)) keys.push(bidderKey);
   }
   return keys;
 }

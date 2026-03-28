@@ -3,7 +3,7 @@ import { useNavigate }                from 'react-router-dom';
 import { useBlockHeight }            from '@/shared/hooks/useBlockHeight';
 import { useWallet }                  from '@provablehq/aleo-wallet-adaptor-react';
 import { Button, Spinner }            from '@/components';
-import { getAleoClient }              from '@fairdrop/sdk/client';
+import { fetchMappingBigInt }         from '@/lib/mapping';
 import { AuctionType }                from '@fairdrop/types/domain';
 import { config }                     from '@/env';
 import { AppRoutes }                  from '@/config/app.routes';
@@ -119,13 +119,7 @@ export function CreateAuctionPage() {
       if (!programEntry) throw new Error('No program for selected auction type.');
 
       // Fetch current creator nonce (0 if no prior auctions)
-      let nonce = 0n;
-      try {
-        const raw = await getAleoClient().getProgramMappingValue(
-          programEntry.programId, 'creator_nonces', address,
-        );
-        if (raw) nonce = BigInt(String(raw).replace('u64', '').trim());
-      } catch { /* missing = 0 */ }
+      const nonce = await fetchMappingBigInt(programEntry.programId, 'creator_nonces', address);
 
       // Upload metadata to IPFS right before submitting — no junk uploads on navigation
       const { hash, ipfsCid } = await metadataService.upload({

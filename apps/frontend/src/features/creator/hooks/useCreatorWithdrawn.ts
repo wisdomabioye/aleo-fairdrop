@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { getAleoClient } from '@fairdrop/sdk/client';
-import { parseU128, u128ToBigInt } from '@fairdrop/sdk/parse';
+import { fetchMappingBigInt } from '@/lib/mapping';
 
 export interface CreatorWithdrawn {
   paymentsWithdrawn: bigint;
@@ -19,15 +18,11 @@ export function useCreatorWithdrawn(
   return useQuery<CreatorWithdrawn>({
     queryKey: ['creator-withdrawn', auctionId],
     queryFn:  async () => {
-      const client = getAleoClient();
-      const [revRaw, unsoldRaw] = await Promise.all([
-        client.getProgramMappingValue(programId, 'creator_withdrawn', auctionId).catch(() => null),
-        client.getProgramMappingValue(programId, 'unsold_withdrawn',  auctionId).catch(() => null),
+      const [paymentsWithdrawn, unsoldWithdrawn] = await Promise.all([
+        fetchMappingBigInt(programId, 'creator_withdrawn', auctionId),
+        fetchMappingBigInt(programId, 'unsold_withdrawn',  auctionId),
       ]);
-      return {
-        paymentsWithdrawn: u128ToBigInt(parseU128(revRaw ?? '0')),
-        unsoldWithdrawn:   u128ToBigInt(parseU128(unsoldRaw ?? '0')),
-      };
+      return { paymentsWithdrawn, unsoldWithdrawn };
     },
     enabled,
     staleTime: 30_000,
