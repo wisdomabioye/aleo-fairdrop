@@ -33,9 +33,11 @@ export function AuctionCard({ auction }: AuctionCardProps) {
     (auction.status === AuctionStatus.Active || auction.status === AuctionStatus.Clearing);
 
   return (
-    <Link to={auctionDetailUrl(auction.id)} className="group mx-auto block w-full max-w-[20rem]">
-      <Card className="h-full border-border/70 transition-[border-color,box-shadow] group-hover:border-sky-500/12 group-hover:shadow-md">
-        <CardContent className="space-y-3 p-4">
+    <Link to={auctionDetailUrl(auction.id)} className="group mx-auto flex h-full w-full max-w-[20rem] flex-col">
+      <Card className="flex flex-1 flex-col border-border/70 transition-[border-color,box-shadow] group-hover:border-sky-500/12 group-hover:shadow-md">
+        <CardContent className="flex flex-1 flex-col gap-3 p-4">
+
+          {/* ── Header ──────────────────────────────────────────────────────── */}
           <div className="flex items-start gap-3">
             {!imageError && logoUrl ? (
               <img
@@ -50,34 +52,23 @@ export function AuctionCard({ auction }: AuctionCardProps) {
             )}
 
             <div className="min-w-0 flex-1">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-foreground">{name}</p>
-
                   <div className="mt-1 flex flex-wrap items-center gap-1.5">
                     {slot ? (
-                      <span
-                        className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${slot.color}`}
-                      >
+                      <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${slot.color}`}>
                         {slot.label}
                       </span>
                     ) : null}
-
                     <AuctionStatusBadge status={auction.status} />
-
                     {auction.gateMode !== GateMode.Open ? (
-                      <span
-                        className="inline-flex items-center"
-                        title={`Gate: ${auction.gateMode}`}
-                      >
-                        {auction.gateMode === GateMode.Merkle ? (
-                          <Lock className="size-3 text-muted-foreground" />
-                        ) : (
-                          <KeyRound className="size-3 text-muted-foreground" />
-                        )}
+                      <span className="inline-flex items-center" title={`Gate: ${auction.gateMode}`}>
+                        {auction.gateMode === GateMode.Merkle
+                          ? <Lock className="size-3 text-muted-foreground" />
+                          : <KeyRound className="size-3 text-muted-foreground" />}
                       </span>
                     ) : null}
-
                     {auction.vestEnabled ? (
                       <span className="inline-flex items-center" title="Vesting enabled">
                         <Lock className="size-3 text-sky-500" />
@@ -86,20 +77,23 @@ export function AuctionCard({ auction }: AuctionCardProps) {
                   </div>
                 </div>
 
-                {hasPrice ? (
-                  <div className="shrink-0 text-right">
-                    <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/75">
-                      {isClearing ? 'Clearing' : 'Current'}
-                    </p>
-                    <p className="text-sm font-semibold text-foreground">
-                      {formatMicrocredits(price)}
-                    </p>
-                  </div>
-                ) : null}
+                {/* Price block — always reserves width; invisible when absent */}
+                <div className={`w-16 shrink-0 text-right ${hasPrice ? '' : 'invisible'}`}>
+                  <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/75">
+                    {isClearing ? 'Clearing' : 'Current'}
+                  </p>
+                  <p className="text-sm font-semibold text-foreground">
+                    {formatMicrocredits(price)}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
 
+          {/* Spacer — absorbs any header height variance; anchors bottom sections */}
+          <div className="flex-1" />
+
+          {/* ── Progress ────────────────────────────────────────────────────── */}
           <div className="space-y-1">
             <Progress value={auction.progressPct} className="h-1.5" />
             <div className="flex items-center justify-between text-[11px] text-muted-foreground">
@@ -108,25 +102,23 @@ export function AuctionCard({ auction }: AuctionCardProps) {
             </div>
           </div>
 
+          {/* ── Footer ──────────────────────────────────────────────────────── */}
           <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
             <span className="truncate">By {truncateAddress(auction.creator)}</span>
-
             {showCountdown ? (
               <div className="shrink-0">
                 <Countdown targetTime={auction.estimatedEnd!} className="text-[11px]" />
               </div>
             ) : (
               <span className="shrink-0">
-                {auction.status === AuctionStatus.Cleared
-                  ? 'Finalized'
-                  : auction.status === AuctionStatus.Voided
-                    ? 'Voided'
-                    : auction.status === AuctionStatus.Ended
-                      ? 'Awaiting close'
-                      : auction.status}
+                {auction.status === AuctionStatus.Cleared  ? 'Finalized'      :
+                 auction.status === AuctionStatus.Voided   ? 'Voided'         :
+                 auction.status === AuctionStatus.Ended    ? 'Awaiting close' :
+                                                             auction.status}
               </span>
             )}
           </div>
+
         </CardContent>
       </Card>
     </Link>
