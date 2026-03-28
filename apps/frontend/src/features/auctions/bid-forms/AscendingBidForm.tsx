@@ -64,12 +64,14 @@ export function AscendingBidForm({ auction, protocolConfig, onBidSuccess }: BidF
     isWaiting: bidWaiting,
     error: bidError,
     advance: placeBid,
+    reset: resetBid,
   } = useConfirmedSequentialTx(bidSteps);
 
   useEffect(() => {
     if (bidDone) {
       setQtyInput('');
       onBidSuccess?.();
+      resetBid();
     }
   }, [bidDone]);
 

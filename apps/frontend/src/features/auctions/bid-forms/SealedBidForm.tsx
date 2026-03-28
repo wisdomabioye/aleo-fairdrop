@@ -107,6 +107,7 @@ export function SealedBidForm({ auction, blockHeight, protocolConfig, onBidSucce
     isWaiting: bidWaiting,
     error: bidError,
     advance: submitBid,
+    reset: resetBid,
   } = useConfirmedSequentialTx(bidSteps);
 
   useEffect(() => {
@@ -116,6 +117,7 @@ export function SealedBidForm({ auction, blockHeight, protocolConfig, onBidSucce
     setPayInput('');
     if (isRevealPhase) setNonce('');
     onBidSuccess?.();
+    resetBid();
   }, [bidDone, isRevealPhase]);
 
   const isDisabled = !connected || bidBusy || bidWaiting;

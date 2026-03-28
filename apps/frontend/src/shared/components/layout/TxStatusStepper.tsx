@@ -188,7 +188,7 @@ export function TxStatusStepper() {
 
       {!collapsed ? (
         <div className="max-h-[18rem] space-y-1.5 overflow-y-auto p-2">
-          {transactions.map((tx) => (
+          {[...transactions].reverse().map((tx) => (
             <TxRow key={tx.id} tx={tx} onDismiss={() => removeEntry(tx.id)} />
           ))}
         </div>

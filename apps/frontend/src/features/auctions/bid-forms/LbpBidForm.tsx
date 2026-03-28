@@ -53,12 +53,14 @@ export function LbpBidForm({ auction, protocolConfig, onBidSuccess }: BidFormPro
     isWaiting: bidWaiting,
     error: bidError,
     advance: placeBid,
+    reset: resetBid,
   } = useConfirmedSequentialTx(bidSteps);
 
   useEffect(() => {
     if (bidDone) {
       setPayInput('');
       onBidSuccess?.();
+      resetBid();
     }
   }, [bidDone]);
 

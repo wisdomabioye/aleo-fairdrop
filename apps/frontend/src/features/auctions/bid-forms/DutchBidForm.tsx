@@ -134,9 +134,15 @@ export function DutchBidForm({ auction, protocolConfig, onBidSuccess }: BidFormP
     isWaiting: bidWaiting,
     error: bidError,
     advance: placeBid,
+    reset: resetBid,
   } = useConfirmedSequentialTx(bidSteps);
 
-  useEffect(() => { if (bidSuccess) onBidSuccess?.(); }, [bidSuccess]);
+  useEffect(() => {
+    if (bidSuccess) {
+      onBidSuccess?.();
+      resetBid();
+    }
+  }, [bidSuccess]);
 
   const isDisabled = !!formBlocker || bidBusy || bidWaiting;
   const showSummary = qtyRaw > 0n || (mode === 'private' && !!selectedRecord) || !!codeId.trim();
@@ -207,7 +213,7 @@ export function DutchBidForm({ auction, protocolConfig, onBidSuccess }: BidFormP
           {unspentRecords.length > 0 ? (
             <>
               <Select
-                value={selectedRecordId || undefined}
+                value={selectedRecordId}
                 onValueChange={(value) => {
                   if (!recordTouched) setRecordTouched(true);
                   setSelectedRecordId(value);

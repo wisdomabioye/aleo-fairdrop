@@ -131,6 +131,7 @@ export function RaiseBidForm({ auction, protocolConfig, onBidSuccess }: BidFormP
     isWaiting: bidWaiting,
     error: bidError,
     advance: placeBid,
+    reset: resetBid,
   } = useConfirmedSequentialTx(bidSteps);
 
   useEffect(() => {
@@ -139,6 +140,7 @@ export function RaiseBidForm({ auction, protocolConfig, onBidSuccess }: BidFormP
     setPayTouched(false);
     setRecordTouched(false);
     onBidSuccess?.();
+    resetBid();
   }, [bidDone]);
 
   const showSummary =
