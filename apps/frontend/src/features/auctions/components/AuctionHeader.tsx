@@ -7,13 +7,14 @@ import {
   Hash,
   KeyRound,
   Lock,
+  Target,
   TimerIcon,
   X,
 } from 'lucide-react';
 import { AuctionStatusBadge, Countdown } from '@/components';
 import { Badge } from '@/components/ui/badge';
 import { truncateAddress, sanitizeExternalUrl } from '@fairdrop/sdk/format';
-import { AuctionType, GateMode } from '@fairdrop/types/domain';
+import { AuctionStatus, AuctionType, GateMode } from '@fairdrop/types/domain';
 import type { AuctionView } from '@fairdrop/types/domain';
 import { IPFS_GATEWAY } from '@/env';
 import { AppRoutes } from '@/config';
@@ -112,10 +113,6 @@ export function AuctionHeader({ auction, currentPrice }: AuctionHeaderProps) {
   const [copied, setCopied] = useState(false);
   const [imageError, setImageError] = useState(false);
 
-  const isRaise = auction.type === AuctionType.Raise;
-  const isActive =
-    auction.status === 'active' || auction.status === 'clearing';
-
   const commitEndBlock = useMemo(() => {
     const candidate = auction.commitEndBlock;
     return candidate;
@@ -132,7 +129,12 @@ export function AuctionHeader({ auction, currentPrice }: AuctionHeaderProps) {
     setCopied(true);
   };
 
-  const priceLabel = auction.status === 'clearing' ? 'Clearing price' : 'Current price';
+  const isActive = auction.status === AuctionStatus.Active || auction.status === AuctionStatus.Clearing;
+  const isRaise = auction.type === AuctionType.Raise;
+  const isSealed = auction.type === AuctionType.Sealed;
+  const priceLabel = isSealed
+    ? (auction.status === AuctionStatus.Clearing || auction.status === AuctionStatus.Cleared ? 'Clearing price' : 'Dutch ref.')
+    : (auction.status === AuctionStatus.Clearing ? 'Clearing price' : 'Current price');
 
   return (
     <div className="overflow-hidden rounded-xl border border-sky-500/10 bg-gradient-surface shadow-xs ring-1 ring-white/5">
@@ -255,11 +257,11 @@ export function AuctionHeader({ auction, currentPrice }: AuctionHeaderProps) {
                   href={twitter}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex h-7 items-center gap-1 rounded-lg border border-border/60 bg-background/50 px-2 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+                  className="inline-flex h-7 items-center align-center gap-1 rounded-lg border border-border/60 bg-background/50 px-2 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
                   aria-label="Twitter/X"
                 >
                   <X className="size-3" />
-                  <span>X</span>
+                  <span>X/Twitter</span>
                 </a>
               ) : null}
             </div>
@@ -267,26 +269,26 @@ export function AuctionHeader({ auction, currentPrice }: AuctionHeaderProps) {
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5 border-t border-border/50 pt-2.5">
-          {
-            currentPrice != null ? (
+          {isRaise ? (() => {
+            const raiseTarget = auction.params.type === AuctionType.Raise
+              ? BigInt(auction.params.raise_target)
+              : null;
+            const targetMet = auction.status === AuctionStatus.Clearing
+              || auction.status === AuctionStatus.Cleared;
+            return raiseTarget != null ? (
               <InlineStat
-                label={priceLabel}
-                value={formatMicrocredits(BigInt(currentPrice))}
-                icon={Hash}
+                label={targetMet ? 'Target met' : 'Raise target'}
+                value={formatMicrocredits(raiseTarget)}
+                icon={Target}
               />
-            ) 
-            :
-            isRaise ?
-            (
-              <InlineStat
-                label={priceLabel}
-                value={"N/A"}
-                icon={Hash}
-              />
-            )
-            :
-            null
-          }
+            ) : null;
+          })() : currentPrice != null ? (
+            <InlineStat
+              label={priceLabel}
+              value={formatMicrocredits(BigInt(currentPrice))}
+              icon={Hash}
+            />
+          ) : null}
 
           <InlineStat
             label={isActive ? 'Ends in' : 'Status'}

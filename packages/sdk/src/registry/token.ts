@@ -132,3 +132,11 @@ export async function fetchCreditsBalance(account: string): Promise<bigint | nul
     return null;
   }
 }
+
+export function generateTokenId(): string {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  let v = 0n;
+  for (const b of bytes) v = (v << 8n) | BigInt(b);
+  return v.toString() + 'field';
+}

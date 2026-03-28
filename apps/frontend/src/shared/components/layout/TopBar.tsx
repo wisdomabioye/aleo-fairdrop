@@ -242,20 +242,23 @@ function ChainStatusBadge() {
   return (
     <span
       title={title}
-      className="hidden h-8 items-center gap-1.5 rounded-lg border border-border/60 bg-background/60 px-2.5 text-[11px] font-medium sm:inline-flex"
+      className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border/60 bg-background/60 px-2 text-[11px] font-medium xl:px-2.5"
     >
-      <Activity className="size-3.5 text-muted-foreground/75" />
-      <span className={`size-2 rounded-full ${STATUS_DOT[level]}`} aria-hidden="true" />
-      <span className="text-foreground/90">{text}</span>
+      <Activity className="size-3.5 shrink-0 text-muted-foreground/75" />
+      <span className={`size-2 shrink-0 rounded-full ${STATUS_DOT[level]}`} aria-hidden="true" />
 
-      {chainTip != null ? (
+      {/* Status text: xl+ only */}
+      <span className="hidden text-foreground/90 xl:inline">{text}</span>
+
+      {/* Block height: xl+ only */}
+      {chainTip != null && (
         <>
-          <span className="text-muted-foreground/45">•</span>
-          <span className="text-muted-foreground/80">
-            Block <span className="text-foreground/90">{Number(chainTip).toLocaleString()}</span>
+          <span className="hidden text-muted-foreground/45 xl:inline">·</span>
+          <span className="hidden text-muted-foreground/80 xl:inline">
+            #{Number(chainTip).toLocaleString()}
           </span>
         </>
-      ) : null}
+      )}
     </span>
   );
 }

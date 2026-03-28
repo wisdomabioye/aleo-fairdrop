@@ -52,11 +52,20 @@ export const auctionIdFromTransitionInputOne: AuctionIdExtractor = (
  * commit_bid_private, commit_bid_private_ref, 
 */
 export const auctionIdFromFinalizeRevealBid: AuctionIdExtractor = (
-  _transition: AleoTransition,
+  transition: AleoTransition,
   _ops:         FinalizeOperation[],
 ): string | null => {
-    console.log('NOT IMPLEMENTED')
-    return null;
+    /** Auction Id is not available in inputs array.
+     * However, it is passed to finalize as the 1st argument in
+     * transition outputs index 1
+     */
+    const output = transition.outputs[1]; // future output
+    const match = String(output.value??"").match(
+      /arguments\s*:\s*\[\s*([0-9]+field)/
+    );
+
+    const auctionId = match ? match[1] : null;
+    return auctionId;
 };
 
 

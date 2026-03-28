@@ -114,7 +114,11 @@ function AuctionDetailContent({ id }: { id: string }) {
                                                'Market & Bid';
 
   const hasOverviewIntro = Boolean(ProgressPanel);
-  const showPricePanel = PricePanel && auction.type !== AuctionType.Dutch;
+  // For sealed, only show the price panel once clearing price is set (after close_auction).
+  // During commit/reveal the bid form itself carries price context.
+  const showPricePanel = PricePanel
+    && auction.type !== AuctionType.Dutch
+    && !(auction.type === AuctionType.Sealed && !auction.clearingPrice);
 
   return (
     <div className="space-y-4 p-4 sm:p-5 lg:p-6">

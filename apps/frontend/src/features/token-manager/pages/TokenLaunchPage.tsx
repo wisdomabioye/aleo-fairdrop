@@ -20,6 +20,7 @@ import {
 import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
 import { SYSTEM_PROGRAMS } from '@fairdrop/sdk/constants';
 import { asciiToU128 }     from '@fairdrop/sdk/parse';
+import { generateTokenId } from '@fairdrop/sdk/registry';
 import { parseTokenAmount } from '@fairdrop/sdk/format';
 import { TX_DEFAULT_FEE }  from '@/env';
 
@@ -27,16 +28,6 @@ import { TX_DEFAULT_FEE }  from '@/env';
 
 const TOKEN_REGISTRY = SYSTEM_PROGRAMS.tokenRegistry;
 const NO_EXPIRY      = 4294967295; // u32::MAX
-
-// ── Utils ─────────────────────────────────────────────────────────────────────
-
-function generateTokenId(): string {
-  const bytes = new Uint8Array(16);
-  crypto.getRandomValues(bytes);
-  let v = 0n;
-  for (const b of bytes) v = (v << 8n) | BigInt(b);
-  return v.toString() + 'field';
-}
 
 // ── TokenLaunchPage ───────────────────────────────────────────────────────────
 
