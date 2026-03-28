@@ -5,6 +5,7 @@ node_modules
 # Not needed in services container
 apps/
 contracts/
+!contracts/deployments/
 docs/
 infra/
 

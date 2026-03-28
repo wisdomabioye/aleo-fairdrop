@@ -25,6 +25,7 @@ WORKDIR /app
 
 RUN apk add --no-cache supervisor
 
+COPY contracts/deployments/ contracts/deployments/
 COPY packages/ packages/
 COPY services/api/ services/api/
 COPY services/indexer/ services/indexer/
