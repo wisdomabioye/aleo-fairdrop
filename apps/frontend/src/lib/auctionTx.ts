@@ -268,3 +268,24 @@ export function claimCommission(codeRecord: Record<string, unknown>, amount: big
     privateFee: false,
   };
 }
+
+// ── 5. Vesting ────────────────────────────────────────────────────────────────
+
+/**
+ * release — releases a portion of a VestedAllocation to the owner.
+ *
+ * D11 pattern: caller supplies `amount`; finalize validates against on-chain
+ * vesting math. Use computeReleasable() to compute the correct amount before calling.
+ *
+ * @param vestRecord  Raw VestedAllocation record from the wallet
+ * @param amount      Tokens to release (≤ vested_so_far − released)
+ */
+export function releaseVested(vestRecord: Record<string, unknown>, amount: bigint): AuctionTxSpec {
+  return {
+    program:    config.programs.vest.programId,
+    function:   'release',
+    inputs:     [vestRecord, `${amount}u128`],
+    fee:        TX_DEFAULT_FEE,
+    privateFee: false,
+  };
+}
