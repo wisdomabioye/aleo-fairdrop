@@ -3,7 +3,7 @@ import { Spinner } from '@/components';
 import { AuctionStatus } from '@fairdrop/types/domain';
 import { ConnectWalletPrompt } from '@/shared/components/wallet/ConnectWalletPrompt';
 import { BidClaimRow } from '../../claim/components/BidClaimRow';
-import { useAuctionBids } from '../hooks/useAuctionBids';
+import { useAuctionClaimable } from '../hooks/useAuctionClaimable';
 import type { PostAuctionPanelProps } from './types';
 
 /**
@@ -30,7 +30,7 @@ export function DefaultPostAuctionPanel({ auction }: PostAuctionPanelProps) {
     auction.status === AuctionStatus.Cleared ||
     auction.status === AuctionStatus.Voided;
 
-  const { records, loading } = useAuctionBids(auction.id, auction.programId, scannable);
+  const { records, loading } = useAuctionClaimable(auction, scannable);
 
   // ── Ended / Clearing: no bidder action yet ─────────────────────────────────
   if (isSettling) {

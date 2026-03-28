@@ -1,51 +1,26 @@
-import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Gift, Share2 } from 'lucide-react';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { Button, Spinner, Card, CardContent, CardHeader, CardTitle, CopyField } from '@/components';
 import { Badge } from '@/components/ui/badge';
 import { formatMicrocredits } from '@fairdrop/sdk/credits';
-import { recField } from '@fairdrop/sdk/parse';
 import { AuctionStatus } from '@fairdrop/types/domain';
 import type { AuctionView } from '@fairdrop/types/domain';
 import { AppRoutes } from '@/config';
-import { config } from '@/env';
 import { createReferralCode } from '@/lib/auctionTx';
+import { useMyReferralCode } from '@/shared/hooks/useMyReferralCode';
 import { useProtocolConfig } from '@/shared/hooks/useProtocolConfig';
 import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
 import { parseExecutionError } from '@/shared/utils/errors';
-
-const REF_PROGRAM = config.programs.ref.programId;
 
 interface AuctionReferralTabProps {
   auction: AuctionView;
 }
 
-function useMyCode(auctionId: string) {
-  const { connected, requestRecords } = useWallet();
-  const [codeId,   setCodeId]   = useState<string | null>(null);
-  const [checking, setChecking] = useState(false);
-
-  useEffect(() => {
-    if (!connected) { setCodeId(null); return; }
-    setChecking(true);
-    (requestRecords as (p: string, plain: boolean) => Promise<Record<string, unknown>[]>)(REF_PROGRAM, true)
-      .then((recs) => {
-        console.log('recs', recs)
-        const found = (recs ?? []).find((r) => recField(r, 'auction_id') === auctionId);
-        setCodeId(found ? recField(found, 'code_id') : null);
-      })
-      .catch(() => setCodeId(null))
-      .finally(() => setChecking(false));
-  }, [connected, auctionId]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  return { codeId, checking };
-}
-
 export function AuctionReferralTab({ auction }: AuctionReferralTabProps) {
   const { connected, executeTransaction } = useWallet();
   const { data: pc } = useProtocolConfig();
-  const { codeId, checking } = useMyCode(auction.id);
+  const { codeId, checking } = useMyReferralCode(auction.id);
 
   // referralBudget is null until cleared — use protocol maxReferralBps to determine eligibility
   const hasReferralProgram  = (pc?.maxReferralBps ?? 0) > 0;

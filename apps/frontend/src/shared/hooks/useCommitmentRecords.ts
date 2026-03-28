@@ -5,17 +5,21 @@ import type { WalletSealedCommitment } from '@fairdrop/types/primitives';
 import { useWalletRecords } from './useWalletRecords';
 
 interface Options {
-  pollInterval?:  number;
-  fetchOnMount?:  boolean;
+  /** Filter records to a specific auction. */
+  auctionId?:    string;
+  pollInterval?: number;
+  fetchOnMount?: boolean;
 }
 
 /**
  * Fetches Commitment records for one sealed auction program owned by the connected wallet.
  *
- * @param programId - Sealed auction program (e.g. "fairdrop_sealed_v1.aleo")
+ * @param programId       - Sealed auction program (e.g. "fairdrop_sealed_v1.aleo")
+ * @param opts.auctionId  - When set, only Commitment records for that auction are returned.
  */
 export function useCommitmentRecords(programId: string, opts: Options = {}) {
-  const { entries, loading, fetchRecords } = useWalletRecords(programId, opts);
+  const { auctionId, ...walletOpts } = opts;
+  const { entries, loading, fetchRecords } = useWalletRecords(programId, walletOpts);
 
   const commitmentRecords = useMemo<WalletSealedCommitment[]>(() => {
     const result: WalletSealedCommitment[] = [];
@@ -23,6 +27,7 @@ export function useCommitmentRecords(programId: string, opts: Options = {}) {
       if (entry.recordName !== 'Commitment') continue;
       try {
         const fields = parsePlaintext(entry.recordPlaintext);
+        if (auctionId && stripVisibility(fields['auction_id'] ?? '') !== auctionId) continue;
         result.push({
           id:             entry.commitment,
           programId,
@@ -37,7 +42,7 @@ export function useCommitmentRecords(programId: string, opts: Options = {}) {
       } catch { /* skip malformed */ }
     }
     return result;
-  }, [entries, programId]);
+  }, [entries, programId, auctionId]);
 
   return { commitmentRecords, loading, fetchRecords };
 }
