@@ -9,7 +9,7 @@ import { TX_DEFAULT_FEE } from '@/env';
 import type { BidFormProps } from './types';
 
 /** Ascending bid: pay-what-you-bid — no refund at claim. */
-export function AscendingBidForm({ auction, protocolConfig }: BidFormProps) {
+export function AscendingBidForm({ auction, protocolConfig, onBidSuccess }: BidFormProps) {
   const { connected, executeTransaction } = useWallet();
   const [searchParams] = useSearchParams();
 
@@ -69,6 +69,7 @@ export function AscendingBidForm({ auction, protocolConfig }: BidFormProps) {
   useEffect(() => {
     if (bidDone) {
       setQtyInput('');
+      onBidSuccess?.();
     }
   }, [bidDone]);
 

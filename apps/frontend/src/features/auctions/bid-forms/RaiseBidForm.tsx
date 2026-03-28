@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils';
 import type { BidFormProps } from './types';
 
 /** Raise bid: payment amount only — allocation is pro-rata at close. */
-export function RaiseBidForm({ auction, protocolConfig }: BidFormProps) {
+export function RaiseBidForm({ auction, protocolConfig, onBidSuccess }: BidFormProps) {
   const { connected, executeTransaction } = useWallet();
   const [searchParams] = useSearchParams();
   const { creditRecords, loading: creditsLoading } = useCreditRecords();
@@ -138,6 +138,7 @@ export function RaiseBidForm({ auction, protocolConfig }: BidFormProps) {
     setPayInput('');
     setPayTouched(false);
     setRecordTouched(false);
+    onBidSuccess?.();
   }, [bidDone]);
 
   const showSummary =

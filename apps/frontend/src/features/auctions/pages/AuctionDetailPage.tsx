@@ -48,7 +48,7 @@ export function AuctionDetailPage() {
 }
 
 function AuctionDetailContent({ id }: { id: string }) {
-  const { data: auction, isLoading, isError } = useAuction(id);
+  const { data: auction, isLoading, isError, refetch: refetchAuction } = useAuction(id);
   const { data: blockHeight } = useBlockHeight();
   const { data: indexerData } = useIndexerStatus();
   const { data: protocolConfig } = useProtocolConfig();
@@ -199,6 +199,10 @@ function AuctionDetailContent({ id }: { id: string }) {
                     blockHeight={blockHeight ?? 0}
                     protocolConfig={protocolConfig}
                     lagBlocks={lagBlocks}
+                    onBidSuccess={async () => {
+                      await new Promise(resolve => setTimeout(resolve, 5000)) // wait for indexer to catch up
+                      void refetchAuction()
+                    }}
                   />
                 ) : isPostAuction ? (
                   <DefaultPostAuctionPanel auction={auction} />

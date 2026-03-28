@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Eye, Shield } from 'lucide-react';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
@@ -22,7 +22,7 @@ import { useCreditRecords } from '@/shared/hooks/useCreditRecords';
 import { cn } from '@/lib/utils';
 import type { BidFormProps } from './types';
 
-export function DutchBidForm({ auction, protocolConfig }: BidFormProps) {
+export function DutchBidForm({ auction, protocolConfig, onBidSuccess }: BidFormProps) {
   const { connected, executeTransaction } = useWallet();
   const [searchParams] = useSearchParams();
   const { creditRecords, loading: creditsLoading } = useCreditRecords();
@@ -129,11 +129,14 @@ export function DutchBidForm({ auction, protocolConfig }: BidFormProps) {
   ];
 
   const {
+    done: bidSuccess,
     busy: bidBusy,
     isWaiting: bidWaiting,
     error: bidError,
     advance: placeBid,
   } = useConfirmedSequentialTx(bidSteps);
+
+  useEffect(() => { if (bidSuccess) onBidSuccess?.(); }, [bidSuccess]);
 
   const isDisabled = !!formBlocker || bidBusy || bidWaiting;
   const showSummary = qtyRaw > 0n || (mode === 'private' && !!selectedRecord) || !!codeId.trim();

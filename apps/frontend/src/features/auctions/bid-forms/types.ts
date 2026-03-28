@@ -6,4 +6,6 @@ export interface BidFormProps {
   protocolConfig: ProtocolConfig;
   /** Blocks behind chain tip — form is disabled when > 10. */
   lagBlocks:      number;
+  /** Called once the bid transaction is confirmed on-chain. */
+  onBidSuccess?:  () => void;
 }

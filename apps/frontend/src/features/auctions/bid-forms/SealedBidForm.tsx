@@ -19,7 +19,7 @@ import { TX_DEFAULT_FEE } from '@/env';
  *   - Enter the same quantity + nonce used at commit
  *   - Wallet uses the Commitment record (AutoDecrypt) to reveal
  */
-export function SealedBidForm({ auction, blockHeight, protocolConfig }: BidFormProps) {
+export function SealedBidForm({ auction, blockHeight, protocolConfig, onBidSuccess }: BidFormProps) {
   const { connected, executeTransaction } = useWallet();
   const [searchParams] = useSearchParams();
 
@@ -114,10 +114,8 @@ export function SealedBidForm({ auction, blockHeight, protocolConfig }: BidFormP
 
     setQtyInput('');
     setPayInput('');
-
-    if (isRevealPhase) {
-      setNonce('');
-    }
+    if (isRevealPhase) setNonce('');
+    onBidSuccess?.();
   }, [bidDone, isRevealPhase]);
 
   const isDisabled = !connected || bidBusy || bidWaiting;

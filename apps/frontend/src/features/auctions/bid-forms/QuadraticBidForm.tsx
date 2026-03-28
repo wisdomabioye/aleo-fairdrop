@@ -9,7 +9,7 @@ import { TX_DEFAULT_FEE } from '@/env';
 import type { BidFormProps } from './types';
 
 /** Quadratic bid: enter vote quantity; payment = qty * currentPrice. */
-export function QuadraticBidForm({ auction, protocolConfig }: BidFormProps) {
+export function QuadraticBidForm({ auction, protocolConfig, onBidSuccess }: BidFormProps) {
   const { connected, executeTransaction } = useWallet();
   const [searchParams] = useSearchParams();
 
@@ -66,6 +66,7 @@ export function QuadraticBidForm({ auction, protocolConfig }: BidFormProps) {
   useEffect(() => {
     if (bidDone) {
       setQtyInput('');
+      onBidSuccess?.();
     }
   }, [bidDone]);
 

@@ -8,7 +8,7 @@ import { TX_DEFAULT_FEE } from '@/env';
 import type { BidFormProps } from './types';
 
 /** LBP bid: payment amount drives the bonding curve swap. */
-export function LbpBidForm({ auction, protocolConfig }: BidFormProps) {
+export function LbpBidForm({ auction, protocolConfig, onBidSuccess }: BidFormProps) {
   const { connected, executeTransaction } = useWallet();
   const [searchParams] = useSearchParams();
 
@@ -58,6 +58,7 @@ export function LbpBidForm({ auction, protocolConfig }: BidFormProps) {
   useEffect(() => {
     if (bidDone) {
       setPayInput('');
+      onBidSuccess?.();
     }
   }, [bidDone]);
 
