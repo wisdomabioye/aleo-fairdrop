@@ -27,7 +27,7 @@ export function ReferralStep({ protocolConfig }: ReferralStepProps) {
         </div>
         <div className="flex justify-between px-4 py-3">
           <span className="text-muted-foreground">Max referrer commission</span>
-          <span>up to {maxReferralPct}% of each bid</span>
+          <span>up to {maxReferralPct}% of referral pool</span>
         </div>
       </div>
 

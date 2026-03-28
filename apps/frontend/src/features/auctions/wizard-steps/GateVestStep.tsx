@@ -135,28 +135,44 @@ export function GateVestStep({ form, onChange }: StepProps) {
 
       {form.vestEnabled && (
         <div className="rounded-md border border-border p-4 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label>Cliff (blocks after end)</Label>
-              <Input
-                inputMode="numeric"
-                value={form.vestCliffBlocks}
-                onChange={(e) => onChange({ vestCliffBlocks: e.target.value.replace(/\D/g, '') })}
-                placeholder="0"
-              />
-              <p className="text-xs text-muted-foreground">No tokens vest before this point.</p>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Vest end (blocks after end)</Label>
-              <Input
-                inputMode="numeric"
-                value={form.vestEndBlocks}
-                onChange={(e) => onChange({ vestEndBlocks: e.target.value.replace(/\D/g, '') })}
-                placeholder="0"
-              />
-              <p className="text-xs text-muted-foreground">100% vested at this block.</p>
-            </div>
-          </div>
+          {(() => {
+            const cliff = parseInt(form.vestCliffBlocks) || 0;
+            const end   = parseInt(form.vestEndBlocks)   || 0;
+            const vestEndErr = form.vestEndBlocks && end <= 0
+              ? 'Required, must be > 0.'
+              : form.vestEndBlocks && form.vestCliffBlocks && end <= cliff
+              ? 'Must be greater than cliff.'
+              : null;
+            return (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label>Cliff (blocks after end)</Label>
+                  <Input
+                    inputMode="numeric"
+                    value={form.vestCliffBlocks}
+                    onChange={(e) => onChange({ vestCliffBlocks: e.target.value.replace(/\D/g, '') })}
+                    placeholder="0"
+                  />
+                  <p className="text-xs text-muted-foreground">No tokens vest before this point. 0 = no cliff.</p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Vest end (blocks after end)</Label>
+                  <Input
+                    inputMode="numeric"
+                    value={form.vestEndBlocks}
+                    onChange={(e) => onChange({ vestEndBlocks: e.target.value.replace(/\D/g, '') })}
+                    placeholder="1000"
+                    aria-invalid={!!vestEndErr}
+                    className={vestEndErr ? 'border-destructive focus-visible:ring-destructive/30' : ''}
+                  />
+                  {vestEndErr
+                    ? <p className="text-xs text-destructive">{vestEndErr}</p>
+                    : <p className="text-xs text-muted-foreground">100% vested at this block.</p>
+                  }
+                </div>
+              </div>
+            );
+          })()}
 
           {vestAuthStatus === 'checking' && (
             <div className="flex items-center gap-1.5 text-muted-foreground">

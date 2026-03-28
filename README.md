@@ -1,6 +1,6 @@
 # Fairdrop
 
-Privacy-preserving token auction protocol on Aleo. Bidders can participate without revealing their identity or bid size on-chain. Auction creators get flexible mechanisms (Dutch, Sealed, Raise, Ascending, LBP, Quadratic) with optional vesting, gating, and referrals.
+Privacy-preserving token launches and capital formation on Aleo. Bidders can participate without revealing their identity or bid size on-chain. Auction creators get flexible mechanisms (Dutch, Sealed, Raise, Ascending, LBP, Quadratic) with optional vesting, gating, and referrals.
 
 ## Monorepo map
 

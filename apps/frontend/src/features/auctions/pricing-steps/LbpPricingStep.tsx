@@ -1,4 +1,5 @@
 import { Input, Label, TokenAmountInput } from '@/components';
+import { parseTokenAmount } from '@fairdrop/sdk/format';
 import type { PricingStepProps, LbpPricingValues } from './types';
 
 function bpsToPercent(bps: string): string {
@@ -14,11 +15,15 @@ export function LbpPricingStep({ value, onChange }: PricingStepProps<LbpPricingV
     (e: React.ChangeEvent<HTMLInputElement>) =>
       set(k)(e.target.value.replace(/\D/g, ''));
 
-  const startWt = parseInt(value.startWeight) || 0;
-  const endWt   = parseInt(value.endWeight)   || 0;
-  const feeBps  = parseInt(value.swapFeeBps)  || 0;
+  const startWt     = parseInt(value.startWeight) || 0;
+  const endWt       = parseInt(value.endWeight)   || 0;
+  const feeBps      = parseInt(value.swapFeeBps)  || 0;
+  const initialMicro = parseTokenAmount(value.initialPrice, 6);
 
-  const weightWarning = startWt > 0 && endWt > 0 && startWt <= endWt;
+  const weightWarning    = startWt > 0 && endWt > 0 && startWt <= endWt;
+  const startWeightErr   = value.startWeight && startWt <= 0 ? 'Required, must be > 0.' : null;
+  const endWeightErr     = value.endWeight   && endWt   <= 0 ? 'Required, must be > 0.' : null;
+  const initialPriceErr  = value.initialPrice && initialMicro <= 0n ? 'Required, must be > 0.' : null;
 
   return (
     <div className="space-y-4">
@@ -33,20 +38,30 @@ export function LbpPricingStep({ value, onChange }: PricingStepProps<LbpPricingV
           <Input
             inputMode="numeric" value={value.startWeight}
             onChange={intField('startWeight')} placeholder="9000"
+            aria-invalid={!!startWeightErr}
+            className={startWeightErr ? 'border-destructive focus-visible:ring-destructive/30' : ''}
           />
-          <p className="text-xs text-muted-foreground">
-            {startWt > 0 ? `${bpsToPercent(value.startWeight)}% sale token — high initial weight → high starting price.` : 'e.g. 9000 = 90%'}
-          </p>
+          {startWeightErr
+            ? <p className="text-xs text-destructive">{startWeightErr}</p>
+            : <p className="text-xs text-muted-foreground">
+                {startWt > 0 ? `${bpsToPercent(value.startWeight)}% sale token — high initial weight → high starting price.` : 'e.g. 9000 = 90%'}
+              </p>
+          }
         </div>
         <div className="space-y-1.5">
           <Label>End weight (bps)</Label>
           <Input
             inputMode="numeric" value={value.endWeight}
             onChange={intField('endWeight')} placeholder="1000"
+            aria-invalid={!!endWeightErr}
+            className={endWeightErr ? 'border-destructive focus-visible:ring-destructive/30' : ''}
           />
-          <p className="text-xs text-muted-foreground">
-            {endWt > 0 ? `${bpsToPercent(value.endWeight)}% sale token — low final weight → lower ending price.` : 'e.g. 1000 = 10%'}
-          </p>
+          {endWeightErr
+            ? <p className="text-xs text-destructive">{endWeightErr}</p>
+            : <p className="text-xs text-muted-foreground">
+                {endWt > 0 ? `${bpsToPercent(value.endWeight)}% sale token — low final weight → lower ending price.` : 'e.g. 1000 = 10%'}
+              </p>
+          }
         </div>
       </div>
       <div className="grid grid-cols-2 gap-4">
@@ -64,6 +79,7 @@ export function LbpPricingStep({ value, onChange }: PricingStepProps<LbpPricingV
           label="Initial price" value={value.initialPrice}
           onChange={set('initialPrice')} decimals={6} symbol="ALEO"
           placeholder="1.0" hint="Starting price per token."
+          error={initialPriceErr ?? undefined}
         />
       </div>
       {weightWarning && (

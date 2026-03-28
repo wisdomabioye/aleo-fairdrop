@@ -11,6 +11,8 @@ export function QuadraticPricingStep({ value, onChange }: PricingStepProps<Quadr
   const capMicro      = parseTokenAmount(value.contributionCap, 6);
   const offset        = parseInt(value.matchingDeadlineOffset) || 0;
 
+  const deadlineErr = value.matchingDeadlineOffset && offset <= 0 ? 'Required, must be > 0.' : null;
+
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground py-4">
@@ -36,11 +38,16 @@ export function QuadraticPricingStep({ value, onChange }: PricingStepProps<Quadr
           inputMode="numeric" value={value.matchingDeadlineOffset}
           onChange={(e) => set('matchingDeadlineOffset')(e.target.value.replace(/\D/g, ''))}
           placeholder="5000"
+          aria-invalid={!!deadlineErr}
+          className={deadlineErr ? 'border-destructive focus-visible:ring-destructive/30' : ''}
         />
-        <p className="text-xs text-muted-foreground">
-          Block offset after start_block when the matching pool is locked.
-          {offset > 0 && ` (~${Math.round(offset * 10 / 60)} min from start)`}
-        </p>
+        {deadlineErr
+          ? <p className="text-xs text-destructive">{deadlineErr}</p>
+          : <p className="text-xs text-muted-foreground">
+              Block offset after start_block when the matching pool is locked.
+              {offset > 0 && ` (~${Math.round(offset * 10 / 60)} min from start)`}
+            </p>
+        }
       </div>
       {matchingMicro > 0n && (
         <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground space-y-0.5">

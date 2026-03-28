@@ -7,10 +7,11 @@ export function RaisePricingStep({ value, onChange, supply }: PricingStepProps<R
   const targetMicro = parseTokenAmount(value.raiseTarget, 6);
 
   // Implied price per base token unit — only meaningful if sale token has 6 decimals.
-  // Display as a rough guide; creator should verify against their token's decimals.
   const impliedPrice = supply != null && supply > 0n && targetMicro > 0n
     ? targetMicro / supply
     : null;
+
+  const targetError = value.raiseTarget && targetMicro <= 0n ? 'Required, must be > 0.' : null;
 
   return (
     <div className="space-y-4">
@@ -24,6 +25,7 @@ export function RaisePricingStep({ value, onChange, supply }: PricingStepProps<R
         onChange={(v) => onChange({ ...value, raiseTarget: v })}
         decimals={6} symbol="ALEO" placeholder="10000"
         hint="Total credits required for the raise to succeed."
+        error={targetError ?? undefined}
       />
       {targetMicro > 0n && (
         <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground space-y-0.5">

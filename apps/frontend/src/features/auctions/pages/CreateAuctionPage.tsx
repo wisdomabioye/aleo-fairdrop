@@ -1,5 +1,6 @@
 import { useState }                   from 'react';
 import { useNavigate }                from 'react-router-dom';
+import { useBlockHeight }            from '@/shared/hooks/useBlockHeight';
 import { useWallet }                  from '@provablehq/aleo-wallet-adaptor-react';
 import { Button, Spinner }            from '@/components';
 import { getAleoClient }              from '@fairdrop/sdk/client';
@@ -19,6 +20,8 @@ import { MetadataStep }               from '../wizard-steps/MetadataStep';
 import { ReviewStep }                 from '../wizard-steps/ReviewStep';
 import { DEFAULT_FORM, DEFAULT_PRICING } from '../wizard-steps/types';
 import { buildCreateAuctionInputs }   from '../wizard-steps/build-inputs';
+import { isPricingComplete }          from '../pricing-steps/validation';
+import { metadataService }           from '@/services/metadata.service';
 import type { WizardForm }            from '../wizard-steps/types';
 
 // ── step definitions ──────────────────────────────────────────────────────────
@@ -36,29 +39,44 @@ const STEPS = [
 
 // ── step validation ───────────────────────────────────────────────────────────
 
-function canAdvance(step: number, form: WizardForm): boolean {
+function canAdvance(
+  step: number,
+  form: WizardForm,
+  opts: { currentBlock: number; minDuration: number } = { currentBlock: 0, minDuration: 0 },
+): boolean {
   switch (step) {
     case 0: return form.auctionType !== null;
     case 1: return !!form.saleTokenId && !!form.supply && !!form.tokenRecord;
-    case 2: return form.pricing !== null;
+    case 2: return !!form.auctionType && !!form.pricing && isPricingComplete(form.auctionType, form.pricing);
     case 3: {
-      const start = parseInt(form.startBlock);
-      const end   = parseInt(form.endBlock);
-      return start > 0 && end > start && parseFloat(form.minBidAmount) > 0;
+      const start    = parseInt(form.startBlock);
+      const end      = parseInt(form.endBlock);
+      const duration = end - start;
+      const startOk  = opts.currentBlock === 0 ? start > 0 : start > opts.currentBlock;
+      const durOk    = opts.minDuration === 0 ? end > start : duration >= opts.minDuration;
+      return startOk && durOk && parseFloat(form.minBidAmount) > 0;
     }
     case 4: {
       if (form.gateMode === 1 && (!form.merkleRoot || form.merkleRoot === '0field')) return false;
       if (form.gateMode === 2 && !form.issuerAddress) return false;
+      if (form.vestEnabled) {
+        const cliff = parseInt(form.vestCliffBlocks) || 0;
+        const end   = parseInt(form.vestEndBlocks)   || 0;
+        if (end <= 0 || end <= cliff) return false;
+      }
       return true;
     }
     case 5: return true;
     case 6: {
-      return !!form.metadataName.trim()
-        && !!form.metadataDescription.trim()
-        && !!form.metadataHash
-        && form.metadataHash !== '0field';
+      return !!form.metadataName.trim() && !!form.metadataDescription.trim();
     }
-    case 7: return true;
+    case 7: {
+      const start    = parseInt(form.startBlock);
+      const end      = parseInt(form.endBlock);
+      const startOk  = opts.currentBlock === 0 ? start > 0 : start > opts.currentBlock;
+      const durOk    = opts.minDuration === 0 ? end > start : (end - start) >= opts.minDuration;
+      return startOk && durOk && parseFloat(form.minBidAmount) > 0;
+    }
     default: return true;
   }
 }
@@ -69,6 +87,7 @@ export function CreateAuctionPage() {
   const navigate = useNavigate();
   const { executeTransaction, address } = useWallet();
   const { data: protocolConfig, isLoading: configLoading } = useProtocolConfig();
+  const { data: currentBlock = 0 } = useBlockHeight();
 
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<WizardForm>(DEFAULT_FORM);
@@ -108,7 +127,20 @@ export function CreateAuctionPage() {
         if (raw) nonce = BigInt(String(raw).replace('u64', '').trim());
       } catch { /* missing = 0 */ }
 
-      const tx = buildCreateAuctionInputs(form, nonce, protocolConfig, config);
+      // Upload metadata to IPFS right before submitting — no junk uploads on navigation
+      const { hash, ipfsCid } = await metadataService.upload({
+        name:        form.metadataName.trim(),
+        description: form.metadataDescription.trim(),
+        website:     form.metadataWebsite.trim()  || undefined,
+        twitter:     form.metadataTwitter.trim()  || undefined,
+        discord:     form.metadataDiscord.trim()  || undefined,
+        logoIpfs:    form.metadataLogoIpfs        || undefined,
+      });
+
+      const tx = buildCreateAuctionInputs(
+        { ...form, metadataHash: hash, metadataIpfsCid: ipfsCid },
+        nonce, protocolConfig, config,
+      );
       const result = await executeTransaction({
         ...tx,
         inputs:     tx.inputs as string[],
@@ -152,7 +184,10 @@ export function CreateAuctionPage() {
   }
 
   const isLastStep   = step === STEPS.length - 1;
-  const canGoForward = canAdvance(step, form);
+  const canGoForward = canAdvance(step, form, {
+    currentBlock,
+    minDuration: protocolConfig?.minAuctionDuration ?? 0,
+  });
 
   // ── render ────────────────────────────────────────────────────────────────────
 
@@ -210,7 +245,7 @@ export function CreateAuctionPage() {
         </Button>
 
         {isLastStep ? (
-          <Button onClick={advance} disabled={submitting || !address || !protocolConfig}>
+          <Button onClick={advance} disabled={submitting || !address || !protocolConfig || !canGoForward}>
             {busy      ? <><Spinner className="mr-2 h-4 w-4" />Submitting…</>
             : isWaiting ? <><Spinner className="mr-2 h-4 w-4" />Confirming…</>
             : 'Create Auction'}

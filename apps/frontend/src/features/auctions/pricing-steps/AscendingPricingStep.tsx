@@ -17,6 +17,13 @@ export function AscendingPricingStep({ value, onChange }: PricingStepProps<Ascen
     : null;
   const blocksToCeiling = steps != null && riseBlocks > 0 ? steps * riseBlocks : null;
 
+  // Inline errors
+  const floorError   = value.floorPrice && floorMicro <= 0n ? 'Required, must be > 0.' : null;
+  const ceilingError = value.ceilingPrice && ceilingMicro <= 0n ? 'Required, must be > 0.'
+                     : value.ceilingPrice && value.floorPrice && ceilingMicro <= floorMicro ? 'Must be greater than floor price.' : null;
+  const riseBlkErr   = value.priceRiseBlocks && riseBlocks <= 0 ? 'Required, must be > 0.' : null;
+  const riseAmtErr   = value.priceRiseAmount && riseAmt <= 0n   ? 'Required, must be > 0.' : null;
+
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground py-4">
@@ -29,11 +36,13 @@ export function AscendingPricingStep({ value, onChange }: PricingStepProps<Ascen
           label="Floor price" value={value.floorPrice}
           onChange={set('floorPrice')} decimals={6} symbol="ALEO"
           placeholder="0.05" hint="Starting (lowest) price."
+          error={floorError ?? undefined}
         />
         <TokenAmountInput
           label="Ceiling price" value={value.ceilingPrice}
           onChange={set('ceilingPrice')} decimals={6} symbol="ALEO"
           placeholder="0.5" hint="Maximum price cap."
+          error={ceilingError ?? undefined}
         />
       </div>
       <div className="grid grid-cols-2 gap-4">
@@ -43,16 +52,22 @@ export function AscendingPricingStep({ value, onChange }: PricingStepProps<Ascen
             inputMode="numeric" value={value.priceRiseBlocks}
             onChange={(e) => set('priceRiseBlocks')(e.target.value.replace(/\D/g, ''))}
             placeholder="100"
+            aria-invalid={!!riseBlkErr}
+            className={riseBlkErr ? 'border-destructive focus-visible:ring-destructive/30' : ''}
           />
-          <p className="text-xs text-muted-foreground">
-            Price rises every {riseBlocks || 'N'} blocks
-            {riseBlocks > 0 ? ` (~${Math.round(riseBlocks * 10 / 60)} min)` : ''}.
-          </p>
+          {riseBlkErr
+            ? <p className="text-xs text-destructive">{riseBlkErr}</p>
+            : <p className="text-xs text-muted-foreground">
+                Price rises every {riseBlocks || 'N'} blocks
+                {riseBlocks > 0 ? ` (~${Math.round(riseBlocks * 10 / 60)} min)` : ''}.
+              </p>
+          }
         </div>
         <TokenAmountInput
           label="Rise amount" value={value.priceRiseAmount}
           onChange={set('priceRiseAmount')} decimals={6} symbol="ALEO"
           placeholder="0.01" hint="Price increase per step."
+          error={riseAmtErr ?? undefined}
         />
       </div>
       {blocksToCeiling != null && (

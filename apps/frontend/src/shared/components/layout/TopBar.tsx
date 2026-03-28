@@ -58,7 +58,7 @@ export function TopBar({ trigger, actions }: TopBarProps) {
 
   return (
     <>
-      {data?.lagBlocks && <StaleBanner lagBlocks={data.lagBlocks} />}
+      {!!data?.lagBlocks && <StaleBanner lagBlocks={data.lagBlocks} />}
       <header className="flex h-14 items-center gap-3 border-b border-border bg-background/95 px-4 backdrop-blur-md">
         {trigger}
 
