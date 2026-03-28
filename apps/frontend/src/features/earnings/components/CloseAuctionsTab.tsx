@@ -10,7 +10,7 @@ import { useAuctions }         from '../../auctions/hooks/useAuctions';
 import { useProtocolConfig }   from '../../../shared/hooks/useProtocolConfig';
 import { auctionsService }     from '@/services/auctions.service';
 import { AUCTION_REGISTRY }    from '../../auctions/registry';
-import { TX_DEFAULT_FEE } from '@/env';
+import { closeAuction }        from '@/lib/auctionTx';
 
 export function CloseAuctionsTab() {
   const { connected, executeTransaction } = useWallet();
@@ -35,18 +35,8 @@ export function CloseAuctionsTab() {
     try {
       // Re-fetch full detail to get live volume + closer_reward (D11 validation)
       const full: AuctionView = await auctionsService.get(auction.id);
-      const result = await executeTransaction({
-        program:  full.programId,
-        function: 'close_auction',
-        inputs: [
-          full.id,
-          full.creator,
-          String(full.status === AuctionStatus.Clearing), // filled = supply_met
-          `${full.totalCommitted}u128`,                    // volume
-          `${full.closerReward}u128`,                      // closer_reward
-        ],
-        fee: TX_DEFAULT_FEE,
-      });
+      const spec = closeAuction(full);
+      const result = await executeTransaction({ ...spec, inputs: spec.inputs as string[] });
       if (result?.transactionId) track(result.transactionId, 'Close auction');
     } catch (err) {
       setErrors((e) => ({ ...e, [auction.id]: parseExecutionError(err) }));

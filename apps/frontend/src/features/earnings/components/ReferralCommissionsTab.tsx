@@ -5,7 +5,8 @@ import { getAleoClient }      from '@fairdrop/sdk/client';
 import { formatMicrocredits } from '@fairdrop/sdk/credits';
 import { recStr, recField, stripSuffix } from '@fairdrop/sdk/parse';
 import { computeRefListKey }  from '@fairdrop/sdk/hash';
-import { config, TX_DEFAULT_FEE }             from '@/env';
+import { config }                from '@/env';
+import { creditCommission, claimCommission } from '@/lib/auctionTx';
 import { 
   ConnectWalletPrompt
 } from '@/shared/components/wallet/ConnectWalletPrompt';
@@ -118,12 +119,8 @@ export function ReferralCommissionsTab() {
 
     for (const bidderKey of uncredited) {
       try {
-        const result = await executeTransaction({
-          program:  REF_PROGRAM,
-          function: 'credit_commission',
-          inputs:   [codeId, bidderKey],
-          fee:      TX_DEFAULT_FEE,
-        });
+        const spec = creditCommission(codeId, bidderKey);
+        const result = await executeTransaction({ ...spec, inputs: spec.inputs as string[] });
         if (result?.transactionId) track(result.transactionId, 'Credit bidder');
         setCodes((prev) => prev.map((s) =>
           s.codeId === codeId
@@ -156,13 +153,10 @@ export function ReferralCommissionsTab() {
       return;
     }
 
-    const attempt = async (amount: bigint) =>
-      executeTransaction({
-        program:  REF_PROGRAM,
-        function: 'claim_commission',
-        inputs:   [raw as unknown as string, `${amount}u128`],
-        fee:      TX_DEFAULT_FEE,
-      });
+    const attempt = async (amount: bigint) => {
+      const spec = claimCommission(raw, amount);
+      return executeTransaction({ ...spec, inputs: spec.inputs as string[] });
+    };
 
     try {
       const result = await attempt(latestEarned);

@@ -9,7 +9,7 @@ import type { AuctionView } from '@fairdrop/types/domain';
 import { useBlockHeight } from '@/shared/hooks/useBlockHeight';
 import { useProtocolConfig } from '@/shared/hooks/useProtocolConfig';
 import { AppRoutes } from '@/config';
-import { TX_DEFAULT_FEE } from '@/env';
+import { closeAuction } from '@/lib/auctionTx';
 import { cn } from '@/lib/utils';
 import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
 
@@ -156,28 +156,14 @@ export function AuctionEarnTab({ auction }: AuctionEarnTabProps) {
     : 'Available once the auction becomes active.';
 
   // ── close handler ──────────────────────────────────────────────────────────
-  const closeAuctionStep = [
-    {
-      label: "Close Auction",
-      execute: async () => {
-        const result = await executeTransaction({
-          program:  auction.programId,
-          function: 'close_auction',
-          inputs: [
-            auction.id,
-            auction.creator,
-            String(auction.status === AuctionStatus.Clearing),
-            `${auction.totalCommitted}u128`,
-            `${auction.closerReward}u128`,
-          ],
-          fee: TX_DEFAULT_FEE,
-          privateFee: false
-        });
-      
-        return result?.transactionId;
-      }
-    }
-  ]
+  const closeAuctionStep = [{
+    label: 'Close Auction',
+    execute: async () => {
+      const spec = closeAuction(auction);
+      const result = await executeTransaction({ ...spec, inputs: spec.inputs as string[] });
+      return result?.transactionId;
+    },
+  }];
 
   const {
     busy: auctionCloseSiging,

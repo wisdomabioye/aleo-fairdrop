@@ -17,7 +17,8 @@ import { formatMicrocredits } from '@fairdrop/sdk/credits';
 import { AuctionStatus, AuctionType } from '@fairdrop/types/domain';
 import type { AuctionView } from '@fairdrop/types/domain';
 import { AppRoutes } from '@/config';
-import { TX_DEFAULT_FEE } from '@/env';
+import * as auctionTx from '@/lib/auctionTx';
+import type { AuctionTxSpec } from '@/lib/auctionTx';
 import { useConfirmedSequentialTx, type SequentialStep } from '@/shared/hooks/useConfirmedSequentialTx';
 import { parseExecutionError } from '@/shared/utils/errors';
 import { cn } from '@/lib/utils';
@@ -121,20 +122,14 @@ export function ActionsPanel({ auction, blockHeight }: ActionsPanelProps) {
 
   if (!canClose && !canCancel && !canSlash && !canWithdraw && !canPushReferral) return null;
 
-  function runAction(key: string, label: string, fn: string, inputs: string[]) {
+  function runAction(key: string, label: string, spec: AuctionTxSpec) {
     if (tx.busy || tx.isWaiting) return;
     tx.reset();
     setActiveKey(key);
     setPendingStep({
       label,
       execute: async () => {
-        const result = await executeTransaction({
-          program:    auction.programId,
-          function:   fn,
-          inputs,
-          fee:        TX_DEFAULT_FEE,
-          privateFee: false,
-        });
+        const result = await executeTransaction({ ...spec, inputs: spec.inputs as string[] });
         return result?.transactionId;
       },
     });
@@ -157,13 +152,7 @@ export function ActionsPanel({ auction, blockHeight }: ActionsPanelProps) {
         ? 'Finalize this auction and progress settlement.'
         : 'Close the auction and receive the closer reward.',
       icon:    Gavel,
-      onClick: () => runAction('close', label, 'close_auction', [
-        auction.id,
-        auction.creator,
-        String(auction.status === AuctionStatus.Clearing),
-        `${auction.totalCommitted}u128`,
-        `${auction.closerReward}u128`,
-      ]),
+      onClick: () => runAction('close', label, auctionTx.closeAuction(auction)),
     });
   }
 
@@ -176,10 +165,7 @@ export function ActionsPanel({ auction, blockHeight }: ActionsPanelProps) {
       pendingLabel: 'Submitting…',
       description:  'Claim settled proceeds as the auction creator.',
       icon:    HandCoins,
-      onClick: () => runAction('withdraw-payments', 'Withdraw revenue', 'withdraw_payments', [
-        auction.id,
-        `${auction.creatorRevenue}u128`,
-      ]),
+      onClick: () => runAction('withdraw-payments', 'Withdraw revenue', auctionTx.withdrawPayments(auction, auction.creatorRevenue!)),
     });
 
     if (unsold > 0n) {
@@ -189,11 +175,7 @@ export function ActionsPanel({ auction, blockHeight }: ActionsPanelProps) {
         pendingLabel: 'Submitting…',
         description:  'Recover unsold inventory after clearing.',
         icon:    Coins,
-        onClick: () => runAction('withdraw-unsold', 'Withdraw unsold', 'withdraw_unsold', [
-          auction.id,
-          `${unsold}u128`,
-          auction.saleTokenId,
-        ]),
+        onClick: () => runAction('withdraw-unsold', 'Withdraw unsold', auctionTx.withdrawUnsold(auction, unsold)),
       });
     }
   }
@@ -205,10 +187,7 @@ export function ActionsPanel({ auction, blockHeight }: ActionsPanelProps) {
       pendingLabel: 'Submitting…',
       description:  'Move referral budget into the distribution flow.',
       icon:    Send,
-      onClick: () => runAction('push-referral', 'Push referral budget', 'push_referral_budget', [
-        auction.id,
-        `${auction.referralBudget}u128`,
-      ]),
+      onClick: () => runAction('push-referral', 'Push referral budget', auctionTx.pushReferralBudget(auction)),
     });
   }
 
@@ -220,11 +199,7 @@ export function ActionsPanel({ auction, blockHeight }: ActionsPanelProps) {
       description:  'Available while the auction is still upcoming or active.',
       icon:    Ban,
       variant: 'destructive',
-      onClick: () => runAction('cancel', 'Cancel auction', 'cancel_auction', [
-        auction.id,
-        auction.saleTokenId,
-        `${auction.supply}u128`,
-      ]),
+      onClick: () => runAction('cancel', 'Cancel auction', auctionTx.cancelAuction(auction)),
     });
   }
 

@@ -6,7 +6,8 @@ import { recField, recU128 }         from '@fairdrop/sdk/parse';
 import { computeBidderKey }    from '@fairdrop/sdk/hash';
 import { AuctionType }         from '@fairdrop/types/domain';
 import type { AuctionView }    from '@fairdrop/types/domain';
-import { config, TX_DEFAULT_FEE }              from '@/env';
+import { config }                 from '@/env';
+import { slashUnrevealed }        from '@/lib/auctionTx';
 import { parseExecutionError } from '@/shared/utils/errors';
 import { 
   ConnectWalletPrompt
@@ -85,17 +86,8 @@ export function SlashBidsTab() {
     setSlashing(commitmentKey);
 
     try {
-      const result = await executeTransaction({
-        program:  config.programs.sealed.programId,
-        function: 'slash_unrevealed',
-        inputs: [
-          commitmentKey,
-          c.auctionId,
-          `${c.paymentAmount}u128`,
-          `${slashBps}u16`,
-        ],
-        fee: TX_DEFAULT_FEE,
-      });
+      const spec = slashUnrevealed(commitmentKey, c.auctionId, c.paymentAmount, slashBps);
+      const result = await executeTransaction({ ...spec, inputs: spec.inputs as string[] });
       if (result?.transactionId) track(result.transactionId, 'Slash unrevealed');
     } catch (err) {
       setErrors((e) => ({ ...e, [commitmentKey]: parseExecutionError(err) }));

@@ -9,7 +9,8 @@ import { recField } from '@fairdrop/sdk/parse';
 import { AuctionStatus } from '@fairdrop/types/domain';
 import type { AuctionView } from '@fairdrop/types/domain';
 import { AppRoutes } from '@/config';
-import { config, TX_DEFAULT_FEE } from '@/env';
+import { config } from '@/env';
+import { createReferralCode } from '@/lib/auctionTx';
 import { useProtocolConfig } from '@/shared/hooks/useProtocolConfig';
 import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
 import { parseExecutionError } from '@/shared/utils/errors';
@@ -79,13 +80,8 @@ export function AuctionReferralTab({ auction }: AuctionReferralTabProps) {
     label: 'Create referral code',
     execute: async () => {
       if (!pc) throw new Error('Protocol config not loaded');
-      const result = await executeTransaction({
-        program:  REF_PROGRAM,
-        function: 'create_code',
-        inputs:   [auction.id, `${pc.maxReferralBps}u16`],
-        fee:      TX_DEFAULT_FEE,
-        privateFee: false
-      });
+      const spec = createReferralCode(auction.id, pc.maxReferralBps);
+      const result = await executeTransaction({ ...spec, inputs: spec.inputs as string[] });
       return result?.transactionId;
     },
   }]);

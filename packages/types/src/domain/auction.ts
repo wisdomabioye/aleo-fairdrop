@@ -103,6 +103,7 @@ export interface AuctionView {
   // Supply
   supply:          bigint;
   totalCommitted:  bigint;
+  totalPayments:  bigint;
   progressPct:     number;  // 0–100, capped
   minBidAmount: bigint;
   maxBidAmount: bigint;

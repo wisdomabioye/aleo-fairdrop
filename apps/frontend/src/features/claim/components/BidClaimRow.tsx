@@ -6,7 +6,7 @@ import type { AuctionView }      from '@fairdrop/types/domain';
 import { parseExecutionError }   from '@/shared/utils/errors';
 import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
 import type { ClaimableRecord }  from '../hooks/useClaimable';
-import { TX_DEFAULT_FEE } from '@/env';
+import * as auctionTx from '@/lib/auctionTx';
 
 interface Props {
   record:  ClaimableRecord;
@@ -43,16 +43,12 @@ export function BidClaimRow({ record, auction }: Props) {
     label: label ?? 'Claim',
     execute: async () => {
       if (!action || !auction) throw new Error('Nothing to claim');
-      const needsScale = action === 'claim' || action === 'claim_vested';
-      const inputs: (string | Record<string, unknown>)[] = needsScale
-        ? [record.raw, auction.id, `${record.paymentAmount}u128`, `${auction.saleScale}u128`]
-        : [record.raw, auction.id, `${record.paymentAmount}u128`];
-      const result = await executeTransaction({
-        program:  record.programId,
-        function: action,
-        inputs:   inputs as string[],
-        fee:      TX_DEFAULT_FEE,
-      });
+      const claimRec = { raw: record.raw, programId: record.programId, paymentAmount: record.paymentAmount };
+      const spec = action === 'claim'               ? auctionTx.claimBid(claimRec, auction)
+                 : action === 'claim_vested'        ? auctionTx.claimVested(claimRec, auction)
+                 : action === 'claim_voided'        ? auctionTx.claimVoided(claimRec, auction)
+                 :                                    auctionTx.claimCommitVoided(claimRec, auction);
+      const result = await executeTransaction({ ...spec, inputs: spec.inputs as string[] });
       return result?.transactionId;
     },
   }]);

@@ -21,11 +21,11 @@ interface Props {
 export function CreatorRevenueCard({ auction, paymentsWithdrawn, unsoldWithdrawn, loading }: Props) {
   const decimals = auction.saleTokenDecimals ?? 0;
   const symbol   = auction.saleTokenSymbol ?? '';
-  const revenue  = auction.creatorRevenue ?? 0n;
-  const unsold   = auction.supply - auction.totalCommitted;
+  const revenue  = BigInt(auction.creatorRevenue ?? 0);
+  const unsold   = BigInt(auction.supply) - BigInt(auction.totalCommitted);
 
-  const revenueRemaining = revenue - paymentsWithdrawn;
-  const unsoldRemaining  = unsold  - unsoldWithdrawn;
+  const revenueRemaining = revenue - BigInt(paymentsWithdrawn);
+  const unsoldRemaining  = unsold  - BigInt(unsoldWithdrawn);
 
   return (
     <Card className="border-sky-500/10 bg-gradient-surface shadow-xs ring-1 ring-white/5">
