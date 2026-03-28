@@ -1,28 +1,26 @@
-import { useWallet }              from '@provablehq/aleo-wallet-adaptor-react';
-import { Spinner }                 from '@/components';
-import { AuctionStatus }           from '@fairdrop/types/domain';
-import { ConnectWalletPrompt }     from '@/shared/components/wallet/ConnectWalletPrompt';
-import { AUCTION_REGISTRY }        from '../../auctions/registry';
-import { useClaimable }            from '../hooks/useClaimable';
-import { BidClaimRow }             from '../components/BidClaimRow';
+import { useWallet }          from '@provablehq/aleo-wallet-adaptor-react';
+import { RefreshCw }          from 'lucide-react';
+import { Button, PageHeader, Spinner } from '@/components';
+import { AuctionStatus }      from '@fairdrop/types/domain';
+import { ConnectWalletPrompt } from '@/shared/components/wallet/ConnectWalletPrompt';
+import { useClaimable }       from '../hooks/useClaimable';
+import { ClaimGroup }         from '../components/ClaimGroup';
 
 export function ClaimPage() {
   const { connected } = useWallet();
-  const { groups, loading } = useClaimable();
+  const { groups, loading, reload } = useClaimable();
 
-  const header = (
-    <div>
-      <h1 className="text-2xl font-semibold">Claim</h1>
-      <p className="text-sm text-muted-foreground mt-1">
-        Claim tokens from cleared auctions, or refunds from voided ones.
-      </p>
-    </div>
+  const pageHeader = (
+    <PageHeader
+      title="Claim"
+      description="Claim tokens from cleared auctions, or refunds from cancelled ones."
+    />
   );
 
   if (!connected) {
     return (
-      <div className="max-w-3xl mx-auto py-6 px-4 space-y-6">
-        {header}
+      <div className="mx-auto max-w-2xl space-y-6 p-4 sm:p-5 lg:p-6">
+        {pageHeader}
         <ConnectWalletPrompt message="Connect your wallet to see your claimable bids." />
       </div>
     );
@@ -30,52 +28,80 @@ export function ClaimPage() {
 
   if (loading) {
     return (
-      <div className="max-w-3xl mx-auto py-6 px-4 space-y-6">
-        {header}
-        <div className="flex justify-center py-12"><Spinner className="h-6 w-6" /></div>
+      <div className="mx-auto max-w-2xl space-y-6 p-4 sm:p-5 lg:p-6">
+        {pageHeader}
+        <div className="flex justify-center py-12">
+          <Spinner className="h-6 w-6" />
+        </div>
       </div>
     );
   }
 
-  const actionable = groups.filter((g) =>
-    g.auction &&
-    (g.auction.status === AuctionStatus.Cleared || g.auction.status === AuctionStatus.Voided),
+  const actionable  = groups.filter(
+    (g) => g.auction?.status === AuctionStatus.Cleared || g.auction?.status === AuctionStatus.Voided,
   );
+  const clearedCount   = actionable.filter((g) => g.auction?.status === AuctionStatus.Cleared).length;
+  const refundableCount = actionable.filter((g) => g.auction?.status === AuctionStatus.Voided).length;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 py-6 px-4">
-      {header}
+    <div className="mx-auto max-w-2xl space-y-4 p-4 sm:p-5 lg:p-6">
+      {pageHeader}
 
-      {actionable.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-12">
-          No claimable bids right now.
-        </p>
-      ) : (
-        <div className="space-y-6">
-          {actionable.map((group) => {
-            const slot = group.auction ? AUCTION_REGISTRY[group.auction.type] : null;
-            return (
-              <div key={group.auctionId} className="space-y-2">
-                <div className="flex items-center gap-2">
-                  {slot && (
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${slot.color}`}>
-                      {slot.label}
-                    </span>
-                  )}
-                  <span className="text-sm font-semibold">
-                    {group.auction?.metadata?.name ?? `${group.auctionId.slice(0, 16)}…`}
+      {/* ── Summary bar ─────────────────────────────────────────────────────── */}
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm text-muted-foreground">
+          {actionable.length === 0 ? (
+            'No claimable auctions found.'
+          ) : (
+            <>
+              <span className="font-medium text-foreground">{actionable.length}</span>{' '}
+              auction{actionable.length !== 1 ? 's' : ''} ready
+              {clearedCount > 0 && (
+                <>
+                  {' · '}
+                  <span className="text-emerald-600 dark:text-emerald-400">
+                    {clearedCount} cleared
                   </span>
-                </div>
-                {group.records.map((rec, idx) => (
-                  <BidClaimRow
-                    key={`${rec.auctionId}-${rec.kind}-${idx}`}
-                    record={rec}
-                    auction={group.auction}
-                  />
-                ))}
-              </div>
-            );
-          })}
+                </>
+              )}
+              {refundableCount > 0 && (
+                <>
+                  {' · '}
+                  <span className="text-amber-600 dark:text-amber-400">
+                    {refundableCount} refundable
+                  </span>
+                </>
+              )}
+            </>
+          )}
+        </p>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 gap-1.5 px-2 text-xs text-muted-foreground hover:text-foreground"
+          onClick={reload}
+        >
+          <RefreshCw className="size-3" />
+          Reload
+        </Button>
+      </div>
+
+      {/* ── Groups ──────────────────────────────────────────────────────────── */}
+      {actionable.length === 0 ? (
+        <div className="rounded-lg border border-border/50 bg-muted/20 py-12 text-center">
+          <p className="text-sm text-muted-foreground">
+            No claimable bids right now.
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground/70">
+            Records are scanned across all auction programs when your wallet is connected.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {actionable.map((group) => (
+            <ClaimGroup key={group.auctionId} group={group} />
+          ))}
         </div>
       )}
     </div>
