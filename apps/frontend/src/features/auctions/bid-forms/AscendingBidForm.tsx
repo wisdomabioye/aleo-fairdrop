@@ -12,9 +12,8 @@ import type { BidFormProps } from './types';
 export function AscendingBidForm({ auction, protocolConfig, onBidSuccess }: BidFormProps) {
   const { connected, executeTransaction } = useWallet();
   const [searchParams] = useSearchParams();
-
   const decimals = auction.saleTokenDecimals ?? 0;
-  const saleScale = auction.saleScale;
+  const saleScale = BigInt(auction.saleScale);
   const currentPrice = BigInt(auction.currentPrice ?? 0);
 
   const [qtyInput, setQtyInput] = useState('');

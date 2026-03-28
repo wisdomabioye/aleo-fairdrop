@@ -71,18 +71,19 @@ function computeDutchPrice(row: AuctionRow, currentBlock: number): bigint | null
  * Returns null for non-Ascending auctions or before price fields are set.
  */
 function computeAscendingPrice(row: AuctionRow, currentBlock: number): bigint | null {
+
   if (
-    row.startPrice == null || row.ceilingPrice == null ||
+    row.floorPrice == null || row.ceilingPrice == null ||
     row.priceRiseBlocks == null || row.priceRiseAmount == null
   ) return null;
 
   const effectiveBlock = Math.min(currentBlock, row.endBlock);
-  if (effectiveBlock < row.startBlock) return BigInt(row.startPrice);
+  if (effectiveBlock < row.startBlock) return BigInt(row.floorPrice);
 
   const elapsed  = BigInt(effectiveBlock - row.startBlock);
   const steps    = elapsed / BigInt(row.priceRiseBlocks);
   const risen    = steps * BigInt(row.priceRiseAmount);
-  const price    = BigInt(row.startPrice) + risen;
+  const price    = BigInt(row.floorPrice) + risen;
   const ceiling  = BigInt(row.ceilingPrice);
   return price < ceiling ? price : ceiling;
 }
