@@ -5,6 +5,9 @@
 export function parseExecutionError(err: unknown): string {
   const msg = err instanceof Error ? err.message : String(err);
 
+  if (msg.includes('already exists in the ledger') || msg.includes('input ID') && msg.includes('already exists'))
+    return 'One of the selected records has already been spent. Refresh your records and try again.';
+
   if (msg.includes('assert_config'))
     return 'Protocol config changed while the wizard was open. Review the updated fee and resubmit.';
 

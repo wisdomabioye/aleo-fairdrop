@@ -118,7 +118,7 @@ export function TokenStep({ form, onChange }: StepProps) {
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground py-4">
         Select the token record to auction. Supply equals the record amount —{' '}
-        <Link to={AppRoutes.tokenManager} className="text-primary underline">
+        <Link to={AppRoutes.tokenSplitJoin} className="text-primary underline">
           split your balance in Token Manager
         </Link>{' '}
         first if you need a specific quantity.
@@ -130,7 +130,7 @@ export function TokenStep({ form, onChange }: StepProps) {
           <Spinner className="h-4 w-4" /> Loading token records…
         </div>
       ) : tokenGroups.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground py-2">
           No token records found. Mint a token in{' '}
           <Link to={AppRoutes.tokenLaunch} className="text-primary underline">Token Launch</Link>.
         </p>

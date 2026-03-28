@@ -28,9 +28,10 @@ export const AppRoutes = {
   gate: '/gate/:id',
 
   // Token tools
-  tokenLaunch:  '/token-launch',
-  tokenManager: '/token-manager',
-  shield:       '/shield',
+  tokenLaunch:    '/token-launch',
+  tokenManager:   '/token-manager',
+  tokenSplitJoin: '/token-split-join',
+  shield:         '/shield',
 
   // Admin
   admin: '/admin',

@@ -24,6 +24,7 @@ import { GatePage }           from '@/features/gate/pages/GatePage';
 import { ShieldPage }         from '@/features/shield/pages/ShieldPage';
 import { TokenLaunchPage }    from '@/features/token-manager/pages/TokenLaunchPage';
 import { TokenManagerPage }   from '@/features/token-manager/pages/TokenManagerPage';
+import { SplitJoinTokenPage } from '@/features/token-manager/pages/SplitJoinTokenPage';
 import { AdminPage }          from '@/features/admin/pages/AdminPage';
 
 // ── Placeholder (for routes not yet built) ────────────────────────────────────
@@ -90,6 +91,7 @@ export function App() {
           <Route path={AppRoutes.shield}             element={<ShieldPage />} />
           <Route path={AppRoutes.tokenLaunch}        element={<TokenLaunchPage />} />
           <Route path={AppRoutes.tokenManager}       element={<TokenManagerPage />} />
+          <Route path={AppRoutes.tokenSplitJoin}     element={<SplitJoinTokenPage />} />
 
           {/* Admin & Guide */}
           <Route path={AppRoutes.admin}              element={<AdminPage />} />

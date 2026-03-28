@@ -73,44 +73,34 @@ function TxRow({ tx }: { tx: TrackedTx }) {
     <div className="relative overflow-hidden rounded-lg border border-border/70 bg-background/70 px-2.5 py-2 shadow-xs">
       <span className={cn('absolute inset-y-0 left-0 w-0.5', meta.accentClassName)} aria-hidden="true" />
 
-      <div className="pl-1">
-        <div className="flex items-center gap-2">
-          <div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-muted/60">
-            <StatusIcon status={tx.status} />
-          </div>
-
-          <p className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
-            {tx.label}
-          </p>
-
-          {tx.aleoId ? (
-            <a
-              href={`${config.explorerUrl}/${tx.aleoId}`}
-              target="_blank"
-              rel="noreferrer"
-              className="rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground"
-              aria-label="View on explorer"
-              title="View on explorer"
-            >
-              <ExternalLink className="size-3.5" />
-            </a>
-          ) : null}
+      <div className="flex items-center gap-2 pl-1">
+        <div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-muted/60">
+          <StatusIcon status={tx.status} />
         </div>
 
-        <div className="mt-1.5 flex items-center gap-2 pl-8">
-          <Badge
-            variant="outline"
-            className={cn('h-5 rounded-full px-1.5 text-[10px] font-medium', meta.badgeClassName)}
+        <p className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">
+          {tx.label}
+        </p>
+
+        <Badge
+          variant="outline"
+          className={cn('h-5 shrink-0 rounded-full px-1.5 text-[10px] font-medium', meta.badgeClassName)}
+        >
+          {meta.label}
+        </Badge>
+
+        {tx.aleoId ? (
+          <a
+            href={`${config.explorerUrl}/${tx.aleoId}`}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground"
+            aria-label="View on explorer"
+            title="View on explorer"
           >
-            {meta.label}
-          </Badge>
-
-          {tx.aleoId ? (
-            <span className="min-w-0 truncate font-mono text-[10px] text-muted-foreground">
-              {tx.aleoId}
-            </span>
-          ) : null}
-        </div>
+            <ExternalLink className="size-3.5" />
+          </a>
+        ) : null}
       </div>
     </div>
   );

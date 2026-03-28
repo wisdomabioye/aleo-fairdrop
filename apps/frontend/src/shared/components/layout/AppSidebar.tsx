@@ -19,6 +19,7 @@ import {
   Wallet,
   Copy,
   Check,
+  Scissors,
   type LucideIcon,
 } from 'lucide-react';
 import {
@@ -68,6 +69,7 @@ const TOOLS: NavItem[] = [
   { label: 'Shield', to: AppRoutes.shield, icon: ShieldCheck },
   { label: 'Token Launch', to: AppRoutes.tokenLaunch, icon: Coins },
   { label: 'Token Manager', to: AppRoutes.tokenManager, icon: Settings2 },
+  { label: 'Split & Join', to: AppRoutes.tokenSplitJoin, icon: Scissors },
 ];
 
 const RESOURCES: NavItem[] = [
