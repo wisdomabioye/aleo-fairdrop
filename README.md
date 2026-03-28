@@ -31,6 +31,10 @@ pnpm build        # production build
 
 Requires Node ≥ 22, pnpm ≥ 10, and the [Leo CLI](https://developer.aleo.org/leo/installation) for contract work.
 
+## Deployment
+
+For a full walkthrough — deploying contracts, running the indexer and API, and admin setup — see [`SETUP.md`](SETUP.md).
+
 ## Architecture
 
 See [`docs/architecture/DESIGN.md`](docs/architecture/DESIGN.md) for protocol design decisions, gap analysis, and implementation status.
