@@ -37,7 +37,15 @@ export function BidClaimRow({ record, auction }: Props) {
 
   // Derived before hooks so the step closure captures the latest values via stepsRef
   const action = auction ? resolveAction(record, auction) : null;
-  const label  = action ? ACTION_LABELS[action] : null;
+  const claimed = record.raw.spent
+  const label  = (
+    action ?
+    claimed ?
+    "Claimed"
+    : 
+    ACTION_LABELS[action] : 
+    null
+  );
 
   const tx = useConfirmedSequentialTx([{
     label: label ?? 'Claim',
@@ -102,7 +110,7 @@ export function BidClaimRow({ record, auction }: Props) {
         </div>
 
         {action ? (
-          <Button size="sm" disabled={busy} onClick={tx.advance}>
+          <Button size="sm" disabled={busy || claimed} onClick={tx.advance}>
             {busy ? <><Spinner className="mr-2 h-3 w-3" />Claiming…</> : label}
           </Button>
         ) : (
