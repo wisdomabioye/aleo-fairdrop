@@ -1,5 +1,6 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Gift, Share2 } from 'lucide-react';
+import { ArrowRight, Gift } from 'lucide-react';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { Button, Spinner, Card, CardContent, CardHeader, CardTitle, CopyField } from '@/components';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +21,7 @@ interface AuctionReferralTabProps {
 export function AuctionReferralTab({ auction }: AuctionReferralTabProps) {
   const { connected, executeTransaction } = useWallet();
   const { data: pc } = useProtocolConfig();
-  const { codeId, checking } = useMyReferralCode(auction.id);
+  const { codeId, checking, refetch: refetchCode } = useMyReferralCode(auction.id);
 
   // referralBudget is null until cleared — use protocol maxReferralBps to determine eligibility
   const hasReferralProgram  = (pc?.maxReferralBps ?? 0) > 0;
@@ -60,6 +61,23 @@ export function AuctionReferralTab({ auction }: AuctionReferralTabProps) {
       return result?.transactionId;
     },
   }]);
+
+  // Poll for the new ReferralCode record after the tx confirms.
+  // The wallet may need a few seconds to index the record, so we retry with back-off.
+  useEffect(() => {
+    if (!tx.done) return;
+    let cancelled = false;
+    const poll = async () => {
+      for (const delay of [2000, 4000, 6000, 8000]) {
+        await new Promise((r) => setTimeout(r, delay));
+        if (cancelled) return;
+        await refetchCode();
+        if (cancelled) return;
+      }
+    };
+    void poll();
+    return () => { cancelled = true; };
+  }, [tx.done]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const busy     = tx.busy || tx.isWaiting;
   const errorMsg = tx.error ? parseExecutionError(tx.error) : '';
@@ -111,17 +129,9 @@ export function AuctionReferralTab({ auction }: AuctionReferralTabProps) {
                   </Link>
                 </div>
               ) : tx.done ? (
-                <div className="mt-2 space-y-1.5">
-                  <p className="text-xs text-emerald-600 dark:text-emerald-400">
-                    Code confirmed — refresh to see your referral link.
-                  </p>
-                  <Link
-                    to={AppRoutes.referral}
-                    className="inline-flex items-center gap-1 text-xs font-medium text-foreground transition-colors hover:text-primary"
-                  >
-                    Manage commissions
-                    <ArrowRight className="size-3.5" />
-                  </Link>
+                <div className="mt-2 flex items-center gap-2">
+                  <Spinner className="h-3 w-3" />
+                  <span className="text-xs text-muted-foreground">Fetching your referral link…</span>
                 </div>
               ) : canCreate ? (
                 <div className="mt-2 space-y-1.5">
@@ -145,15 +155,6 @@ export function AuctionReferralTab({ auction }: AuctionReferralTabProps) {
               )}
             </div>
           </div>
-        </div>
-
-        {/* ── Auction share link ────────────────────────────────────────────── */}
-        <div className="rounded-xl border border-border/70 bg-background/50 px-3 py-2.5">
-          <div className="mb-2 flex items-center gap-2">
-            <Share2 className="size-3.5 text-muted-foreground" />
-            <p className="text-sm font-medium text-foreground">Share link</p>
-          </div>
-          <CopyField label="Auction link" value={shareUrl} truncate={false} />
         </div>
       </CardContent>
     </Card>

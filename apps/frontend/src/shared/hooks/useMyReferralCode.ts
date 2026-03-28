@@ -14,7 +14,7 @@ const REF_PROGRAM = config.programs.ref.programId;
  * @param auctionId - The auction to check for an existing referral code.
  */
 export function useMyReferralCode(auctionId: string) {
-  const { entries, loading: checking } = useWalletRecords(REF_PROGRAM);
+  const { entries, loading: checking, fetchRecords } = useWalletRecords(REF_PROGRAM);
 
   const codeId = useMemo<string | null>(() => {
     for (const entry of entries) {
@@ -28,5 +28,5 @@ export function useMyReferralCode(auctionId: string) {
     return null;
   }, [entries, auctionId]);
 
-  return { codeId, checking };
+  return { codeId, checking, refetch: fetchRecords };
 }
