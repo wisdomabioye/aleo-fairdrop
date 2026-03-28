@@ -44,7 +44,7 @@ async function fetchUncreditedKeys(codeId: string, count: bigint): Promise<strin
 // ── types ─────────────────────────────────────────────────────────────────────
 
 interface RefCodeStatus {
-  raw:           Record<string, unknown>;
+  raw:           WalletRecord;
   codeId:        string;
   auctionId:     string;
   commissionBps: number;
@@ -85,7 +85,7 @@ export function ReferralCommissionsTab() {
           const commissionBps = parseInt(stripSuffix(stripVisibility(fields['commission_bps'] ?? '0')), 10) || 0;
           if (!codeId) continue;
           parsed.push({
-            raw:           entry as unknown as Record<string, unknown>,
+            raw: entry,
             codeId,
             auctionId,
             commissionBps,
@@ -156,7 +156,7 @@ export function ReferralCommissionsTab() {
       return;
     }
     const attempt = async (amount: bigint) => {
-      const spec = claimCommission(raw, amount);
+      const spec = claimCommission(raw.recordPlaintext, amount);
       return executeTransaction({ ...spec, inputs: spec.inputs as string[] });
     };
     try {

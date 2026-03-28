@@ -114,7 +114,6 @@ export interface AuctionView {
   // Timing
   startBlock:      number;
   endBlock:        number;
-  commitEndBlock:    number | null;
   endedAtBlock:    number | null;
   estimatedStart:  Date | null;    // block → wall-clock approximation
   estimatedEnd:    Date | null;

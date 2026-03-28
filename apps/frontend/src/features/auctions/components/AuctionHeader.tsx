@@ -114,7 +114,7 @@ export function AuctionHeader({ auction, currentPrice }: AuctionHeaderProps) {
   const [imageError, setImageError] = useState(false);
 
   const commitEndBlock = useMemo(() => {
-    const candidate = auction.commitEndBlock;
+    const candidate = auction.params.type === AuctionType.Sealed ? auction.params.commit_end_block : 0;
     return candidate;
   }, [auction]);
 

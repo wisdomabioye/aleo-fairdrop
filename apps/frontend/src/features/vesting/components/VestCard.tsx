@@ -68,8 +68,8 @@ export function VestCard({ vest, auction, blockHeight }: VestCardProps) {
     setError('');
     setBusy(true);
     try {
-      const spec   = releaseVested(vest.raw, releasable);
-      const result = await executeTransaction({ ...spec, inputs: spec.inputs as string[] });
+      const spec   = releaseVested(vest.raw.recordPlaintext, releasable);
+      const result = await executeTransaction({ ...spec, inputs: spec.inputs });
       if (result?.transactionId) track(result.transactionId, 'Release vested tokens');
     } catch (err) {
       setError(parseExecutionError(err));

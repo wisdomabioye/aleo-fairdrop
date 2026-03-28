@@ -15,10 +15,10 @@ import { formatMicrocredits } from '@fairdrop/sdk/credits';
 import { formatAmount, parseTokenAmount } from '@fairdrop/sdk/format';
 import { AuctionStatus } from '@fairdrop/types/domain';
 import type { AuctionView } from '@fairdrop/types/domain';
-import * as auctionTx from '@/lib/auctionTx';
-import type { AuctionTxSpec } from '@/lib/auctionTx';
 import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
 import { parseExecutionError } from '@/shared/utils/errors';
+import type { TransactionOptions } from '@provablehq/aleo-types';
+import * as auctionTx from '@/lib/auctionTx';
 
 interface Props {
   auction:           AuctionView;
@@ -79,7 +79,7 @@ export function CreatorActionsCard({
   const [step, setStep] = useState<{ label: string; execute: () => Promise<string | undefined> } | null>(null);
   const tx = useConfirmedSequentialTx(step ? [step] : []);
 
-  function runAction(key: string, label: string, spec: AuctionTxSpec) {
+  function runAction(key: string, label: string, spec: TransactionOptions) {
     if (tx.busy || tx.isWaiting) return;
     tx.reset();
     setActiveKey(key);

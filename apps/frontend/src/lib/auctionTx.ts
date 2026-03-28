@@ -5,7 +5,7 @@
  * D11 pattern: caller reads on-chain state and passes it as public inputs;
  *              finalize validates with assert_eq. Wrong inputs → tx fails in finalize.
  *
- * Returns an AuctionTxSpec that can be spread directly into executeTransaction():
+ * Returns an TransactionOptions that can be spread directly into executeTransaction():
  *   executeTransaction(auctionTx.closeAuction(auction))
  *   executeTransaction(auctionTx.withdrawPayments(auction, amount))
  *
@@ -19,15 +19,8 @@
 import { AuctionStatus, AuctionType } from '@fairdrop/types/domain';
 import type { AuctionView } from '@fairdrop/types/domain';
 import { config, TX_DEFAULT_FEE } from '@/env';
-
-// Wallet adapters accept record objects as inputs at runtime despite string[] TS type.
-export interface AuctionTxSpec {
-  program:    string;
-  function:   string;
-  inputs:     (string | Record<string, unknown>)[];
-  fee:        number;
-  privateFee: boolean;
-}
+import { RaiseAuctionConfig } from 'node_modules/@fairdrop/types/src/contracts/auctions/raise';
+import type { TransactionOptions } from '@provablehq/aleo-types';
 
 // ── 1. Auction lifecycle ──────────────────────────────────────────────────────
 
@@ -40,7 +33,7 @@ export interface AuctionTxSpec {
  *   volume        = state.total_payments  ← ALEO paid in, NOT sale-token quantity
  *   closer_reward = config.closer_reward
  */
-export function closeAuction(auction: AuctionView): AuctionTxSpec {
+export function closeAuction(auction: AuctionView): TransactionOptions {
   return {
     program:    auction.programId,
     function:   'close_auction',
@@ -48,10 +41,7 @@ export function closeAuction(auction: AuctionView): AuctionTxSpec {
       auction.id,
       auction.creator,
       String(auction.status === AuctionStatus.Clearing),  // filled = supply_met
-      auction.type == AuctionType.Sealed ?
-      `${auction.totalPayments}u128` // volume = total_payments (D11)
-      :
-      `${auction.totalCommitted}u128`, // volume = total_payments (D11)
+      `${auction.totalPayments}u128`, // volume = total_payments (D11)
       `${auction.closerReward}u128`,
     ],
     fee:        TX_DEFAULT_FEE,
@@ -65,7 +55,7 @@ export function closeAuction(auction: AuctionView): AuctionTxSpec {
  * Burns escrow_sales back to the creator's token balance.
  * After cancel, bidders call claim_voided / claim_commit_voided.
  */
-export function cancelAuction(auction: AuctionView): AuctionTxSpec {
+export function cancelAuction(auction: AuctionView): TransactionOptions {
   return {
     program:    auction.programId,
     function:   'cancel_auction',
@@ -81,7 +71,7 @@ export function cancelAuction(auction: AuctionView): AuctionTxSpec {
  * Transfers referral_budget credits to fairdrop_ref_v1 so referrers can claim.
  * D11: referral_budget = state.referral_budget
  */
-export function pushReferralBudget(auction: AuctionView): AuctionTxSpec {
+export function pushReferralBudget(auction: AuctionView): TransactionOptions {
   return {
     program:    auction.programId,
     function:   'push_referral_budget',
@@ -96,7 +86,7 @@ export function pushReferralBudget(auction: AuctionView): AuctionTxSpec {
  *
  * Withdraws up to `amount` ALEO from creator_revenue escrow.
  */
-export function withdrawPayments(auction: AuctionView, amount: bigint): AuctionTxSpec {
+export function withdrawPayments(auction: AuctionView, amount: bigint): TransactionOptions {
   return {
     program:    auction.programId,
     function:   'withdraw_payments',
@@ -112,7 +102,7 @@ export function withdrawPayments(auction: AuctionView, amount: bigint): AuctionT
  * Mints up to `amount` unsold tokens back to the creator.
  * sale_token_id required for the token_registry CPI.
  */
-export function withdrawUnsold(auction: AuctionView, amount: bigint): AuctionTxSpec {
+export function withdrawUnsold(auction: AuctionView, amount: bigint): TransactionOptions {
   return {
     program:    auction.programId,
     function:   'withdraw_unsold',
@@ -130,7 +120,7 @@ export function withdrawUnsold(auction: AuctionView, amount: bigint): AuctionTxS
  */
 export interface ClaimRecord {
   /** Raw wallet record object — wallet adapter handles serialization at runtime. */
-  raw:           Record<string, unknown>;
+  raw:           string;
   /** Program that issued this record (matches auction.programId). */
   programId:     string;
   /** ALEO locked as collateral or payment. */
@@ -141,11 +131,46 @@ export interface ClaimRecord {
  * claim — settled auction; returns tokens to the bidder.
  * `saleScale` D11: config.sale_scale (divisor applied in finalize).
  */
-export function claimBid(record: ClaimRecord, auction: AuctionView): AuctionTxSpec {
+export function claimBid(record: ClaimRecord, auction: AuctionView): TransactionOptions {
+  let inputs: string[] = [];
+
+  switch (auction.type) {
+    case AuctionType.Sealed:
+    case AuctionType.Dutch:
+    case AuctionType.Lbp:
+    case AuctionType.Quadratic:
+      inputs = [
+        record.raw, 
+        `${auction.clearingPrice}u128`, 
+        auction.saleTokenId, 
+        `${auction.saleScale}u128`
+      ];
+      break;
+    case AuctionType.Raise:
+      inputs = [
+        record.raw, 
+        `${auction.totalPayments}u128`, 
+        `${(
+          auction.params as Pick<RaiseAuctionConfig, 'raise_target'>
+        ).raise_target}u128`, 
+        `${auction.supply}u128`, 
+        auction.saleTokenId, 
+        `${auction.saleScale}u128`
+      ];
+      break;
+
+    case AuctionType.Ascending:
+      inputs = [
+        record.raw, 
+        auction.saleTokenId, 
+      ];
+      break;
+  }
+  
   return {
     program:    record.programId,
     function:   'claim',
-    inputs:     [record.raw, auction.id, `${record.paymentAmount}u128`, `${auction.saleScale}u128`],
+    inputs,
     fee:        TX_DEFAULT_FEE,
     privateFee: false,
   };
@@ -154,11 +179,55 @@ export function claimBid(record: ClaimRecord, auction: AuctionView): AuctionTxSp
 /**
  * claim_vested — settled auction with vesting; issues a vest schedule instead of tokens.
  */
-export function claimVested(record: ClaimRecord, auction: AuctionView): AuctionTxSpec {
+export function claimVested(record: ClaimRecord, auction: AuctionView): TransactionOptions {
+  let inputs: string[] = [];
+
+  switch (auction.type) {
+    case AuctionType.Dutch:
+    case AuctionType.Sealed:
+    case AuctionType.Lbp:
+    case AuctionType.Quadratic:
+      inputs = [
+        record.raw, 
+        `${auction.clearingPrice}u128`,
+        auction.saleTokenId,
+        `${auction.saleScale}u128`,
+        `${auction.endedAtBlock}u32`,
+        `${auction.vestCliffBlocks}u32`,
+        `${auction.vestEndBlocks}u32`,
+      ];
+      break;
+    case AuctionType.Raise:
+      inputs = [
+        record.raw, 
+        `${auction.totalPayments}u128`, 
+        `${(
+          auction.params as Pick<RaiseAuctionConfig, 'raise_target'>
+        ).raise_target}u128`, 
+        `${auction.supply}u128`, 
+        auction.saleTokenId, 
+        `${auction.saleScale}u128`,
+        `${auction.endedAtBlock}u32`,
+        `${auction.vestCliffBlocks}u32`,
+        `${auction.vestEndBlocks}u32`,
+      ];
+      break;
+
+    case AuctionType.Ascending:
+      inputs = [
+        record.raw, 
+        auction.saleTokenId,
+        `${auction.endedAtBlock}u32`,
+        `${auction.vestCliffBlocks}u32`,
+        `${auction.vestEndBlocks}u32`,
+      ];
+      break;
+  }
+
   return {
     program:    record.programId,
     function:   'claim_vested',
-    inputs:     [record.raw, auction.id, `${record.paymentAmount}u128`, `${auction.saleScale}u128`],
+    inputs,
     fee:        TX_DEFAULT_FEE,
     privateFee: false,
   };
@@ -167,11 +236,11 @@ export function claimVested(record: ClaimRecord, auction: AuctionView): AuctionT
 /**
  * claim_voided — cancelled auction; refunds the bidder's payment from a Bid record.
  */
-export function claimVoided(record: ClaimRecord, auction: AuctionView): AuctionTxSpec {
+export function claimVoided(record: ClaimRecord, _auction: AuctionView): TransactionOptions {
   return {
     program:    record.programId,
     function:   'claim_voided',
-    inputs:     [record.raw, auction.id, `${record.paymentAmount}u128`],
+    inputs:     [record.raw],
     fee:        TX_DEFAULT_FEE,
     privateFee: false,
   };
@@ -181,11 +250,11 @@ export function claimVoided(record: ClaimRecord, auction: AuctionView): AuctionT
  * claim_commit_voided — cancelled auction; refunds sealed Commitment record collateral.
  * Used when the bidder never revealed (Commitment record, not Bid record).
  */
-export function claimCommitVoided(record: ClaimRecord, auction: AuctionView): AuctionTxSpec {
+export function claimCommitVoided(record: ClaimRecord, _auction: AuctionView): TransactionOptions {
   return {
     program:    record.programId,
     function:   'claim_commit_voided',
-    inputs:     [record.raw, auction.id, `${record.paymentAmount}u128`],
+    inputs:     [record.raw],
     fee:        TX_DEFAULT_FEE,
     privateFee: false,
   };
@@ -209,11 +278,16 @@ export function slashUnrevealed(
   auctionId:      string,
   paymentAmount:  bigint,
   slashRewardBps: number,
-): AuctionTxSpec {
+): TransactionOptions {
   return {
     program:    config.programs.sealed.programId,
     function:   'slash_unrevealed',
-    inputs:     [commitmentKey, auctionId, `${paymentAmount}u128`, `${slashRewardBps}u16`],
+    inputs:     [
+      commitmentKey, 
+      auctionId, 
+      `${paymentAmount}u128`, 
+      `${slashRewardBps}u16`
+    ],
     fee:        TX_DEFAULT_FEE,
     privateFee: false,
   };
@@ -227,7 +301,7 @@ export function slashUnrevealed(
  * @param auctionId      Auction to attach the code to
  * @param maxReferralBps Protocol cap (from ProtocolConfig.maxReferralBps)
  */
-export function createReferralCode(auctionId: string, maxReferralBps: number): AuctionTxSpec {
+export function createReferralCode(auctionId: string, maxReferralBps: number): TransactionOptions {
   return {
     program:    config.programs.ref.programId,
     function:   'create_code',
@@ -243,7 +317,7 @@ export function createReferralCode(auctionId: string, maxReferralBps: number): A
  * @param codeId     Referral code field (on-chain identifier)
  * @param bidderKey  BHP256(BidderKey{bidder, auction_id}) — computed off-chain
  */
-export function creditCommission(codeId: string, bidderKey: string): AuctionTxSpec {
+export function creditCommission(codeId: string, bidderKey: string): TransactionOptions {
   return {
     program:    config.programs.ref.programId,
     function:   'credit_commission',
@@ -259,7 +333,7 @@ export function creditCommission(codeId: string, bidderKey: string): AuctionTxSp
  * @param codeRecord  Raw referral code record from the wallet
  * @param amount      Amount to claim (up to accumulated balance)
  */
-export function claimCommission(codeRecord: Record<string, unknown>, amount: bigint): AuctionTxSpec {
+export function claimCommission(codeRecord: string, amount: bigint): TransactionOptions {
   return {
     program:    config.programs.ref.programId,
     function:   'claim_commission',
@@ -280,7 +354,7 @@ export function claimCommission(codeRecord: Record<string, unknown>, amount: big
  * @param vestRecord  Raw VestedAllocation record from the wallet
  * @param amount      Tokens to release (≤ vested_so_far − released)
  */
-export function releaseVested(vestRecord: Record<string, unknown>, amount: bigint): AuctionTxSpec {
+export function releaseVested(vestRecord: string, amount: bigint): TransactionOptions {
   return {
     program:    config.programs.vest.programId,
     function:   'release',

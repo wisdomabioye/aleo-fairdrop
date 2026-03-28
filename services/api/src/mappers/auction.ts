@@ -213,7 +213,6 @@ export function toAuctionView(
     clearingPrice:      bigOrNull(row.clearingPrice),
     startBlock:         row.startBlock,
     endBlock:           row.endBlock,
-    commitEndBlock:     row.commitEndBlock ?? null,
     endedAtBlock:       row.endedAtBlock    ?? null,
     estimatedStart:     estimateTime(row.startBlock, ctx),
     estimatedEnd:       estimateTime(row.endBlock,   ctx),

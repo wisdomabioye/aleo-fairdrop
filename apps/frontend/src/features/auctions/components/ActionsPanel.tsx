@@ -4,10 +4,7 @@ import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import {
   AlertTriangle,
   ArrowRight,
-  Ban,
-  Coins,
   Gavel,
-  HandCoins,
   Send,
   Wallet,
   type LucideIcon,
@@ -18,10 +15,10 @@ import { AuctionStatus, AuctionType } from '@fairdrop/types/domain';
 import type { AuctionView } from '@fairdrop/types/domain';
 import { AppRoutes } from '@/config';
 import * as auctionTx from '@/lib/auctionTx';
-import type { AuctionTxSpec } from '@/lib/auctionTx';
 import { useConfirmedSequentialTx, type SequentialStep } from '@/shared/hooks/useConfirmedSequentialTx';
 import { parseExecutionError } from '@/shared/utils/errors';
 import { cn } from '@/lib/utils';
+import type { TransactionOptions } from '@provablehq/aleo-types';
 
 interface ActionsPanelProps {
   auction: AuctionView;
@@ -105,24 +102,18 @@ export function ActionsPanel({ auction, blockHeight }: ActionsPanelProps) {
 
   const canClose =
     auction.status === AuctionStatus.Ended || auction.status === AuctionStatus.Clearing;
-  const canCancel =
-    isCreator &&
-    (auction.status === AuctionStatus.Upcoming || auction.status === AuctionStatus.Active);
+  
   const canSlash =
     auction.type === AuctionType.Sealed && pastEnd && auction.status === AuctionStatus.Ended;
-  const canWithdraw =
-    isCreator &&
-    auction.status === AuctionStatus.Cleared &&
-    auction.creatorRevenue != null &&
-    auction.creatorRevenue > 0n;
+
   const canPushReferral =
     auction.status === AuctionStatus.Cleared &&
     auction.referralBudget != null &&
     auction.referralBudget > 0n;
 
-  if (!canClose && !canCancel && !canSlash && !canWithdraw && !canPushReferral) return null;
+  if (!canClose && !canSlash && !canPushReferral) return null;
 
-  function runAction(key: string, label: string, spec: AuctionTxSpec) {
+  function runAction(key: string, label: string, spec: TransactionOptions) {
     if (tx.busy || tx.isWaiting) return;
     tx.reset();
     setActiveKey(key);
@@ -156,30 +147,6 @@ export function ActionsPanel({ auction, blockHeight }: ActionsPanelProps) {
     });
   }
 
-  const unsold = auction.supply - auction.totalCommitted;
-
-  if (canWithdraw) {
-    actions.push({
-      key:          'withdraw-payments',
-      label:        'Withdraw Revenue',
-      pendingLabel: 'Submitting…',
-      description:  'Claim settled proceeds as the auction creator.',
-      icon:    HandCoins,
-      onClick: () => runAction('withdraw-payments', 'Withdraw revenue', auctionTx.withdrawPayments(auction, auction.creatorRevenue!)),
-    });
-
-    if (unsold > 0n) {
-      actions.push({
-        key:          'withdraw-unsold',
-        label:        'Withdraw Unsold',
-        pendingLabel: 'Submitting…',
-        description:  'Recover unsold inventory after clearing.',
-        icon:    Coins,
-        onClick: () => runAction('withdraw-unsold', 'Withdraw unsold', auctionTx.withdrawUnsold(auction, unsold)),
-      });
-    }
-  }
-
   if (canPushReferral) {
     actions.push({
       key:          'push-referral',
@@ -188,18 +155,6 @@ export function ActionsPanel({ auction, blockHeight }: ActionsPanelProps) {
       description:  'Move referral budget into the distribution flow.',
       icon:    Send,
       onClick: () => runAction('push-referral', 'Push referral budget', auctionTx.pushReferralBudget(auction)),
-    });
-  }
-
-  if (canCancel) {
-    actions.push({
-      key:          'cancel',
-      label:        'Cancel Auction',
-      pendingLabel: 'Submitting…',
-      description:  'Available while the auction is still upcoming or active.',
-      icon:    Ban,
-      variant: 'destructive',
-      onClick: () => runAction('cancel', 'Cancel auction', auctionTx.cancelAuction(auction)),
     });
   }
 

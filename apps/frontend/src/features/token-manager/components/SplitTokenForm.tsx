@@ -157,8 +157,6 @@ export function SplitTokenForm() {
         </div>
       )}
 
-      <WizardTxStatus trackedIds={trackedIds} />
-
       <Button className="w-full" onClick={advance} disabled={!splitValid || blocked}>
         {busy      ? <><Spinner className="mr-2 size-4" /> Waiting for wallet…</>
         : isWaiting ? <><Spinner className="mr-2 size-4" /> Awaiting confirmation…</>

@@ -45,7 +45,7 @@ export function useAuctionClaimable(
 
         result.push({
           // Pass the WalletRecord object — wallet adapter uses commitment/ciphertext to prove it.
-          raw:           entry as unknown as Record<string, unknown>,
+          raw: entry,
           programId,
           auctionId,
           paymentAmount: u128ToBigInt(parseU128(fields['payment_amount'] ?? '0u128')),

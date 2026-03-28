@@ -11,7 +11,7 @@ import type { AuctionView } from '@fairdrop/types/domain';
 export type RecordKind = 'bid' | 'commitment';
 
 export interface ClaimableRecord {
-  raw:           Record<string, unknown>;
+  raw: WalletRecord;
   programId:     string;
   auctionId:     string;
   paymentAmount: bigint;
@@ -66,7 +66,7 @@ export function useClaimable() {
               if (!auctionId) continue;
               const paymentAmount = u128ToBigInt(parseU128(fields['payment_amount'] ?? '0u128'));
               const kind: RecordKind = isCommitment ? 'commitment' : 'bid';
-              allRecords.push({ raw: entry as unknown as Record<string, unknown>, programId: prog.programId, auctionId, paymentAmount, kind });
+              allRecords.push({ raw: entry, programId: prog.programId, auctionId, paymentAmount, kind });
             } catch { /* skip malformed */ }
           }
         }),

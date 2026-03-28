@@ -74,7 +74,8 @@ export function AuctionInfoTab({ auction, protocolConfig }: AuctionInfoTabProps)
   const tokenDecimals = auction.saleTokenDecimals as number;
   const isSealed = auction.type === AuctionType.Sealed;
   const isRaise = auction.type === AuctionType.Raise;
-
+  const commitEndBlock = auction.params.type === AuctionType.Sealed ? auction.params.commit_end_block : 0 
+  
   return (
     <Card className="border-sky-500/10 bg-gradient-surface shadow-xs ring-1 ring-white/5">
       <CardHeader className="pb-2">
@@ -142,7 +143,7 @@ export function AuctionInfoTab({ auction, protocolConfig }: AuctionInfoTabProps)
                 <>
                   <Row
                     label="Commit End block"
-                    value={auction.commitEndBlock?.toLocaleString()}
+                    value={Number(commitEndBlock).toLocaleString()}
                     valueClassName="font-mono text-[12px] text-foreground/80"
                   />
                   <Row

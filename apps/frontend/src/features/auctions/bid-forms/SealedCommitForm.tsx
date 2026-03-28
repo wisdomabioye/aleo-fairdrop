@@ -36,7 +36,7 @@ export function SealedCommitForm({ auction, protocolConfig, onBidSuccess }: Prop
   const startPrice   = sealedP ? BigInt(sealedP.start_price)        : 0n;
   const decayBlocks  = sealedP ? BigInt(sealedP.price_decay_blocks) : 1n;
   const decayAmount  = sealedP ? BigInt(sealedP.price_decay_amount) : 0n;
-  const commitEndBlock = auction.commitEndBlock;
+  const commitEndBlock = sealedP ? sealedP.commit_end_block: 0;
 
   // Clearing price is fixed by Dutch formula at commit_end_block — deterministic.
   // Bidders must lock: payment_amount * sale_scale >= quantity * clearing_price

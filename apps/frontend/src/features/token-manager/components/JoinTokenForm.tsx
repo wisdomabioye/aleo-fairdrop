@@ -164,9 +164,7 @@ export function JoinTokenForm() {
           {parseExecutionError(error)}
         </div>
       )}
-
-      <WizardTxStatus trackedIds={trackedIds} />
-
+      
       <Button className="w-full" onClick={advance} disabled={!joinValid || blocked}>
         {busy      ? <><Spinner className="mr-2 size-4" /> Waiting for wallet…</>
         : isWaiting ? <><Spinner className="mr-2 size-4" /> Awaiting confirmation…</>

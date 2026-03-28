@@ -69,7 +69,7 @@ export function VestingPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {records.map((v, i) => (
+          {records.filter(r => !r.raw.spent).map((v, i) => (
             <VestCard
               key={`${v.auctionId}:${v.tokenId}:${i}`}
               vest={v}

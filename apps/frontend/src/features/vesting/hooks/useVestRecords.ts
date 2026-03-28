@@ -12,7 +12,7 @@ const VEST_PROGRAM = config.programs.vest.programId;
 
 export interface VestRecord {
   /** Raw WalletRecord — passed as first input to `release`. */
-  raw:        Record<string, unknown>;
+  raw:        WalletRecord;
   /** auction_id field (informational). */
   auctionId:  string;
   /** sale_token_id — the token being vested. */
@@ -81,7 +81,7 @@ export function useVestRecords() {
           const endBlock   = parseU32(fields['end_block']   ?? '0u32');
           if (!auctionId || total === 0n) continue;
           parsed.push({
-            raw: entry as unknown as Record<string, unknown>,
+            raw: entry,
             auctionId, tokenId, total, released, cliffBlock, endBlock,
           });
         } catch { /* skip malformed */ }

@@ -43,12 +43,23 @@ export function BidClaimRow({ record, auction }: Props) {
     label: label ?? 'Claim',
     execute: async () => {
       if (!action || !auction) throw new Error('Nothing to claim');
-      const claimRec = { raw: record.raw, programId: record.programId, paymentAmount: record.paymentAmount };
-      const spec = action === 'claim'               ? auctionTx.claimBid(claimRec, auction)
-                 : action === 'claim_vested'        ? auctionTx.claimVested(claimRec, auction)
-                 : action === 'claim_voided'        ? auctionTx.claimVoided(claimRec, auction)
-                 :                                    auctionTx.claimCommitVoided(claimRec, auction);
-      const result = await executeTransaction({ ...spec, inputs: spec.inputs as string[] });
+      const claimRec = { raw: record.raw.recordPlaintext, programId: record.programId, paymentAmount: record.paymentAmount };
+      const spec = (
+        action === 'claim' 
+        ? 
+        auctionTx.claimBid(claimRec, auction)
+        : 
+        action === 'claim_vested'        
+        ? 
+        auctionTx.claimVested(claimRec, auction)
+        : 
+        action === 'claim_voided'        
+        ? 
+        auctionTx.claimVoided(claimRec, auction)
+        :                                    
+        auctionTx.claimCommitVoided(claimRec, auction));
+      
+        const result = await executeTransaction({ ...spec, inputs: spec.inputs as string[] });
       return result?.transactionId;
     },
   }]);
