@@ -122,9 +122,17 @@ export function SealedCommitForm({ auction, protocolConfig, onBidSuccess }: Prop
     onBidSuccess?.(); resetBid();
   }, [bidDone]);
 
-  const isDisabled = !connected || bidBusy || bidWaiting;
+  const formBlocker = useMemo(() => {
+    if (!connected) return 'Connect wallet to place a bid.';
+    if (mode === 'private') {
+      if (!selectedRecord) return 'Select a payment record.';
+      if (paymentMicro > 0n && selectedRecord.microcredits < paymentMicro)
+        return 'Selected record does not have enough balance.';
+    }
+    return null;
+  }, [connected, mode, selectedRecord, paymentMicro]);
 
-  const formBlocker = !connected ? 'Connect wallet to place a bid.' : null;
+  const isDisabled = !!formBlocker || bidBusy || bidWaiting;
 
   return (
     <div className="space-y-3">
@@ -249,7 +257,7 @@ export function SealedCommitForm({ auction, protocolConfig, onBidSuccess }: Prop
       )}
 
       <Button type="button" className="w-full"
-        disabled={isDisabled || !!formBlocker || !!paymentError || !qtyRaw || !paymentMicro}
+        disabled={isDisabled || !!paymentError || !qtyRaw || !paymentMicro}
         onClick={() => void submitBid()}>
         {bidBusy ? <><Spinner className="mr-2 h-3 w-3" />Authorizing…</> : bidWaiting ? <><Spinner className="mr-2 h-3 w-3" />Confirming…</> : `Commit ${mode === 'private' ? 'Private' : 'Public'} Bid`}
       </Button>
