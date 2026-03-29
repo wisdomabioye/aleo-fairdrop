@@ -84,7 +84,7 @@ export function MetadataStep({ form, onChange }: StepProps) {
           <Input
             value={form.metadataTwitter}
             onChange={(e) => onChange({ metadataTwitter: e.target.value })}
-            placeholder="@handle"
+            placeholder="https://x.com/@handle"
           />
         </div>
         <div className="space-y-1.5">
