@@ -35,6 +35,7 @@ export function PricingStep({ form, onChange }: StepProps) {
   }
 
   const supply = form.supply ? BigInt(form.supply) : undefined;
+  const saleTokenDecimals = form.tokenDecimals;
 
   switch (auctionType) {
     case AuctionType.Dutch:
@@ -43,6 +44,7 @@ export function PricingStep({ form, onChange }: StepProps) {
           value={value as DutchPricingValues}
           onChange={handleChange}
           supply={supply}
+          saleTokenDecimals={saleTokenDecimals}
         />
       );
     case AuctionType.Sealed:
@@ -51,6 +53,7 @@ export function PricingStep({ form, onChange }: StepProps) {
           value={value as SealedPricingValues}
           onChange={handleChange}
           supply={supply}
+          saleTokenDecimals={saleTokenDecimals}
         />
       );
     case AuctionType.Raise:
@@ -59,6 +62,7 @@ export function PricingStep({ form, onChange }: StepProps) {
           value={value as RaisePricingValues}
           onChange={handleChange}
           supply={supply}
+          saleTokenDecimals={saleTokenDecimals}
         />
       );
     case AuctionType.Ascending:
@@ -67,6 +71,7 @@ export function PricingStep({ form, onChange }: StepProps) {
           value={value as AscendingPricingValues}
           onChange={handleChange}
           supply={supply}
+          saleTokenDecimals={saleTokenDecimals}
         />
       );
     case AuctionType.Lbp:
@@ -75,6 +80,7 @@ export function PricingStep({ form, onChange }: StepProps) {
           value={value as LbpPricingValues}
           onChange={handleChange}
           supply={supply}
+          saleTokenDecimals={saleTokenDecimals}
         />
       );
     case AuctionType.Quadratic:
@@ -83,6 +89,7 @@ export function PricingStep({ form, onChange }: StepProps) {
           value={value as QuadraticPricingValues}
           onChange={handleChange}
           supply={supply}
+          saleTokenDecimals={saleTokenDecimals}
         />
       );
     default:

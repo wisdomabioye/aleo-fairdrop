@@ -40,5 +40,7 @@ export interface PricingStepProps<T> {
   value:    T;
   onChange: (next: T) => void;
   /** Raw sale token supply from Step 2 (base units). Used for implied price preview. */
-  supply?:  bigint;
+  supply?:           bigint;
+  /** Sale token decimals from Step 2. Used to normalise supply for price previews. */
+  saleTokenDecimals?: number;
 }

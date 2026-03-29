@@ -3,12 +3,16 @@ import { parseTokenAmount } from '@fairdrop/sdk/format';
 import { formatMicrocredits } from '@fairdrop/sdk/credits';
 import type { PricingStepProps, RaisePricingValues } from './types';
 
-export function RaisePricingStep({ value, onChange, supply }: PricingStepProps<RaisePricingValues>) {
+export function RaisePricingStep({ value, onChange, supply, saleTokenDecimals }: PricingStepProps<RaisePricingValues>) {
   const targetMicro = parseTokenAmount(value.raiseTarget, 6);
 
-  // Implied price per base token unit — only meaningful if sale token has 6 decimals.
-  const impliedPrice = supply != null && supply > 0n && targetMicro > 0n
-    ? targetMicro / supply
+  // Mirrors the contract formula: clearing_price = raise_target * sale_scale / supply
+  // Both raise_target (microcredits) and supply (raw token units) include their respective
+  // decimal factors, so dividing supply by sale_scale first yields price per whole token.
+  const saleScale = 10n ** BigInt(saleTokenDecimals ?? 6);
+  const humanSupply = supply != null && saleScale > 0n ? supply / saleScale : null;
+  const impliedPrice = humanSupply != null && humanSupply > 0n && targetMicro > 0n
+    ? targetMicro / humanSupply
     : null;
 
   const targetError = value.raiseTarget && targetMicro <= 0n ? 'Required, must be > 0.' : null;
@@ -32,9 +36,9 @@ export function RaisePricingStep({ value, onChange, supply }: PricingStepProps<R
           <div>Raise target: <strong className="text-foreground">{formatMicrocredits(targetMicro)}</strong></div>
           {impliedPrice != null && (
             <div>
-              Implied price per token unit:{' '}
+              Implied price per token:{' '}
               <strong className="text-foreground">{formatMicrocredits(impliedPrice)}</strong>
-              {' '}(raise target ÷ supply — assumes matching decimals)
+              {' '}(raise target ÷ token supply)
             </div>
           )}
         </div>
