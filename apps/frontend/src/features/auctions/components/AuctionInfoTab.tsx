@@ -154,7 +154,7 @@ export function AuctionInfoTab({ auction, protocolConfig }: AuctionInfoTabProps)
                 </>
                 :
                 <Row
-                  label="Reveal End block"
+                  label="End block"
                   value={auction.endBlock.toLocaleString()}
                   valueClassName="font-mono text-[12px] text-foreground/80"
                 />
