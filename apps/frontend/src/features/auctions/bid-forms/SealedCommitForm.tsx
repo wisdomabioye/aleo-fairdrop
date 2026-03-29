@@ -11,6 +11,7 @@ import { parseTokenAmount } from '@fairdrop/sdk/format';
 import { generateTokenId } from '@fairdrop/sdk/registry';
 import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
 import { useCreditRecords } from '@/shared/hooks/useCreditRecords';
+import { useCommitmentRecords } from '@/shared/hooks/useCommitmentRecords';
 import { AppRoutes } from '@/config';
 import { cn } from '@/lib/utils';
 import type { AuctionView, ProtocolConfig } from '@fairdrop/types/domain';
@@ -65,6 +66,8 @@ export function SealedCommitForm({ auction, protocolConfig, onBidSuccess }: Prop
   const [showReferral,     setShowReferral]     = useState(Boolean(searchParams.get('ref')));
 
   const { creditRecords, loading: creditsLoading } = useCreditRecords();
+  const { commitmentRecords } = useCommitmentRecords(auction.programId, { auctionId: auction.id });
+  const existingCommit = commitmentRecords.find((c) => !c.spent);
   const unspentRecords = useMemo(() => creditRecords.filter((r) => !r.spent), [creditRecords]);
   const selectedRecord = unspentRecords.find((r) => r.id === selectedRecordId) ?? null;
 
@@ -133,6 +136,28 @@ export function SealedCommitForm({ auction, protocolConfig, onBidSuccess }: Prop
   }, [connected, mode, selectedRecord, paymentMicro]);
 
   const isDisabled = !!formBlocker || bidBusy || bidWaiting;
+
+  if (existingCommit) {
+    return (
+      <div className="space-y-3">
+        <div className="rounded-lg border border-sky-500/20 bg-sky-500/8 px-3 py-2.5 text-xs text-sky-700 dark:text-sky-400 space-y-1">
+          <p className="font-medium">Commitment submitted</p>
+          <p>
+            You already have a sealed commitment for this auction.
+            The reveal window opens at block {commitEndBlock?.toLocaleString() ?? '—'}.
+          </p>
+        </div>
+        <div className="rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2.5 text-[11px] text-destructive space-y-0.5">
+          <p className="font-medium">You must reveal before the auction ends</p>
+          <p>
+            If you do not reveal your bid before block {sealedP?.commit_end_block != null ? auction.endBlock.toLocaleString() : '—'},
+            your entire collateral ({formatMicrocredits(existingCommit.payment_amount)}) is permanently forfeited.
+            There is no recovery path.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">

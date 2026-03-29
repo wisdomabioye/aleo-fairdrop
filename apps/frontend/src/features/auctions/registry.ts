@@ -18,8 +18,9 @@ import { AscendingPricePanel } from './price-panels/AscendingPricePanel';
 import { LbpPricePanel }       from './price-panels/LbpPricePanel';
 import { QuadraticPricePanel } from './price-panels/QuadraticPricePanel';
 
-import { DefaultProgressPanel } from './progress-panels/DefaultProgressPanel';
-import { RaiseProgressPanel }   from './progress-panels/RaiseProgressPanel';
+import { DefaultProgressPanel }  from './progress-panels/DefaultProgressPanel';
+import { RaiseProgressPanel }    from './progress-panels/RaiseProgressPanel';
+import { SealedProgressPanel }   from './progress-panels/SealedProgressPanel';
 
 export interface AuctionTypeSlot {
   type:          AuctionType;
@@ -50,7 +51,7 @@ export const AUCTION_REGISTRY: Record<AuctionType, AuctionTypeSlot> = {
     description:   'Commit-reveal: bids hidden on-chain until reveal window.',
     BidForm:       SealedBidForm,
     PricePanel:    SealedPricePanel,
-    ProgressPanel: DefaultProgressPanel,
+    ProgressPanel: SealedProgressPanel,
   },
   [AuctionType.Raise]: {
     type:          AuctionType.Raise,

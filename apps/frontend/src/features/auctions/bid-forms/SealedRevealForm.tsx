@@ -49,8 +49,16 @@ export function SealedRevealForm({ auction, onBidSuccess }: Props) {
 
   return (
     <div className="space-y-3">
-      <div className="rounded-lg border border-sky-500/20 bg-sky-500/10 px-3 py-2 text-xs text-sky-600 dark:text-sky-400">
+      <div className="rounded-lg border border-sky-500/20 bg-sky-500/8 px-3 py-2 text-xs text-sky-600 dark:text-sky-400">
         Reveal phase — select your commitment record. Quantity and nonce are read automatically.
+      </div>
+
+      <div className="rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2.5 text-[11px] text-destructive space-y-0.5">
+        <p className="font-medium">Reveal before block {auction.endBlock.toLocaleString()}</p>
+        <p>
+          Failure to reveal within this window results in complete forfeiture of your locked collateral.
+          There is no recovery path — unrevealed commitments cannot be refunded.
+        </p>
       </div>
 
       <div className="space-y-1.5">
