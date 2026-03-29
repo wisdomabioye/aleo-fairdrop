@@ -7,9 +7,55 @@ import { truncateAddress } from '@fairdrop/sdk/format';
 import { IPFS_GATEWAY } from '@/env';
 import { auctionDetailUrl } from '@/config';
 import { getRegistrySlot } from '../registry';
-import { AuctionStatus, GateMode } from '@fairdrop/types/domain';
+import { AuctionStatus, AuctionType, GateMode } from '@fairdrop/types/domain';
 import type { AuctionListItem } from '@fairdrop/types/domain';
+import { useBlockHeight } from '@/shared/hooks/useBlockHeight';
 import { LetterAvatar } from './LetterAvatar';
+
+function CardProgress({ auction }: { auction: AuctionListItem }) {
+  const isSealed = auction.type === AuctionType.Sealed;
+  const { data: blockHeight = 0 } = useBlockHeight();
+
+  if (isSealed && auction.commitEndBlock != null) {
+    const commitEndBlock = auction.commitEndBlock;
+    const isRevealPhase  = blockHeight > commitEndBlock;
+
+    if (!isRevealPhase) {
+      const total   = commitEndBlock - auction.startBlock;
+      const elapsed = blockHeight - auction.startBlock;
+      const pct     = total > 0 ? Math.min(100, (elapsed / total) * 100) : 0;
+      return (
+        <div className="space-y-1">
+          <Progress value={pct} className="h-1.5" />
+          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+            <span>Commit phase</span>
+            <span>{Math.max(0, commitEndBlock - blockHeight).toLocaleString()} blocks to reveal</span>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-1">
+        <Progress value={auction.progressPct} className="h-1.5" />
+        <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+          <span>{auction.progressPct.toFixed(1)}% revealed</span>
+          <span>{Math.max(0, auction.endBlock - blockHeight).toLocaleString()} blocks to close</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-1">
+      <Progress value={auction.progressPct} className="h-1.5" />
+      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+        <span>{auction.progressPct.toFixed(1)}% filled</span>
+        <span>{auction.saleTokenSymbol ?? 'Token sale'}</span>
+      </div>
+    </div>
+  );
+}
 
 interface AuctionCardProps {
   auction: AuctionListItem;
@@ -94,13 +140,7 @@ export function AuctionCard({ auction }: AuctionCardProps) {
           <div className="flex-1" />
 
           {/* ── Progress ────────────────────────────────────────────────────── */}
-          <div className="space-y-1">
-            <Progress value={auction.progressPct} className="h-1.5" />
-            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-              <span>{auction.progressPct.toFixed(1)}% filled</span>
-              <span>{auction.saleTokenSymbol ?? 'Token sale'}</span>
-            </div>
-          </div>
+          <CardProgress auction={auction} />
 
           {/* ── Footer ──────────────────────────────────────────────────────── */}
           <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
