@@ -6,14 +6,14 @@ import type { ProgressPanelProps } from './types';
 /** Supply bar with a raise-target threshold marker. */
 export function RaiseProgressPanel({ auction }: ProgressPanelProps) {
   const target    = auction.params.type === AuctionType.Raise ? BigInt(auction.params.raise_target) : 0n;
-  const committed = BigInt(auction.totalCommitted); // For Raise Auction, This is the ALEO contributed
+  const totalPayments = BigInt(auction.totalPayments); // For Raise Auction, This is the ALEO contributed
   const raisePct = target > 0n
-    ? Math.min(100, Number((committed * 100n) / target))
+    ? Math.min(100, Number((totalPayments * 100n) / target))
     : 0;
   return (
     <div className="space-y-2">
       <div className="flex justify-between text-xs text-muted-foreground">
-        <span>{formatMicrocredits(committed)} raised</span>
+        <span>{formatMicrocredits(totalPayments)} raised</span>
         {target > 0n && <span>Target: {formatMicrocredits(target)}</span>}
       </div>
 
@@ -33,8 +33,8 @@ export function RaiseProgressPanel({ auction }: ProgressPanelProps) {
       
       <div className="flex justify-between text-xs text-muted-foreground">
         <span>{raisePct.toFixed(1)}% contributed</span>
-         <span className={committed >= target ? 'text-emerald-500' : ''}>
-            {committed >= target ? 'Target met' : `${(raisePct).toFixed(1)}% to target`}
+         <span className={totalPayments >= target ? 'text-emerald-500' : ''}>
+            {totalPayments >= target ? 'Target met' : `${(raisePct).toFixed(1)}% to target`}
           </span>
       </div>
     </div>
