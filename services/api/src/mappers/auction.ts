@@ -192,6 +192,10 @@ export function toAuctionView(
   metaRow:   AuctionMetadataRow | null,
   tokenInfo: TokenInfo | null,
 ): AuctionView {
+  const auctionParams = buildParams(row);
+  const isRaise = row.type === AuctionType.Raise
+  const raiseTarget    = auctionParams.type === AuctionType.Raise ? auctionParams.raise_target : '0'
+
   return {
     id:                 row.id,
     type:               row.type as AuctionType,
@@ -209,7 +213,10 @@ export function toAuctionView(
     totalPayments:     BigInt(row.totalPayments),
     minBidAmount:       BigInt(row.minBidAmount ?? 0),
     maxBidAmount:       BigInt(row.maxBidAmount ?? 0),
-    progressPct:        progressPct(row.totalCommitted, row.supply),
+    progressPct:        progressPct(
+      isRaise ? row.totalPayments : row.totalCommitted, 
+      isRaise ? raiseTarget : row.supply
+    ),
     currentPrice:       computeCurrentPrice(row, ctx.currentBlock),
     clearingPrice:      bigOrNull(row.clearingPrice),
     startBlock:         row.startBlock,
@@ -226,7 +233,7 @@ export function toAuctionView(
     referralBudget:     bigOrNull(row.referralBudget),
     feeBps:             row.feeBps,
     closerReward:       BigInt(row.closerReward),
-    params:             buildParams(row),
+    params:             auctionParams,
   };
 }
 
@@ -236,6 +243,10 @@ export function toAuctionListItem(
   metaRow:   AuctionMetadataRow | null,
   tokenInfo: TokenInfo | null,
 ): AuctionListItem {
+  const auctionParams = buildParams(row);
+  const isRaise = row.type === AuctionType.Raise
+  const raiseTarget    = auctionParams.type === AuctionType.Raise ? auctionParams.raise_target : '0'
+
   return {
     id:              row.id,
     type:            row.type as AuctionType,
@@ -247,7 +258,10 @@ export function toAuctionListItem(
     saleTokenId:     row.saleTokenId,
     saleTokenSymbol: tokenInfo?.symbol      ?? null,
     supply:          BigInt(row.supply),
-    progressPct:     progressPct(row.totalCommitted, row.supply),
+    progressPct:        progressPct(
+      isRaise ? row.totalPayments : row.totalCommitted, 
+      isRaise ? raiseTarget : row.supply
+    ),
     currentPrice:    computeCurrentPrice(row, ctx.currentBlock),
     clearingPrice:   bigOrNull(row.clearingPrice),
     raiseTarget:     bigOrNull(row.raiseTarget),
