@@ -1,19 +1,1501 @@
-// The 'fairdrop_quadratic' program.
+// fairdrop_quadratic_v1.aleo — Privacy-preserving quadratic allocation auction.
+//
+// Mechanism: bidders pay any amount ≥ min_bid_amount. Allocation is proportional
+// to the square root of payment, not the payment itself. A bidder with 100× your
+// budget receives only 10× your tokens. Anti-whale by design.
+//
+// Core formula:
+//   contribution_weight = approx_sqrt(payment_amount)   // computed at bid time
+//   total_sqrt_weight  += contribution_weight            // accumulated in mapping
+//
+//   At claim (after close_auction):
+//   actual_quantity = supply * bid.contribution_weight / state_total_sqrt_weight
+//
+// approx_sqrt implementation: Newton-Raphson, 64 unrolled iterations.
+// Starting estimate: 2^33 (= 8_589_934_592) — strict overestimate of sqrt(u64_max).
+// Converges to floor(sqrt(n)) for all n in u64 range.
+//
+// Sybil note: splitting P across N accounts produces N × sqrt(P/N) = sqrt(N) × sqrt(P),
+// which is MORE weight than a single sqrt(P). Mitigation: combine with ZK credential
+// gating (gate_mode = 2) to enforce one-credential-per-identity.
+//
+// Success / void:
+//   Auction always runs to end_block (no supply_met early close).
+//   Cleared when total_payments >= raise_target at close.
+//   Voided when total_payments < raise_target at close.
+//   Voided auctions: bidders recover credits via claim_voided.
+//                    Creator reclaims supply via withdraw_unsold.
+//
+// Payment token : credits.aleo — private record OR public balance.
+// Sale tokens   : token_registry.aleo/Token. Burned at create, re-minted at claim.
+//
+// Roles required:
+//   fairdrop_quadratic_v1.aleo — SUPPLY_MANAGER_ROLE on sale token (burn + mint).
+//   fairdrop_vest_v1.aleo      — SUPPLY_MANAGER_ROLE on sale token (mint at release),
+//                             required only when vest_enabled = true.
+//
+// Revenue accounting (set at close_auction, cleared case only):
+//   protocol_fee    = total_payments * fee_bps / 10000
+//   creator_revenue = total_payments - protocol_fee
+//   referral_budget = protocol_fee * referral_pool_bps / 10000
+//   treasury_credit = protocol_fee - referral_budget - closer_reward
+//
+//   Void case: no revenue computed. Bidders recover via claim_voided.
+//
+// Auction ID derivation:
+//   auction_id = BHP256(AuctionKey { creator, nonce, PROGRAM_SALT = 6field })
+//
+// Privacy model:
+//   - Bid payment amount     : public (unavoidable — on-chain escrow accounting).
+//   - Contribution weight    : public (sqrt(payment); inferrable from payment anyway).
+//   - Allocation amount      : private — computed from QuadraticBid record at claim.
+//   - Bid source             : hidden for place_bid_private (private UTXO consumed).
+//   - Bidder identity        : pseudonymous — only BHP256(bidder, auction_id) on-chain.
+//   - Token recipients       : private (mint_private).
+//
+// Pause model:
+//   All finalizes except claim_voided assert !fairdrop_config.paused.
+//   claim_voided is pause-exempt — bidders must always be able to recover funds.
+//
+// Lifecycle:
+//   create_auction → place_bid_* → close_auction → [push_referral_budget] →
+//   claim / claim_vested → withdraw_payments + withdraw_unsold
+//   OR: cancel_auction → claim_voided (escape hatch)
+//   OR: close_auction (voided) → claim_voided + withdraw_unsold
+
+import credits.aleo;
+import token_registry.aleo;
+import fairdrop_config_v1.aleo;
+import fairdrop_gate_v1.aleo;
+import fairdrop_proof_v1.aleo;
+import fairdrop_ref_v1.aleo;
+import fairdrop_vest_v1.aleo;
+
 program fairdrop_quadratic_v1.aleo {
-    // This is the constructor for the program.
-    // The constructor allows you to manage program upgrades.
-    // It is called when the program is deployed or upgraded.
-    // It is currently configured to **prevent** upgrades.
-    // Other configurations include:
-    //  - @admin(address="aleo1...")
-    //  - @checksum(mapping="credits.aleo/fixme", key="0field")
-    //  - @custom
-    // For more information, please refer to the documentation: `https://docs.leo-lang.org/guides/upgradability`
-    @noupgrade
+    @admin(address="aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r")
     async constructor() {}
 
-    transition main(public a: u32, b: u32) -> u32 {
-        let c: u32 = a + b;
-        return c;
+    // =========================================================================
+    // Constants
+    // =========================================================================
+
+    const CREDITS_RESERVED_TOKEN_ID: field =
+        3443843282313283355522573239085696902919850365217539366784739393210722344986field;
+
+    const SUPPLY_MANAGER_ROLE: u8 = 3u8;
+
+    // Dutch=1field, Ascending=2field, Sealed=3field, Raise=4field, LBP=5field, Quadratic=6field.
+    const PROGRAM_SALT: field = 6field;
+
+    // Starting estimate for approx_sqrt: 2^33 = 8_589_934_592.
+    // This is a strict overestimate of sqrt(u64_max) = sqrt(2^64-1) < 2^32.
+    // Newton-Raphson converges monotonically downward from this starting point.
+    const SQRT_START: u128 = 8_589_934_592u128;
+
+    // =========================================================================
+    // Structs
+    // =========================================================================
+
+    struct TokenOwner { account: address, token_id: field }
+
+    struct AuctionKey { creator: address, nonce: u64, program_salt: field }
+
+    struct BidderKey { bidder: address, auction_id: field }
+
+    // Immutable auction parameters — written once at create_auction.
+    struct AuctionConfig {
+        auction_id:         field,
+        creator:            address,
+        sale_token_id:      field,
+        payment_token_id:   field,
+        supply:             u128,     // total tokens to distribute
+        raise_target:       u128,     // minimum total credits for success; must be > 0
+        start_block:        u32,
+        end_block:          u32,
+        max_bid_amount:     u128,     // max cumulative payment per bidder; 0 = no cap
+        min_bid_amount:     u128,     // minimum payment per bid
+        sale_scale:         u128,     // 10^sale_token_decimals (for display; unused in pricing)
+        gate_mode:          u8,       // 0=open 1=merkle 2=credential (credential recommended)
+        vest_enabled:       bool,
+        vest_cliff_blocks:  u32,
+        vest_end_blocks:    u32,
+        fee_bps:            u16,      // D16: snapshotted from fairdrop_config at create
+        closer_reward:      u128,     // D16: snapshotted from fairdrop_config at create
+        referral_pool_bps:  u16,      // D16: snapshotted from fairdrop_config at create
+        metadata_hash:      field,    // BHP256 of off-chain metadata JSON. 0field = no metadata.
+    }
+
+    struct AuctionState {
+        total_committed: u128,  // 0 during bids; supply when cleared; 0 when voided
+        total_payments:  u128,  // cumulative bidder credits locked
+        supply_met:      bool,  // always false during bid phase; reserved
+        ended_at_block:  u32,   // config.end_block at close
+        cleared:         bool,
+        clearing_price:  u128,  // always 0 for quadratic (pay-what-you-bid)
+        creator_revenue: u128,
+        protocol_fee:    u128,
+        voided:          bool,
+        referral_budget: u128,
+    }
+
+    struct Stats {
+        total_auctions:          u64,
+        total_bids:              u64,
+        total_payment_collected: u128,
+    }
+
+    struct GateParams {
+        gate_mode:   u8,
+        merkle_root: field,
+        issuer:      address,
+    }
+
+    struct VestParams {
+        vest_enabled:      bool,
+        vest_cliff_blocks: u32,
+        vest_end_blocks:   u32,
+    }
+
+    struct ConfigSnapshot {
+        fee_bps:           u16,
+        creation_fee:      u128,
+        closer_reward:     u128,
+        slash_reward_bps:  u16,
+        referral_pool_bps: u16,
+    }
+
+    // =========================================================================
+    // Records
+    // =========================================================================
+
+    // Private bid receipt. contribution_weight = approx_sqrt(payment_amount).
+    // Stored in record so claim does not need to recompute sqrt.
+    record QuadraticBid {
+        owner:               address,
+        auction_id:          field,
+        payment_amount:      u128,
+        contribution_weight: u128,  // approx_sqrt(payment_amount)
+    }
+
+    // =========================================================================
+    // Mappings
+    // =========================================================================
+
+    mapping auction_configs:  field => AuctionConfig;
+    mapping auction_states:   field => AuctionState;
+
+    // BHP256(BidderKey) → cumulative payment. Enforces max_bid_amount per bidder.
+    mapping bid_totals: field => u128;
+
+    // Accumulated sqrt weights per auction. Final value used at claim.
+    mapping sqrt_weights: field => u128;
+
+    // Burn-backed mint budget; decremented at claim / withdraw_unsold.
+    mapping escrow_sales: field => u128;
+
+    // Bidder credits locked in this program's public credits.aleo balance.
+    mapping escrow_payments: field => u128;
+
+    mapping creator_withdrawn: field => u128;
+    mapping unsold_withdrawn:  field => u128;
+
+    mapping stats: field => Stats;
+
+    mapping auction_index: u64 => field;
+
+    mapping creator_auction_count:   address => u64;
+    mapping creator_latest_auction:  address => field;
+    mapping auction_prev_by_creator: field   => field;
+
+    mapping creator_nonces: address => u64;
+
+    mapping protocol_treasury: field => u128;
+
+    // =========================================================================
+    // 1. create_auction
+    // =========================================================================
+
+    async transition create_auction(
+        token:                 token_registry.aleo/Token,
+        public sale_token_id:  field,
+        public supply:         u128,
+        public raise_target:   u128,   // minimum credits for success
+        public start_block:    u32,
+        public end_block:      u32,
+        public max_bid_amount: u128,   // 0 = no per-bidder cap
+        public min_bid_amount: u128,
+        public sale_scale:     u128,
+        public nonce:          u64,    // D11: creator_nonces[creator]
+        public metadata_hash:  field,
+        public gate:           GateParams,
+        public vest:           VestParams,
+        public snapshot:       ConfigSnapshot,
+    ) -> (token_registry.aleo/Token, Future) {
+        assert(supply > 0u128);
+        assert(raise_target > 0u128);
+        assert_eq(token.token_id, sale_token_id);
+        assert_eq(token.amount, supply);
+
+        let auction_id: field = BHP256::hash_to_field(AuctionKey {
+            creator:      self.signer,
+            nonce:        nonce,
+            program_salt: PROGRAM_SALT,
+        });
+
+        let (remainder, f_burn): (token_registry.aleo/Token, Future) =
+            token_registry.aleo/burn_private(token, supply);
+
+        let f_creation: Future =
+            credits.aleo/transfer_public_as_signer(self.address, snapshot.creation_fee as u64);
+
+        let f_cfg: Future = fairdrop_config_v1.aleo/assert_config(
+            snapshot.fee_bps,
+            snapshot.creation_fee,
+            snapshot.closer_reward,
+            snapshot.slash_reward_bps,
+            snapshot.referral_pool_bps,
+            start_block,
+            end_block,
+        );
+
+        let f_gate: Future = fairdrop_gate_v1.aleo/register_gate(
+            auction_id,
+            gate.gate_mode,
+            gate.merkle_root,
+            gate.issuer,
+        );
+
+        let config: AuctionConfig = AuctionConfig {
+            auction_id:         auction_id,
+            creator:            self.signer,
+            sale_token_id:      sale_token_id,
+            payment_token_id:   CREDITS_RESERVED_TOKEN_ID,
+            supply:             supply,
+            raise_target:       raise_target,
+            start_block:        start_block,
+            end_block:          end_block,
+            max_bid_amount:     max_bid_amount,
+            min_bid_amount:     min_bid_amount,
+            sale_scale:         sale_scale,
+            gate_mode:          gate.gate_mode,
+            vest_enabled:       vest.vest_enabled,
+            vest_cliff_blocks:  vest.vest_cliff_blocks,
+            vest_end_blocks:    vest.vest_end_blocks,
+            fee_bps:            snapshot.fee_bps,
+            closer_reward:      snapshot.closer_reward,
+            referral_pool_bps:  snapshot.referral_pool_bps,
+            metadata_hash:      metadata_hash,
+        };
+
+        return (remainder, finalize_create_auction(
+            f_burn,
+            f_creation,
+            f_cfg,
+            f_gate,
+            self.signer,
+            auction_id,
+            nonce,
+            config,
+            snapshot.creation_fee,
+        ));
+    }
+
+    async function finalize_create_auction(
+        f_burn:       Future,
+        f_creation:   Future,
+        f_cfg:        Future,
+        f_gate:       Future,
+        creator:      address,
+        auction_id:   field,
+        nonce:        u64,
+        config:       AuctionConfig,
+        creation_fee: u128,
+    ) {
+        assert(!fairdrop_config_v1.aleo/paused.get_or_use(0field, false));
+        f_burn.await();
+        f_creation.await();
+        f_cfg.await();
+        f_gate.await();
+
+        assert_eq(config.payment_token_id, CREDITS_RESERVED_TOKEN_ID);
+        assert(config.sale_token_id != CREDITS_RESERVED_TOKEN_ID);
+        assert(config.start_block >= block.height);
+        assert(config.raise_target > 0u128);
+        assert(config.min_bid_amount > 0u128);
+        assert(config.max_bid_amount == 0u128 || config.max_bid_amount >= config.min_bid_amount);
+
+        assert_eq(nonce, creator_nonces.get_or_use(creator, 0u64));
+
+        let expected_id: field = BHP256::hash_to_field(AuctionKey {
+            creator:      creator,
+            nonce:        nonce,
+            program_salt: PROGRAM_SALT,
+        });
+        assert_eq(auction_id, expected_id);
+        assert_eq(config.auction_id, auction_id);
+
+        let quad_role_key: field = BHP256::hash_to_field(TokenOwner {
+            account:  fairdrop_quadratic_v1.aleo,
+            token_id: config.sale_token_id,
+        });
+        assert_eq(
+            token_registry.aleo/roles.get_or_use(quad_role_key, 0u8),
+            SUPPLY_MANAGER_ROLE
+        );
+
+        let vest_duration_ok: bool =
+            !config.vest_enabled || config.vest_end_blocks > config.vest_cliff_blocks;
+        assert(vest_duration_ok);
+
+        let vest_role_key: field = BHP256::hash_to_field(TokenOwner {
+            account:  fairdrop_vest_v1.aleo,
+            token_id: config.sale_token_id,
+        });
+        let vest_role_ok: bool =
+            !config.vest_enabled ||
+            token_registry.aleo/roles.get_or_use(vest_role_key, 0u8) == SUPPLY_MANAGER_ROLE;
+        assert(vest_role_ok);
+
+        auction_configs.set(auction_id, config);
+        auction_states.set(auction_id, AuctionState {
+            total_committed: 0u128,
+            total_payments:  0u128,
+            supply_met:      false,
+            ended_at_block:  0u32,
+            cleared:         false,
+            clearing_price:  0u128,
+            creator_revenue: 0u128,
+            protocol_fee:    0u128,
+            voided:          false,
+            referral_budget: 0u128,
+        });
+        escrow_sales.set(auction_id, config.supply);
+        sqrt_weights.set(auction_id, 0u128);
+
+        let treasury: u128 = protocol_treasury.get_or_use(0field, 0u128);
+        protocol_treasury.set(0field, treasury + creation_fee);
+
+        let count: u64 = creator_auction_count.get_or_use(creator, 0u64);
+        let prev: field  = creator_latest_auction.get_or_use(creator, 0field);
+        creator_auction_count.set(creator, count + 1u64);
+        creator_latest_auction.set(creator, auction_id);
+        auction_prev_by_creator.set(auction_id, prev);
+
+        let s: Stats = stats.get_or_use(0field, Stats {
+            total_auctions: 0u64, total_bids: 0u64, total_payment_collected: 0u128
+        });
+        let idx: u64 = s.total_auctions;
+        stats.set(0field, Stats {
+            total_auctions: idx + 1u64, total_bids: s.total_bids, total_payment_collected: s.total_payment_collected
+        });
+        auction_index.set(idx, auction_id);
+        creator_nonces.set(creator, nonce + 1u64);
+    }
+
+    // =========================================================================
+    // 2. place_bid_private — private credits record
+    // =========================================================================
+    //
+    // contribution_weight = approx_sqrt(payment_amount) computed in transition body.
+    // Newton-Raphson with 64 unrolled iterations from SQRT_START = 2^33.
+    // Starting from an overestimate, the sequence decreases monotonically to
+    // floor(sqrt(payment_amount)) for all payment_amount in u64 range.
+
+    async transition place_bid_private(
+        payment:               credits.aleo/credits,
+        public auction_id:     field,
+        public payment_amount: u64,
+    ) -> (credits.aleo/credits, QuadraticBid, fairdrop_proof_v1.aleo/ParticipationReceipt, Future) {
+        assert(payment_amount > 0u64);
+
+        let bidder_key: field = BHP256::hash_to_field(BidderKey {
+            bidder:     self.signer,
+            auction_id: auction_id,
+        });
+
+        // approx_sqrt: 64-iteration Newton-Raphson from SQRT_START.
+        let n: u128   = payment_amount as u128;
+        let s0: u128  = SQRT_START;
+        let s1: u128  = (s0  + n / s0)  / 2u128;
+        let s2: u128  = (s1  + n / s1)  / 2u128;
+        let s3: u128  = (s2  + n / s2)  / 2u128;
+        let s4: u128  = (s3  + n / s3)  / 2u128;
+        let s5: u128  = (s4  + n / s4)  / 2u128;
+        let s6: u128  = (s5  + n / s5)  / 2u128;
+        let s7: u128  = (s6  + n / s6)  / 2u128;
+        let s8: u128  = (s7  + n / s7)  / 2u128;
+        let s9: u128  = (s8  + n / s8)  / 2u128;
+        let s10: u128 = (s9  + n / s9)  / 2u128;
+        let s11: u128 = (s10 + n / s10) / 2u128;
+        let s12: u128 = (s11 + n / s11) / 2u128;
+        let s13: u128 = (s12 + n / s12) / 2u128;
+        let s14: u128 = (s13 + n / s13) / 2u128;
+        let s15: u128 = (s14 + n / s14) / 2u128;
+        let s16: u128 = (s15 + n / s15) / 2u128;
+        let s17: u128 = (s16 + n / s16) / 2u128;
+        let s18: u128 = (s17 + n / s17) / 2u128;
+        let s19: u128 = (s18 + n / s18) / 2u128;
+        let s20: u128 = (s19 + n / s19) / 2u128;
+        let s21: u128 = (s20 + n / s20) / 2u128;
+        let s22: u128 = (s21 + n / s21) / 2u128;
+        let s23: u128 = (s22 + n / s22) / 2u128;
+        let s24: u128 = (s23 + n / s23) / 2u128;
+        let s25: u128 = (s24 + n / s24) / 2u128;
+        let s26: u128 = (s25 + n / s25) / 2u128;
+        let s27: u128 = (s26 + n / s26) / 2u128;
+        let s28: u128 = (s27 + n / s27) / 2u128;
+        let s29: u128 = (s28 + n / s28) / 2u128;
+        let s30: u128 = (s29 + n / s29) / 2u128;
+        let s31: u128 = (s30 + n / s30) / 2u128;
+        let s32: u128 = (s31 + n / s31) / 2u128;
+        let s33: u128 = (s32 + n / s32) / 2u128;
+        let s34: u128 = (s33 + n / s33) / 2u128;
+        let s35: u128 = (s34 + n / s34) / 2u128;
+        let s36: u128 = (s35 + n / s35) / 2u128;
+        let s37: u128 = (s36 + n / s36) / 2u128;
+        let s38: u128 = (s37 + n / s37) / 2u128;
+        let s39: u128 = (s38 + n / s38) / 2u128;
+        let s40: u128 = (s39 + n / s39) / 2u128;
+        let s41: u128 = (s40 + n / s40) / 2u128;
+        let s42: u128 = (s41 + n / s41) / 2u128;
+        let s43: u128 = (s42 + n / s42) / 2u128;
+        let s44: u128 = (s43 + n / s43) / 2u128;
+        let s45: u128 = (s44 + n / s44) / 2u128;
+        let s46: u128 = (s45 + n / s45) / 2u128;
+        let s47: u128 = (s46 + n / s46) / 2u128;
+        let s48: u128 = (s47 + n / s47) / 2u128;
+        let s49: u128 = (s48 + n / s48) / 2u128;
+        let s50: u128 = (s49 + n / s49) / 2u128;
+        let s51: u128 = (s50 + n / s50) / 2u128;
+        let s52: u128 = (s51 + n / s51) / 2u128;
+        let s53: u128 = (s52 + n / s52) / 2u128;
+        let s54: u128 = (s53 + n / s53) / 2u128;
+        let s55: u128 = (s54 + n / s54) / 2u128;
+        let s56: u128 = (s55 + n / s55) / 2u128;
+        let s57: u128 = (s56 + n / s56) / 2u128;
+        let s58: u128 = (s57 + n / s57) / 2u128;
+        let s59: u128 = (s58 + n / s58) / 2u128;
+        let s60: u128 = (s59 + n / s59) / 2u128;
+        let s61: u128 = (s60 + n / s60) / 2u128;
+        let s62: u128 = (s61 + n / s61) / 2u128;
+        let s63: u128 = (s62 + n / s62) / 2u128;
+        let contribution_weight: u128 = (s63 + n / s63) / 2u128;
+
+        let (change, f_credits): (credits.aleo/credits, Future) =
+            credits.aleo/transfer_private_to_public(payment, self.address, payment_amount);
+
+        let f_gate: Future = fairdrop_gate_v1.aleo/check_admission(auction_id);
+
+        let (receipt, f_proof): (fairdrop_proof_v1.aleo/ParticipationReceipt, Future) =
+            fairdrop_proof_v1.aleo/issue_receipt(auction_id, 0field, bidder_key);
+
+        let bid: QuadraticBid = QuadraticBid {
+            owner:               self.signer,
+            auction_id:          auction_id,
+            payment_amount:      payment_amount as u128,
+            contribution_weight: contribution_weight,
+        };
+
+        return (change, bid, receipt, finalize_place_bid_private(
+            f_credits, f_gate, f_proof,
+            auction_id, bidder_key, payment_amount as u128, contribution_weight,
+        ));
+    }
+
+    async function finalize_place_bid_private(
+        f_credits:           Future,
+        f_gate:              Future,
+        f_proof:             Future,
+        auction_id:          field,
+        bid_total_key:       field,
+        payment_amount:      u128,
+        contribution_weight: u128,
+    ) {
+        assert(!fairdrop_config_v1.aleo/paused.get_or_use(0field, false));
+        f_credits.await();
+        f_gate.await();
+        f_proof.await();
+        // ── quadratic bid validation and state updates ────────────────────────
+        let config: AuctionConfig = auction_configs.get(auction_id);
+        let state:  AuctionState  = auction_states.get(auction_id);
+        assert(!state.cleared);
+        assert(!state.voided);
+        assert(block.height >= config.start_block);
+        assert(block.height <  config.end_block);
+        assert(payment_amount >= config.min_bid_amount);
+        let current_total: u128    = bid_totals.get_or_use(bid_total_key, 0u128);
+        let new_bidder_total: u128 = current_total + payment_amount;
+        let within_limit: bool = config.max_bid_amount == 0u128
+            || new_bidder_total <= config.max_bid_amount;
+        assert(within_limit);
+        bid_totals.set(bid_total_key, new_bidder_total);
+        auction_states.set(auction_id, AuctionState {
+            total_committed: 0u128,
+            total_payments:  state.total_payments + payment_amount,
+            supply_met:      false,
+            ended_at_block:  state.ended_at_block,
+            cleared:         false,
+            clearing_price:  0u128,
+            creator_revenue: 0u128,
+            protocol_fee:    0u128,
+            voided:          false,
+            referral_budget: 0u128,
+        });
+        let escrow: u128 = escrow_payments.get_or_use(auction_id, 0u128);
+        escrow_payments.set(auction_id, escrow + payment_amount);
+        let acc_weight: u128 = sqrt_weights.get_or_use(auction_id, 0u128);
+        sqrt_weights.set(auction_id, acc_weight + contribution_weight);
+        let s: Stats = stats.get_or_use(0field, Stats {
+            total_auctions: 0u64, total_bids: 0u64, total_payment_collected: 0u128
+        });
+        stats.set(0field, Stats {
+            total_auctions:          s.total_auctions,
+            total_bids:              s.total_bids + 1u64,
+            total_payment_collected: s.total_payment_collected + payment_amount,
+        });
+        // ─────────────────────────────────────────────────────────────────────
+    }
+
+    // =========================================================================
+    // 3. place_bid_public — public credits balance
+    // =========================================================================
+
+    async transition place_bid_public(
+        public auction_id:     field,
+        public payment_amount: u64,
+    ) -> (QuadraticBid, fairdrop_proof_v1.aleo/ParticipationReceipt, Future) {
+        assert(payment_amount > 0u64);
+
+        let bidder_key: field = BHP256::hash_to_field(BidderKey {
+            bidder:     self.signer,
+            auction_id: auction_id,
+        });
+
+        // approx_sqrt: 64-iteration Newton-Raphson from SQRT_START.
+        let n: u128   = payment_amount as u128;
+        let s0: u128  = SQRT_START;
+        let s1: u128  = (s0  + n / s0)  / 2u128;
+        let s2: u128  = (s1  + n / s1)  / 2u128;
+        let s3: u128  = (s2  + n / s2)  / 2u128;
+        let s4: u128  = (s3  + n / s3)  / 2u128;
+        let s5: u128  = (s4  + n / s4)  / 2u128;
+        let s6: u128  = (s5  + n / s5)  / 2u128;
+        let s7: u128  = (s6  + n / s6)  / 2u128;
+        let s8: u128  = (s7  + n / s7)  / 2u128;
+        let s9: u128  = (s8  + n / s8)  / 2u128;
+        let s10: u128 = (s9  + n / s9)  / 2u128;
+        let s11: u128 = (s10 + n / s10) / 2u128;
+        let s12: u128 = (s11 + n / s11) / 2u128;
+        let s13: u128 = (s12 + n / s12) / 2u128;
+        let s14: u128 = (s13 + n / s13) / 2u128;
+        let s15: u128 = (s14 + n / s14) / 2u128;
+        let s16: u128 = (s15 + n / s15) / 2u128;
+        let s17: u128 = (s16 + n / s16) / 2u128;
+        let s18: u128 = (s17 + n / s17) / 2u128;
+        let s19: u128 = (s18 + n / s18) / 2u128;
+        let s20: u128 = (s19 + n / s19) / 2u128;
+        let s21: u128 = (s20 + n / s20) / 2u128;
+        let s22: u128 = (s21 + n / s21) / 2u128;
+        let s23: u128 = (s22 + n / s22) / 2u128;
+        let s24: u128 = (s23 + n / s23) / 2u128;
+        let s25: u128 = (s24 + n / s24) / 2u128;
+        let s26: u128 = (s25 + n / s25) / 2u128;
+        let s27: u128 = (s26 + n / s26) / 2u128;
+        let s28: u128 = (s27 + n / s27) / 2u128;
+        let s29: u128 = (s28 + n / s28) / 2u128;
+        let s30: u128 = (s29 + n / s29) / 2u128;
+        let s31: u128 = (s30 + n / s30) / 2u128;
+        let s32: u128 = (s31 + n / s31) / 2u128;
+        let s33: u128 = (s32 + n / s32) / 2u128;
+        let s34: u128 = (s33 + n / s33) / 2u128;
+        let s35: u128 = (s34 + n / s34) / 2u128;
+        let s36: u128 = (s35 + n / s35) / 2u128;
+        let s37: u128 = (s36 + n / s36) / 2u128;
+        let s38: u128 = (s37 + n / s37) / 2u128;
+        let s39: u128 = (s38 + n / s38) / 2u128;
+        let s40: u128 = (s39 + n / s39) / 2u128;
+        let s41: u128 = (s40 + n / s40) / 2u128;
+        let s42: u128 = (s41 + n / s41) / 2u128;
+        let s43: u128 = (s42 + n / s42) / 2u128;
+        let s44: u128 = (s43 + n / s43) / 2u128;
+        let s45: u128 = (s44 + n / s44) / 2u128;
+        let s46: u128 = (s45 + n / s45) / 2u128;
+        let s47: u128 = (s46 + n / s46) / 2u128;
+        let s48: u128 = (s47 + n / s47) / 2u128;
+        let s49: u128 = (s48 + n / s48) / 2u128;
+        let s50: u128 = (s49 + n / s49) / 2u128;
+        let s51: u128 = (s50 + n / s50) / 2u128;
+        let s52: u128 = (s51 + n / s51) / 2u128;
+        let s53: u128 = (s52 + n / s52) / 2u128;
+        let s54: u128 = (s53 + n / s53) / 2u128;
+        let s55: u128 = (s54 + n / s54) / 2u128;
+        let s56: u128 = (s55 + n / s55) / 2u128;
+        let s57: u128 = (s56 + n / s56) / 2u128;
+        let s58: u128 = (s57 + n / s57) / 2u128;
+        let s59: u128 = (s58 + n / s58) / 2u128;
+        let s60: u128 = (s59 + n / s59) / 2u128;
+        let s61: u128 = (s60 + n / s60) / 2u128;
+        let s62: u128 = (s61 + n / s61) / 2u128;
+        let s63: u128 = (s62 + n / s62) / 2u128;
+        let contribution_weight: u128 = (s63 + n / s63) / 2u128;
+
+        let f_credits: Future =
+            credits.aleo/transfer_public_as_signer(self.address, payment_amount);
+
+        let f_gate: Future = fairdrop_gate_v1.aleo/check_admission(auction_id);
+
+        let (receipt, f_proof): (fairdrop_proof_v1.aleo/ParticipationReceipt, Future) =
+            fairdrop_proof_v1.aleo/issue_receipt(auction_id, 0field, bidder_key);
+
+        let bid: QuadraticBid = QuadraticBid {
+            owner:               self.signer,
+            auction_id:          auction_id,
+            payment_amount:      payment_amount as u128,
+            contribution_weight: contribution_weight,
+        };
+
+        return (bid, receipt, finalize_place_bid_public(
+            f_credits, f_gate, f_proof,
+            auction_id, bidder_key, payment_amount as u128, contribution_weight,
+        ));
+    }
+
+    async function finalize_place_bid_public(
+        f_credits:           Future,
+        f_gate:              Future,
+        f_proof:             Future,
+        auction_id:          field,
+        bid_total_key:       field,
+        payment_amount:      u128,
+        contribution_weight: u128,
+    ) {
+        assert(!fairdrop_config_v1.aleo/paused.get_or_use(0field, false));
+        f_credits.await();
+        f_gate.await();
+        f_proof.await();
+        // ── quadratic bid validation and state updates ────────────────────────
+        let config: AuctionConfig = auction_configs.get(auction_id);
+        let state:  AuctionState  = auction_states.get(auction_id);
+        assert(!state.cleared);
+        assert(!state.voided);
+        assert(block.height >= config.start_block);
+        assert(block.height <  config.end_block);
+        assert(payment_amount >= config.min_bid_amount);
+        let current_total: u128    = bid_totals.get_or_use(bid_total_key, 0u128);
+        let new_bidder_total: u128 = current_total + payment_amount;
+        let within_limit: bool = config.max_bid_amount == 0u128
+            || new_bidder_total <= config.max_bid_amount;
+        assert(within_limit);
+        bid_totals.set(bid_total_key, new_bidder_total);
+        auction_states.set(auction_id, AuctionState {
+            total_committed: 0u128,
+            total_payments:  state.total_payments + payment_amount,
+            supply_met:      false,
+            ended_at_block:  state.ended_at_block,
+            cleared:         false,
+            clearing_price:  0u128,
+            creator_revenue: 0u128,
+            protocol_fee:    0u128,
+            voided:          false,
+            referral_budget: 0u128,
+        });
+        let escrow: u128 = escrow_payments.get_or_use(auction_id, 0u128);
+        escrow_payments.set(auction_id, escrow + payment_amount);
+        let acc_weight: u128 = sqrt_weights.get_or_use(auction_id, 0u128);
+        sqrt_weights.set(auction_id, acc_weight + contribution_weight);
+        let s: Stats = stats.get_or_use(0field, Stats {
+            total_auctions: 0u64, total_bids: 0u64, total_payment_collected: 0u128
+        });
+        stats.set(0field, Stats {
+            total_auctions:          s.total_auctions,
+            total_bids:              s.total_bids + 1u64,
+            total_payment_collected: s.total_payment_collected + payment_amount,
+        });
+        // ─────────────────────────────────────────────────────────────────────
+    }
+
+    // =========================================================================
+    // 4. place_bid_private_ref — private credits + referral code
+    // =========================================================================
+
+    async transition place_bid_private_ref(
+        payment:               credits.aleo/credits,
+        public auction_id:     field,
+        public payment_amount: u64,
+        public code_id:        field,
+    ) -> (credits.aleo/credits, QuadraticBid, fairdrop_proof_v1.aleo/ParticipationReceipt, Future) {
+        assert(payment_amount > 0u64);
+
+        let bidder_key: field = BHP256::hash_to_field(BidderKey {
+            bidder:     self.signer,
+            auction_id: auction_id,
+        });
+
+        // approx_sqrt: 64-iteration Newton-Raphson.
+        let n: u128   = payment_amount as u128;
+        let s0: u128  = SQRT_START;
+        let s1: u128  = (s0  + n / s0)  / 2u128;
+        let s2: u128  = (s1  + n / s1)  / 2u128;
+        let s3: u128  = (s2  + n / s2)  / 2u128;
+        let s4: u128  = (s3  + n / s3)  / 2u128;
+        let s5: u128  = (s4  + n / s4)  / 2u128;
+        let s6: u128  = (s5  + n / s5)  / 2u128;
+        let s7: u128  = (s6  + n / s6)  / 2u128;
+        let s8: u128  = (s7  + n / s7)  / 2u128;
+        let s9: u128  = (s8  + n / s8)  / 2u128;
+        let s10: u128 = (s9  + n / s9)  / 2u128;
+        let s11: u128 = (s10 + n / s10) / 2u128;
+        let s12: u128 = (s11 + n / s11) / 2u128;
+        let s13: u128 = (s12 + n / s12) / 2u128;
+        let s14: u128 = (s13 + n / s13) / 2u128;
+        let s15: u128 = (s14 + n / s14) / 2u128;
+        let s16: u128 = (s15 + n / s15) / 2u128;
+        let s17: u128 = (s16 + n / s16) / 2u128;
+        let s18: u128 = (s17 + n / s17) / 2u128;
+        let s19: u128 = (s18 + n / s18) / 2u128;
+        let s20: u128 = (s19 + n / s19) / 2u128;
+        let s21: u128 = (s20 + n / s20) / 2u128;
+        let s22: u128 = (s21 + n / s21) / 2u128;
+        let s23: u128 = (s22 + n / s22) / 2u128;
+        let s24: u128 = (s23 + n / s23) / 2u128;
+        let s25: u128 = (s24 + n / s24) / 2u128;
+        let s26: u128 = (s25 + n / s25) / 2u128;
+        let s27: u128 = (s26 + n / s26) / 2u128;
+        let s28: u128 = (s27 + n / s27) / 2u128;
+        let s29: u128 = (s28 + n / s28) / 2u128;
+        let s30: u128 = (s29 + n / s29) / 2u128;
+        let s31: u128 = (s30 + n / s30) / 2u128;
+        let s32: u128 = (s31 + n / s31) / 2u128;
+        let s33: u128 = (s32 + n / s32) / 2u128;
+        let s34: u128 = (s33 + n / s33) / 2u128;
+        let s35: u128 = (s34 + n / s34) / 2u128;
+        let s36: u128 = (s35 + n / s35) / 2u128;
+        let s37: u128 = (s36 + n / s36) / 2u128;
+        let s38: u128 = (s37 + n / s37) / 2u128;
+        let s39: u128 = (s38 + n / s38) / 2u128;
+        let s40: u128 = (s39 + n / s39) / 2u128;
+        let s41: u128 = (s40 + n / s40) / 2u128;
+        let s42: u128 = (s41 + n / s41) / 2u128;
+        let s43: u128 = (s42 + n / s42) / 2u128;
+        let s44: u128 = (s43 + n / s43) / 2u128;
+        let s45: u128 = (s44 + n / s44) / 2u128;
+        let s46: u128 = (s45 + n / s45) / 2u128;
+        let s47: u128 = (s46 + n / s46) / 2u128;
+        let s48: u128 = (s47 + n / s47) / 2u128;
+        let s49: u128 = (s48 + n / s48) / 2u128;
+        let s50: u128 = (s49 + n / s49) / 2u128;
+        let s51: u128 = (s50 + n / s50) / 2u128;
+        let s52: u128 = (s51 + n / s51) / 2u128;
+        let s53: u128 = (s52 + n / s52) / 2u128;
+        let s54: u128 = (s53 + n / s53) / 2u128;
+        let s55: u128 = (s54 + n / s54) / 2u128;
+        let s56: u128 = (s55 + n / s55) / 2u128;
+        let s57: u128 = (s56 + n / s56) / 2u128;
+        let s58: u128 = (s57 + n / s57) / 2u128;
+        let s59: u128 = (s58 + n / s58) / 2u128;
+        let s60: u128 = (s59 + n / s59) / 2u128;
+        let s61: u128 = (s60 + n / s60) / 2u128;
+        let s62: u128 = (s61 + n / s61) / 2u128;
+        let s63: u128 = (s62 + n / s62) / 2u128;
+        let contribution_weight: u128 = (s63 + n / s63) / 2u128;
+
+        let (change, f_credits): (credits.aleo/credits, Future) =
+            credits.aleo/transfer_private_to_public(payment, self.address, payment_amount);
+
+        let f_gate: Future = fairdrop_gate_v1.aleo/check_admission(auction_id);
+
+        let (receipt, f_proof): (fairdrop_proof_v1.aleo/ParticipationReceipt, Future) =
+            fairdrop_proof_v1.aleo/issue_receipt(auction_id, 0field, bidder_key);
+
+        let f_ref: Future = fairdrop_ref_v1.aleo/record_referral(
+            code_id,
+            auction_id,
+            bidder_key,
+            payment_amount as u128,
+        );
+
+        let bid: QuadraticBid = QuadraticBid {
+            owner:               self.signer,
+            auction_id:          auction_id,
+            payment_amount:      payment_amount as u128,
+            contribution_weight: contribution_weight,
+        };
+
+        return (change, bid, receipt, finalize_place_bid_priv_ref(
+            f_credits, f_gate, f_proof, f_ref,
+            auction_id, bidder_key, payment_amount as u128, contribution_weight,
+        ));
+    }
+
+    async function finalize_place_bid_priv_ref(
+        f_credits:           Future,
+        f_gate:              Future,
+        f_proof:             Future,
+        f_ref:               Future,
+        auction_id:          field,
+        bid_total_key:       field,
+        payment_amount:      u128,
+        contribution_weight: u128,
+    ) {
+        assert(!fairdrop_config_v1.aleo/paused.get_or_use(0field, false));
+        f_credits.await();
+        f_gate.await();
+        f_proof.await();
+        f_ref.await();
+        // ── quadratic bid validation and state updates ────────────────────────
+        let config: AuctionConfig = auction_configs.get(auction_id);
+        let state:  AuctionState  = auction_states.get(auction_id);
+        assert(!state.cleared);
+        assert(!state.voided);
+        assert(block.height >= config.start_block);
+        assert(block.height <  config.end_block);
+        assert(payment_amount >= config.min_bid_amount);
+        let current_total: u128    = bid_totals.get_or_use(bid_total_key, 0u128);
+        let new_bidder_total: u128 = current_total + payment_amount;
+        let within_limit: bool = config.max_bid_amount == 0u128
+            || new_bidder_total <= config.max_bid_amount;
+        assert(within_limit);
+        bid_totals.set(bid_total_key, new_bidder_total);
+        auction_states.set(auction_id, AuctionState {
+            total_committed: 0u128,
+            total_payments:  state.total_payments + payment_amount,
+            supply_met:      false,
+            ended_at_block:  state.ended_at_block,
+            cleared:         false,
+            clearing_price:  0u128,
+            creator_revenue: 0u128,
+            protocol_fee:    0u128,
+            voided:          false,
+            referral_budget: 0u128,
+        });
+        let escrow: u128 = escrow_payments.get_or_use(auction_id, 0u128);
+        escrow_payments.set(auction_id, escrow + payment_amount);
+        let acc_weight: u128 = sqrt_weights.get_or_use(auction_id, 0u128);
+        sqrt_weights.set(auction_id, acc_weight + contribution_weight);
+        let s: Stats = stats.get_or_use(0field, Stats {
+            total_auctions: 0u64, total_bids: 0u64, total_payment_collected: 0u128
+        });
+        stats.set(0field, Stats {
+            total_auctions:          s.total_auctions,
+            total_bids:              s.total_bids + 1u64,
+            total_payment_collected: s.total_payment_collected + payment_amount,
+        });
+        // ─────────────────────────────────────────────────────────────────────
+    }
+
+    // =========================================================================
+    // 5. place_bid_public_ref — public credits + referral code
+    // =========================================================================
+
+    async transition place_bid_public_ref(
+        public auction_id:     field,
+        public payment_amount: u64,
+        public code_id:        field,
+    ) -> (QuadraticBid, fairdrop_proof_v1.aleo/ParticipationReceipt, Future) {
+        assert(payment_amount > 0u64);
+
+        let bidder_key: field = BHP256::hash_to_field(BidderKey {
+            bidder:     self.signer,
+            auction_id: auction_id,
+        });
+
+        // approx_sqrt: 64-iteration Newton-Raphson.
+        let n: u128   = payment_amount as u128;
+        let s0: u128  = SQRT_START;
+        let s1: u128  = (s0  + n / s0)  / 2u128;
+        let s2: u128  = (s1  + n / s1)  / 2u128;
+        let s3: u128  = (s2  + n / s2)  / 2u128;
+        let s4: u128  = (s3  + n / s3)  / 2u128;
+        let s5: u128  = (s4  + n / s4)  / 2u128;
+        let s6: u128  = (s5  + n / s5)  / 2u128;
+        let s7: u128  = (s6  + n / s6)  / 2u128;
+        let s8: u128  = (s7  + n / s7)  / 2u128;
+        let s9: u128  = (s8  + n / s8)  / 2u128;
+        let s10: u128 = (s9  + n / s9)  / 2u128;
+        let s11: u128 = (s10 + n / s10) / 2u128;
+        let s12: u128 = (s11 + n / s11) / 2u128;
+        let s13: u128 = (s12 + n / s12) / 2u128;
+        let s14: u128 = (s13 + n / s13) / 2u128;
+        let s15: u128 = (s14 + n / s14) / 2u128;
+        let s16: u128 = (s15 + n / s15) / 2u128;
+        let s17: u128 = (s16 + n / s16) / 2u128;
+        let s18: u128 = (s17 + n / s17) / 2u128;
+        let s19: u128 = (s18 + n / s18) / 2u128;
+        let s20: u128 = (s19 + n / s19) / 2u128;
+        let s21: u128 = (s20 + n / s20) / 2u128;
+        let s22: u128 = (s21 + n / s21) / 2u128;
+        let s23: u128 = (s22 + n / s22) / 2u128;
+        let s24: u128 = (s23 + n / s23) / 2u128;
+        let s25: u128 = (s24 + n / s24) / 2u128;
+        let s26: u128 = (s25 + n / s25) / 2u128;
+        let s27: u128 = (s26 + n / s26) / 2u128;
+        let s28: u128 = (s27 + n / s27) / 2u128;
+        let s29: u128 = (s28 + n / s28) / 2u128;
+        let s30: u128 = (s29 + n / s29) / 2u128;
+        let s31: u128 = (s30 + n / s30) / 2u128;
+        let s32: u128 = (s31 + n / s31) / 2u128;
+        let s33: u128 = (s32 + n / s32) / 2u128;
+        let s34: u128 = (s33 + n / s33) / 2u128;
+        let s35: u128 = (s34 + n / s34) / 2u128;
+        let s36: u128 = (s35 + n / s35) / 2u128;
+        let s37: u128 = (s36 + n / s36) / 2u128;
+        let s38: u128 = (s37 + n / s37) / 2u128;
+        let s39: u128 = (s38 + n / s38) / 2u128;
+        let s40: u128 = (s39 + n / s39) / 2u128;
+        let s41: u128 = (s40 + n / s40) / 2u128;
+        let s42: u128 = (s41 + n / s41) / 2u128;
+        let s43: u128 = (s42 + n / s42) / 2u128;
+        let s44: u128 = (s43 + n / s43) / 2u128;
+        let s45: u128 = (s44 + n / s44) / 2u128;
+        let s46: u128 = (s45 + n / s45) / 2u128;
+        let s47: u128 = (s46 + n / s46) / 2u128;
+        let s48: u128 = (s47 + n / s47) / 2u128;
+        let s49: u128 = (s48 + n / s48) / 2u128;
+        let s50: u128 = (s49 + n / s49) / 2u128;
+        let s51: u128 = (s50 + n / s50) / 2u128;
+        let s52: u128 = (s51 + n / s51) / 2u128;
+        let s53: u128 = (s52 + n / s52) / 2u128;
+        let s54: u128 = (s53 + n / s53) / 2u128;
+        let s55: u128 = (s54 + n / s54) / 2u128;
+        let s56: u128 = (s55 + n / s55) / 2u128;
+        let s57: u128 = (s56 + n / s56) / 2u128;
+        let s58: u128 = (s57 + n / s57) / 2u128;
+        let s59: u128 = (s58 + n / s58) / 2u128;
+        let s60: u128 = (s59 + n / s59) / 2u128;
+        let s61: u128 = (s60 + n / s60) / 2u128;
+        let s62: u128 = (s61 + n / s61) / 2u128;
+        let s63: u128 = (s62 + n / s62) / 2u128;
+        let contribution_weight: u128 = (s63 + n / s63) / 2u128;
+
+        let f_credits: Future =
+            credits.aleo/transfer_public_as_signer(self.address, payment_amount);
+
+        let f_gate: Future = fairdrop_gate_v1.aleo/check_admission(auction_id);
+
+        let (receipt, f_proof): (fairdrop_proof_v1.aleo/ParticipationReceipt, Future) =
+            fairdrop_proof_v1.aleo/issue_receipt(auction_id, 0field, bidder_key);
+
+        let f_ref: Future = fairdrop_ref_v1.aleo/record_referral(
+            code_id,
+            auction_id,
+            bidder_key,
+            payment_amount as u128,
+        );
+
+        let bid: QuadraticBid = QuadraticBid {
+            owner:               self.signer,
+            auction_id:          auction_id,
+            payment_amount:      payment_amount as u128,
+            contribution_weight: contribution_weight,
+        };
+
+        return (bid, receipt, finalize_place_bid_pub_ref(
+            f_credits, f_gate, f_proof, f_ref,
+            auction_id, bidder_key, payment_amount as u128, contribution_weight,
+        ));
+    }
+
+    async function finalize_place_bid_pub_ref(
+        f_credits:           Future,
+        f_gate:              Future,
+        f_proof:             Future,
+        f_ref:               Future,
+        auction_id:          field,
+        bid_total_key:       field,
+        payment_amount:      u128,
+        contribution_weight: u128,
+    ) {
+        assert(!fairdrop_config_v1.aleo/paused.get_or_use(0field, false));
+        f_credits.await();
+        f_gate.await();
+        f_proof.await();
+        f_ref.await();
+        // ── quadratic bid validation and state updates ────────────────────────
+        let config: AuctionConfig = auction_configs.get(auction_id);
+        let state:  AuctionState  = auction_states.get(auction_id);
+        assert(!state.cleared);
+        assert(!state.voided);
+        assert(block.height >= config.start_block);
+        assert(block.height <  config.end_block);
+        assert(payment_amount >= config.min_bid_amount);
+        let current_total: u128    = bid_totals.get_or_use(bid_total_key, 0u128);
+        let new_bidder_total: u128 = current_total + payment_amount;
+        let within_limit: bool = config.max_bid_amount == 0u128
+            || new_bidder_total <= config.max_bid_amount;
+        assert(within_limit);
+        bid_totals.set(bid_total_key, new_bidder_total);
+        auction_states.set(auction_id, AuctionState {
+            total_committed: 0u128,
+            total_payments:  state.total_payments + payment_amount,
+            supply_met:      false,
+            ended_at_block:  state.ended_at_block,
+            cleared:         false,
+            clearing_price:  0u128,
+            creator_revenue: 0u128,
+            protocol_fee:    0u128,
+            voided:          false,
+            referral_budget: 0u128,
+        });
+        let escrow: u128 = escrow_payments.get_or_use(auction_id, 0u128);
+        escrow_payments.set(auction_id, escrow + payment_amount);
+        let acc_weight: u128 = sqrt_weights.get_or_use(auction_id, 0u128);
+        sqrt_weights.set(auction_id, acc_weight + contribution_weight);
+        let s: Stats = stats.get_or_use(0field, Stats {
+            total_auctions: 0u64, total_bids: 0u64, total_payment_collected: 0u128
+        });
+        stats.set(0field, Stats {
+            total_auctions:          s.total_auctions,
+            total_bids:              s.total_bids + 1u64,
+            total_payment_collected: s.total_payment_collected + payment_amount,
+        });
+        // ─────────────────────────────────────────────────────────────────────
+    }
+
+    // =========================================================================
+    // 6. close_auction — permissionless after end_block
+    // =========================================================================
+    //
+    // Quadratic auctions always run to end_block (no supply_met early close).
+    // Cleared when total_payments >= raise_target; voided otherwise.
+    // Revenue is on total_payments when cleared (pay-what-you-bid; no refund).
+
+    async transition close_auction(
+        public auction_id:    field,
+        public creator:       address,
+        public filled:        bool,    // D11: state.supply_met (always false for quadratic)
+        public volume:        u128,    // D11: state.total_payments
+        public closer_reward: u128,
+    ) -> Future {
+        let f_closer: Future =
+            credits.aleo/transfer_public(self.signer, closer_reward as u64);
+
+        let f_proof: Future =
+            fairdrop_proof_v1.aleo/update_reputation(creator, filled, volume);
+
+        return finalize_close_auction(
+            f_closer, f_proof,
+            auction_id, creator, filled, volume, closer_reward,
+        );
+    }
+
+    async function finalize_close_auction(
+        f_closer:      Future,
+        f_proof:       Future,
+        auction_id:    field,
+        creator:       address,
+        filled:        bool,
+        volume:        u128,
+        closer_reward: u128,
+    ) {
+        assert(!fairdrop_config_v1.aleo/paused.get_or_use(0field, false));
+        f_closer.await();
+        f_proof.await();
+
+        let config: AuctionConfig = auction_configs.get(auction_id);
+        let state:  AuctionState  = auction_states.get(auction_id);
+
+        assert(!state.cleared);
+        assert(!state.voided);
+        assert(block.height >= config.end_block);
+
+        assert_eq(creator,       config.creator);
+        assert_eq(filled,        state.supply_met);  // always false for quadratic
+        assert_eq(volume,        state.total_payments);
+        assert_eq(closer_reward, config.closer_reward);
+
+        let treasury: u128 = protocol_treasury.get_or_use(0field, 0u128);
+        assert(treasury >= closer_reward);
+
+        let is_cleared: bool = state.total_payments >= config.raise_target;
+
+        // Revenue zeroed in void case via ternaries.
+        let total_cost: u128   = is_cleared ? state.total_payments : 0u128;
+        let protocol_fee: u128 = total_cost * (config.fee_bps as u128) / 10000u128;
+        let creator_rev: u128  = total_cost - protocol_fee;
+        let ref_budget: u128   = protocol_fee * (config.referral_pool_bps as u128) / 10000u128;
+        let net_fee: u128      = protocol_fee - ref_budget;
+
+        let treasury_add: u128 = is_cleared ? net_fee : 0u128;
+        protocol_treasury.set(0field, treasury + treasury_add - closer_reward);
+
+        // total_committed: supply when cleared (all distributed); 0 when voided.
+        let final_committed: u128 = is_cleared ? config.supply : 0u128;
+
+        auction_states.set(auction_id, AuctionState {
+            total_committed: final_committed,
+            total_payments:  state.total_payments,
+            supply_met:      false,
+            ended_at_block:  config.end_block,
+            cleared:         is_cleared,
+            clearing_price:  0u128,
+            creator_revenue: creator_rev,
+            protocol_fee:    protocol_fee,
+            voided:          !is_cleared,
+            referral_budget: ref_budget,
+        });
+    }
+
+    // =========================================================================
+    // 7. push_referral_budget — permissionless; call after cleared close_auction
+    // =========================================================================
+
+    async transition push_referral_budget(
+        public auction_id: field,
+        public budget:     u128,
+    ) -> Future {
+        let f_credits: Future =
+            credits.aleo/transfer_public(fairdrop_ref_v1.aleo, budget as u64);
+
+        let f_ref: Future = fairdrop_ref_v1.aleo/fund_reserve(auction_id, budget);
+        return finalize_push_ref_budget(f_credits, f_ref, auction_id, budget);
+    }
+
+    async function finalize_push_ref_budget(
+        f_credits:  Future,
+        f_ref:      Future,
+        auction_id: field,
+        budget:     u128,
+    ) {
+        f_credits.await();
+        f_ref.await();
+
+        let state: AuctionState = auction_states.get(auction_id);
+        assert(state.cleared);
+        assert(!state.voided);
+        assert(budget > 0u128);
+        assert_eq(budget, state.referral_budget);
+
+        auction_states.set(auction_id, AuctionState {
+            total_committed: state.total_committed,
+            total_payments:  state.total_payments,
+            supply_met:      state.supply_met,
+            ended_at_block:  state.ended_at_block,
+            cleared:         state.cleared,
+            clearing_price:  state.clearing_price,
+            creator_revenue: state.creator_revenue,
+            protocol_fee:    state.protocol_fee,
+            voided:          state.voided,
+            referral_budget: 0u128,
+        });
+    }
+
+    // =========================================================================
+    // 8. claim — redeem QuadraticBid record (non-vesting auctions)
+    // =========================================================================
+    //
+    // actual_quantity = supply * bid.contribution_weight / total_sqrt_weight
+    // No clearing-price refund — bidder paid payment_amount in full.
+    //
+    // D11: caller supplies total_sqrt_weight; finalize validates against mapping.
+    // Guard: assert(total_sqrt_weight > 0) prevents division by zero.
+
+    async transition claim(
+        bid:                        QuadraticBid,
+        public total_sqrt_weight:   u128,   // D11: sqrt_weights[auction_id]
+        public supply:              u128,   // D11: config.supply
+        public sale_token_id:       field,
+    ) -> (token_registry.aleo/Token, Future) {
+        assert(total_sqrt_weight > 0u128);
+        let actual_quantity: u128 = supply * bid.contribution_weight / total_sqrt_weight;
+
+        let (sale_token, f_mint): (token_registry.aleo/Token, Future) =
+            token_registry.aleo/mint_private(
+                sale_token_id,
+                bid.owner,
+                actual_quantity,
+                false,
+                4294967295u32,
+            );
+
+        return (sale_token, finalize_claim(
+            f_mint, bid.auction_id, sale_token_id, supply,
+            total_sqrt_weight, actual_quantity,
+        ));
+    }
+
+    async function finalize_claim(
+        f_mint:             Future,
+        auction_id:         field,
+        sale_token_id:      field,
+        supply:             u128,
+        total_sqrt_weight:  u128,
+        actual_quantity:    u128,
+    ) {
+        assert(!fairdrop_config_v1.aleo/paused.get_or_use(0field, false));
+        f_mint.await();
+
+        let config: AuctionConfig = auction_configs.get(auction_id);
+        let state:  AuctionState  = auction_states.get(auction_id);
+
+        assert(state.cleared);
+        assert(!state.voided);
+        assert(!config.vest_enabled);
+        assert_eq(sale_token_id,     config.sale_token_id);
+        assert_eq(supply,            config.supply);
+        // D11: validate total_sqrt_weight against accumulated mapping value.
+        let final_weight: u128 = sqrt_weights.get(auction_id);
+        assert_eq(total_sqrt_weight, final_weight);
+        assert(actual_quantity > 0u128);
+
+        let sale_remaining: u128 = escrow_sales.get(auction_id);
+        assert(actual_quantity <= sale_remaining);
+        escrow_sales.set(auction_id, sale_remaining - actual_quantity);
+    }
+
+    // =========================================================================
+    // 9. claim_vested — redeem QuadraticBid record (vest_enabled auctions)
+    // =========================================================================
+
+    async transition claim_vested(
+        bid:                        QuadraticBid,
+        public total_sqrt_weight:   u128,   // D11: sqrt_weights[auction_id]
+        public supply:              u128,   // D11: config.supply
+        public sale_token_id:       field,
+        public ended_at_block:      u32,
+        public cliff_blocks:        u32,
+        public vest_end_blocks:     u32,
+    ) -> (fairdrop_vest_v1.aleo/VestedAllocation, Future) {
+        assert(total_sqrt_weight > 0u128);
+        let actual_quantity: u128 = supply * bid.contribution_weight / total_sqrt_weight;
+
+        let (vest, f_vest): (fairdrop_vest_v1.aleo/VestedAllocation, Future) =
+            fairdrop_vest_v1.aleo/create_vest(
+                bid.auction_id,
+                bid.owner,
+                sale_token_id,
+                actual_quantity,
+                ended_at_block,
+                cliff_blocks,
+                vest_end_blocks,
+            );
+
+        return (vest, finalize_claim_vested(
+            f_vest, bid.auction_id, sale_token_id, supply,
+            total_sqrt_weight, actual_quantity, ended_at_block, cliff_blocks, vest_end_blocks,
+        ));
+    }
+
+    async function finalize_claim_vested(
+        f_vest:             Future,
+        auction_id:         field,
+        sale_token_id:      field,
+        supply:             u128,
+        total_sqrt_weight:  u128,
+        actual_quantity:    u128,
+        ended_at_block:     u32,
+        cliff_blocks:       u32,
+        vest_end_blocks:    u32,
+    ) {
+        assert(!fairdrop_config_v1.aleo/paused.get_or_use(0field, false));
+        f_vest.await();
+
+        let config: AuctionConfig = auction_configs.get(auction_id);
+        let state:  AuctionState  = auction_states.get(auction_id);
+
+        assert(state.cleared);
+        assert(!state.voided);
+        assert(config.vest_enabled);
+        assert_eq(sale_token_id,     config.sale_token_id);
+        assert_eq(supply,            config.supply);
+        let final_weight: u128 = sqrt_weights.get(auction_id);
+        assert_eq(total_sqrt_weight, final_weight);
+        assert(actual_quantity > 0u128);
+        assert_eq(ended_at_block,  state.ended_at_block);
+        assert_eq(cliff_blocks,    config.vest_cliff_blocks);
+        assert_eq(vest_end_blocks, config.vest_end_blocks);
+
+        let sale_remaining: u128 = escrow_sales.get(auction_id);
+        assert(actual_quantity <= sale_remaining);
+        escrow_sales.set(auction_id, sale_remaining - actual_quantity);
+    }
+
+    // =========================================================================
+    // 10. withdraw_payments — creator withdraws revenue after cleared close
+    // =========================================================================
+
+    async transition withdraw_payments(
+        public auction_id: field,
+        public amount:     u128,
+    ) -> Future {
+        assert(amount > 0u128);
+        let f0: Future = credits.aleo/transfer_public(self.signer, amount as u64);
+        return finalize_withdraw_payments(f0, auction_id, self.signer, amount);
+    }
+
+    async function finalize_withdraw_payments(
+        f0:         Future,
+        auction_id: field,
+        caller:     address,
+        amount:     u128,
+    ) {
+        assert(!fairdrop_config_v1.aleo/paused.get_or_use(0field, false));
+        f0.await();
+
+        let config: AuctionConfig = auction_configs.get(auction_id);
+        let state:  AuctionState  = auction_states.get(auction_id);
+
+        assert(state.cleared);
+        assert(!state.voided);
+        assert_eq(caller, config.creator);
+
+        let withdrawn: u128     = creator_withdrawn.get_or_use(auction_id, 0u128);
+        let new_withdrawn: u128 = withdrawn + amount;
+        assert(new_withdrawn <= state.creator_revenue);
+        creator_withdrawn.set(auction_id, new_withdrawn);
+
+        let escrow: u128 = escrow_payments.get(auction_id);
+        assert(amount <= escrow);
+        escrow_payments.set(auction_id, escrow - amount);
+    }
+
+    // =========================================================================
+    // 11. withdraw_unsold — creator mints back unsold supply after close
+    // =========================================================================
+    //
+    // Voided case: full supply (total_committed = 0 → unsold = supply).
+    // Cleared case: dust rounding if any (total_committed = supply → unsold = 0).
+
+    async transition withdraw_unsold(
+        public auction_id:    field,
+        public amount:        u128,
+        public sale_token_id: field,
+    ) -> (token_registry.aleo/Token, Future) {
+        assert(amount > 0u128);
+
+        let (token, f_mint): (token_registry.aleo/Token, Future) =
+            token_registry.aleo/mint_private(
+                sale_token_id,
+                self.signer,
+                amount,
+                false,
+                4294967295u32,
+            );
+
+        return (token, finalize_withdraw_unsold(
+            f_mint, auction_id, self.signer, amount, sale_token_id,
+        ));
+    }
+
+    async function finalize_withdraw_unsold(
+        f_mint:        Future,
+        auction_id:    field,
+        caller:        address,
+        amount:        u128,
+        sale_token_id: field,
+    ) {
+        assert(!fairdrop_config_v1.aleo/paused.get_or_use(0field, false));
+        f_mint.await();
+
+        let config: AuctionConfig = auction_configs.get(auction_id);
+        let state:  AuctionState  = auction_states.get(auction_id);
+
+        // Allow in both cleared (dust) and voided (full supply) cases.
+        assert(!state.cleared || !state.voided);  // must be in some final state
+        assert(state.cleared || state.voided);
+        assert_eq(caller,        config.creator);
+        assert_eq(sale_token_id, config.sale_token_id);
+
+        let unsold: u128        = config.supply - state.total_committed;
+        let withdrawn: u128     = unsold_withdrawn.get_or_use(auction_id, 0u128);
+        let new_withdrawn: u128 = withdrawn + amount;
+        assert(new_withdrawn <= unsold);
+        unsold_withdrawn.set(auction_id, new_withdrawn);
+
+        let escrow: u128 = escrow_sales.get(auction_id);
+        assert(amount <= escrow);
+        escrow_sales.set(auction_id, escrow - amount);
+    }
+
+    // =========================================================================
+    // 12. cancel_auction — creator escape hatch
+    // =========================================================================
+
+    async transition cancel_auction(
+        public auction_id:    field,
+        public sale_token_id: field,
+        public supply:        u128,
+    ) -> (token_registry.aleo/Token, Future) {
+        let (token, f_mint): (token_registry.aleo/Token, Future) =
+            token_registry.aleo/mint_private(
+                sale_token_id,
+                self.signer,
+                supply,
+                false,
+                4294967295u32,
+            );
+
+        return (token, finalize_cancel_auction(
+            f_mint, self.signer, auction_id, sale_token_id, supply,
+        ));
+    }
+
+    async function finalize_cancel_auction(
+        f_mint:        Future,
+        creator:       address,
+        auction_id:    field,
+        sale_token_id: field,
+        supply:        u128,
+    ) {
+        assert(!fairdrop_config_v1.aleo/paused.get_or_use(0field, false));
+        f_mint.await();
+
+        let config: AuctionConfig = auction_configs.get(auction_id);
+        let state:  AuctionState  = auction_states.get(auction_id);
+
+        assert_eq(creator,       config.creator);
+        assert(!state.cleared);
+        assert(!state.voided);
+        assert_eq(sale_token_id, config.sale_token_id);
+        assert_eq(supply,        config.supply);
+
+        let remaining: u128 = escrow_sales.get(auction_id);
+        assert(supply <= remaining);
+        escrow_sales.set(auction_id, remaining - supply);
+
+        auction_states.set(auction_id, AuctionState {
+            total_committed: state.total_committed,
+            total_payments:  state.total_payments,
+            supply_met:      state.supply_met,
+            ended_at_block:  state.ended_at_block,
+            cleared:         false,
+            clearing_price:  0u128,
+            creator_revenue: 0u128,
+            protocol_fee:    0u128,
+            voided:          true,
+            referral_budget: 0u128,
+        });
+    }
+
+    // =========================================================================
+    // 13. claim_voided — bidder recovers payment from a voided auction
+    // =========================================================================
+    //
+    // No paused check — emergency pause must not trap bidder capital.
+    // Full payment_amount refunded (no partial recovery).
+
+    async transition claim_voided(
+        bid: QuadraticBid,
+    ) -> (credits.aleo/credits, Future) {
+        let (refund, f_refund): (credits.aleo/credits, Future) =
+            credits.aleo/transfer_public_to_private(bid.owner, bid.payment_amount as u64);
+
+        return (refund, finalize_claim_voided(
+            f_refund, bid.auction_id, bid.payment_amount,
+        ));
+    }
+
+    async function finalize_claim_voided(
+        f_refund:       Future,
+        auction_id:     field,
+        payment_amount: u128,
+    ) {
+        f_refund.await();
+
+        let state: AuctionState = auction_states.get(auction_id);
+        assert(state.voided);
+
+        let remaining: u128 = escrow_payments.get_or_use(auction_id, 0u128);
+        assert(payment_amount <= remaining);
+        escrow_payments.set(auction_id, remaining - payment_amount);
     }
 }

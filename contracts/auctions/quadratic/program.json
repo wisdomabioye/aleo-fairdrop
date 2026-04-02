@@ -4,6 +4,14 @@
   "description": "",
   "license": "MIT",
   "leo": "3.5.0",
-  "dependencies": null,
+  "dependencies": [
+    { "name": "credits.aleo",        "location": "network" },
+    { "name": "token_registry.aleo", "location": "network" },
+    { "name": "fairdrop_config_v1.aleo","location": "network" },
+    { "name": "fairdrop_gate_v1.aleo",  "location": "network" },
+    { "name": "fairdrop_proof_v1.aleo", "location": "network" },
+    { "name": "fairdrop_ref_v1.aleo",   "location": "network" },
+    { "name": "fairdrop_vest_v1.aleo",  "location": "network" }
+  ],
   "dev_dependencies": null
 }

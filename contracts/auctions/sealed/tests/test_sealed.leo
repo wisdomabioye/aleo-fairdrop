@@ -1,19 +1,262 @@
-// The 'test_sealed' test program.
-import sealed.aleo;
+// Tests for fairdrop_sealed_v1.aleo
+import fairdrop_sealed_v1.aleo;
+import fairdrop_proof_v1.aleo;
+import token_registry.aleo;
+
+// ── Unit-test coverage scope ──────────────────────────────────────────────────
+//   ✓ commit_bid_public        — zero quantity: transition-body assert fires.
+//   ✓ commit_bid_public        — zero payment:  transition-body assert fires.
+//   ✓ commit_bid_public_ref    — zero quantity: transition-body assert fires.
+//   ✓ commit_bid_public_ref    — zero payment:  transition-body assert fires.
+//   ✓ withdraw_payments        — zero amount:   transition-body assert fires.
+//   ✓ withdraw_unsold          — zero amount:   transition-body assert fires.
+//   ✓ close_auction            — D12 guard via update_reputation CPI: sealed not
+//                                in proof's allowed_callers in unit-test env.
+//                                (closer_reward=0 minimises credits-balance masking)
+//   ✓ push_referral_budget     — D12 guard via fund_reserve CPI: sealed not in
+//                                ref's allowed_callers in unit-test env.
+//   ✓ cancel_auction           — mint_private role check: sealed has no
+//                                SUPPLY_MANAGER_ROLE in unit-test env.
+//   ✓ withdraw_unsold (nonzero)— mint_private role check: same reason.
+//   ✓ withdraw_payments (1u128)— credits transfer: sealed has 0 public balance.
+//   ✓ slash_unrevealed         — credits transfer: sealed has 0 public balance;
+//                                slash_reward > 0 because payment_amount > 0.
+//
+// ── Integration-test only (require admin keys, real on-chain state, token roles)
+//   - create_auction: requires exact-amount Token record, assert_config CPI,
+//     D11 nonce from chain, SUPPLY_MANAGER_ROLE for fairdrop_sealed_v1.aleo,
+//     commit_end_block > start_block and end_block > commit_end_block enforced.
+//   - commit_bid_private / commit_bid_private_ref: require private credits record.
+//   - reveal_bid: requires Commitment record from a prior commit_bid_* call.
+//     Commitment hash re-derived from (quantity, nonce, bidder) and verified.
+//   - slash_unrevealed happy path: reveal window must have closed (block ≥ end_block);
+//     target commitment must be unrevealed and unslashed.
+//   - close_auction happy path: sealed must be in proof's allowed_callers.
+//   - push_referral_budget happy path: sealed must be in ref's allowed_callers.
+//   - claim / claim_vested: require Bid record from reveal_bid; returns
+//     (Token, credits refund, Future) — bidder pays clearing price, refund is
+//     (payment_amount - capped_quantity * clearing_price / sale_scale).
+//   - claim_voided: requires Bid record from a voided (cancelled) auction.
+//   - claim_commit_voided: requires Commitment record from a cancelled/voided auction;
+//     refunds full payment without requiring reveal.
+//   - Revenue invariant: creator_revenue + sum(refunds) + protocol_fee = total_cost
+//     verified by running the full lifecycle and checking escrow balances reach 0.
+// ─────────────────────────────────────────────────────────────────────────────
+
 program test_sealed.aleo {
-    @test
-    script test_it() {
-        let result: u32 = sealed.aleo/main(1u32, 2u32);
-        assert_eq(result, 3u32);
-    }
-
-    @test
-    @should_fail
-    transition do_nothing() {
-        let result: u32 = sealed.aleo/main(2u32, 3u32);
-        assert_eq(result, 3u32);
-    }
-
     @noupgrade
     async constructor() {}
+
+    // =========================================================================
+    // Group 1: Transition-body assertion tests
+    // =========================================================================
+    // These fail before any CPI or finalize executes — clean, deterministic.
+    // Note: quantity and nonce are private inputs in commit_bid_public but asserts
+    // on them (quantity > 0) still fire in transition body before any CPI.
+
+    // commit_bid_public — quantity = 0 fires assert(quantity > 0u128)
+    @test
+    @should_fail
+    script test_commit_pub_zero_qty() {
+        let (commit, receipt, f): (
+            fairdrop_sealed_v1.aleo/Commitment,
+            fairdrop_proof_v1.aleo/ParticipationReceipt,
+            Future,
+        ) = fairdrop_sealed_v1.aleo/commit_bid_public(
+            1field,   // auction_id — dummy; assert fires before any CPI
+            0u128,    // quantity   — ZERO triggers assert(quantity > 0)
+            99field,  // nonce — private; dummy
+            1000u64,  // payment_amount
+        );
+        f.await();
+    }
+
+    // commit_bid_public — payment_amount = 0 fires assert(payment_amount > 0u64)
+    @test
+    @should_fail
+    script test_commit_pub_zero_pay() {
+        let (commit, receipt, f): (
+            fairdrop_sealed_v1.aleo/Commitment,
+            fairdrop_proof_v1.aleo/ParticipationReceipt,
+            Future,
+        ) = fairdrop_sealed_v1.aleo/commit_bid_public(
+            1field,   // auction_id
+            100u128,  // quantity — valid; payment_amount check fires first
+            99field,  // nonce — private; dummy
+            0u64,     // payment_amount — ZERO triggers assert(payment_amount > 0)
+        );
+        f.await();
+    }
+
+    // commit_bid_public_ref — quantity = 0
+    @test
+    @should_fail
+    script test_commit_pub_ref_zero_qty() {
+        let (commit, receipt, f): (
+            fairdrop_sealed_v1.aleo/Commitment,
+            fairdrop_proof_v1.aleo/ParticipationReceipt,
+            Future,
+        ) = fairdrop_sealed_v1.aleo/commit_bid_public_ref(
+            1field,   // auction_id
+            0u128,    // quantity — ZERO triggers assert(quantity > 0)
+            99field,  // nonce — private; dummy
+            1000u64,  // payment_amount
+            77field,  // code_id — dummy; never reached
+        );
+        f.await();
+    }
+
+    // commit_bid_public_ref — payment_amount = 0
+    @test
+    @should_fail
+    script test_commit_pub_ref_zero_pay() {
+        let (commit, receipt, f): (
+            fairdrop_sealed_v1.aleo/Commitment,
+            fairdrop_proof_v1.aleo/ParticipationReceipt,
+            Future,
+        ) = fairdrop_sealed_v1.aleo/commit_bid_public_ref(
+            1field,
+            100u128,
+            99field,  // nonce — private; dummy
+            0u64,     // payment_amount — ZERO triggers assert(payment_amount > 0)
+            77field,
+        );
+        f.await();
+    }
+
+    // withdraw_payments — amount = 0 fires assert(amount > 0u128) in transition body
+    @test
+    @should_fail
+    script test_withdraw_pay_zero() {
+        let f: Future = fairdrop_sealed_v1.aleo/withdraw_payments(
+            1field,  // auction_id — dummy; assert fires before credits CPI
+            0u128,   // amount — ZERO triggers assert(amount > 0)
+        );
+        f.await();
+    }
+
+    // withdraw_unsold — amount = 0 fires assert(amount > 0u128) in transition body
+    @test
+    @should_fail
+    script test_withdraw_unsold_zero() {
+        let (token, f): (token_registry.aleo/Token, Future) =
+            fairdrop_sealed_v1.aleo/withdraw_unsold(
+                1field,   // auction_id
+                0u128,    // amount — ZERO triggers assert(amount > 0)
+                1field,   // sale_token_id — dummy; never reached
+            );
+        f.await();
+    }
+
+    // =========================================================================
+    // Group 2: D12 caller-guard failures
+    // =========================================================================
+    // In the unit-test environment, allowed_callers mappings in fairdrop_proof_v1.aleo
+    // and fairdrop_ref_v1.aleo are empty. fairdrop_sealed_v1.aleo is not registered
+    // as a trusted caller, so CPI calls to those programs fail on their D12 guards.
+
+    // close_auction → update_reputation → proof D12 fires:
+    //   finalize_update_reputation asserts allowed_callers.get_or_use(caller, false)
+    //   where caller = fairdrop_sealed_v1.aleo. Not registered → false.
+    //   closer_reward = 0u128 so credits.transfer_public uses 0u64, reducing the
+    //   chance that a credits-balance check masks the proof D12 assertion.
+    @test
+    @should_fail
+    script test_close_proof_d12() {
+        let f: Future = fairdrop_sealed_v1.aleo/close_auction(
+            1field,   // auction_id — nonexistent; D12 fires before state read
+            aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r,
+            false,    // filled
+            0u128,    // volume
+            0u128,    // closer_reward = 0 — see comment above
+        );
+        f.await();
+    }
+
+    // push_referral_budget → fund_reserve → ref D12 fires:
+    //   finalize_fund_reserve asserts allowed_callers.get_or_use(caller, false)
+    //   where caller = fairdrop_sealed_v1.aleo. Not registered → false.
+    //   budget = 0u128 so credits.transfer_public uses 0u64.
+    @test
+    @should_fail
+    script test_push_ref_d12() {
+        let f: Future = fairdrop_sealed_v1.aleo/push_referral_budget(
+            1field,  // auction_id
+            0u128,   // budget = 0
+        );
+        f.await();
+    }
+
+    // =========================================================================
+    // Group 3: Role-check and escrow failures
+    // =========================================================================
+    // token_registry roles are empty in unit-test env; fairdrop_sealed_v1.aleo has
+    // no SUPPLY_MANAGER_ROLE on any token → mint_private finalize reverts.
+    // credits public balance for fairdrop_sealed_v1.aleo = 0 → transfer_public reverts.
+
+    // cancel_auction → mint_private → SUPPLY_MANAGER_ROLE check fails.
+    //   supply = 100u128 so transition body passes; role check fires in finalize.
+    @test
+    @should_fail
+    script test_cancel_no_role() {
+        let (token, f): (token_registry.aleo/Token, Future) =
+            fairdrop_sealed_v1.aleo/cancel_auction(
+                1field,      // auction_id — nonexistent; role check fires before state read
+                12345field,  // sale_token_id — dummy
+                100u128,     // supply
+            );
+        f.await();
+    }
+
+    // withdraw_unsold (nonzero amount) → mint_private → role check fails.
+    //   amount = 1u128 passes assert(amount > 0) so failure occurs in finalize.
+    @test
+    @should_fail
+    script test_withdraw_unsold_role() {
+        let (token, f): (token_registry.aleo/Token, Future) =
+            fairdrop_sealed_v1.aleo/withdraw_unsold(
+                1field,      // auction_id
+                1u128,       // amount = 1 — passes transition-body assert
+                12345field,  // sale_token_id
+            );
+        f.await();
+    }
+
+    // withdraw_payments (nonzero amount) → credits transfer fails.
+    //   fairdrop_sealed_v1.aleo public credits balance = 0 in unit-test env.
+    //   amount = 1u128 passes assert(amount > 0); credits transfer fires next.
+    @test
+    @should_fail
+    script test_withdraw_pay_no_cred() {
+        let f: Future = fairdrop_sealed_v1.aleo/withdraw_payments(
+            1field,  // auction_id
+            1u128,   // amount = 1 — passes transition-body assert; credits fails
+        );
+        f.await();
+    }
+
+    // slash_unrevealed → credits transfer fails.
+    //   payment_amount = 1_000_000u128, slash_reward_bps = 500u16 (5%) → slash_reward = 50.
+    //   credits.transfer_public(signer, 50u64) fires; fairdrop_sealed_v1 has 0 balance.
+    //   This exercises the unique sealed slashing path unavailable in other auction types.
+    @test
+    @should_fail
+    script test_slash_no_cred() {
+        let f: Future = fairdrop_sealed_v1.aleo/slash_unrevealed(
+            1field,      // commitment_key — dummy BHP256(BidderKey) hash
+            1field,      // auction_id — nonexistent
+            1_000_000u128, // payment_amount — nonzero so slash_reward > 0
+            500u16,      // slash_reward_bps = 5%
+        );
+        f.await();
+    }
+
+    // =========================================================================
+    // Leo requires at least one transition per program.
+    // =========================================================================
+    @test
+    @should_fail
+    transition test_never_passes() {
+        assert_eq(1u32, 2u32);
+    }
 }
