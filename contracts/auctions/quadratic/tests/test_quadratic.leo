@@ -1,4 +1,12 @@
 // Tests for fairdrop_quadratic_v1.aleo
+// ── Leo 4.0 migration notes ───────────────────────────────────────────────────
+//   @test script → @test fn ... -> Final
+//   f.await()    → return final { f.run(); };
+//   Future       → Final
+//   .aleo/       → .aleo::
+//   async constructor → constructor
+//   test_never_passes removed: @test fn are entry points; dummy stub no longer needed.
+// ─────────────────────────────────────────────────────────────────────────────
 import fairdrop_quadratic_v1.aleo;
 import fairdrop_proof_v1.aleo;
 import token_registry.aleo;
@@ -40,7 +48,7 @@ import token_registry.aleo;
 
 program test_quadratic.aleo {
     @noupgrade
-    async constructor() {}
+    constructor() {}
 
     // =========================================================================
     // Group 1: Transition-body assertion tests
@@ -53,56 +61,56 @@ program test_quadratic.aleo {
     // place_bid_public — payment_amount = 0 fires assert(payment_amount > 0u64)
     @test
     @should_fail
-    script test_bid_pub_zero_pay() {
+    fn test_bid_pub_zero_pay() -> Final {
         let (bid, receipt, f): (
-            fairdrop_quadratic_v1.aleo/QuadraticBid,
-            fairdrop_proof_v1.aleo/ParticipationReceipt,
-            Future,
-        ) = fairdrop_quadratic_v1.aleo/place_bid_public(
+            fairdrop_quadratic_v1.aleo::QuadraticBid,
+            fairdrop_proof_v1.aleo::ParticipationReceipt,
+            Final,
+        ) = fairdrop_quadratic_v1.aleo::place_bid_public(
             1field,  // auction_id — dummy; assert fires before any CPI
             0u64,    // payment_amount — ZERO triggers assert(payment_amount > 0)
         );
-        f.await();
+        return final { f.run(); };
     }
 
     // place_bid_public_ref — payment_amount = 0 fires assert(payment_amount > 0u64)
     @test
     @should_fail
-    script test_bid_pub_ref_zero_pay() {
+    fn test_bid_pub_ref_zero_pay() -> Final {
         let (bid, receipt, f): (
-            fairdrop_quadratic_v1.aleo/QuadraticBid,
-            fairdrop_proof_v1.aleo/ParticipationReceipt,
-            Future,
-        ) = fairdrop_quadratic_v1.aleo/place_bid_public_ref(
+            fairdrop_quadratic_v1.aleo::QuadraticBid,
+            fairdrop_proof_v1.aleo::ParticipationReceipt,
+            Final,
+        ) = fairdrop_quadratic_v1.aleo::place_bid_public_ref(
             1field,  // auction_id
             0u64,    // payment_amount — ZERO triggers assert(payment_amount > 0)
             99field, // code_id — dummy; never reached
         );
-        f.await();
+        return final { f.run(); };
     }
 
     // withdraw_payments — amount = 0 fires assert(amount > 0u128) in transition body
     @test
     @should_fail
-    script test_withdraw_pay_zero() {
-        let f: Future = fairdrop_quadratic_v1.aleo/withdraw_payments(
+    fn test_withdraw_pay_zero() -> Final {
+        let f: Final = fairdrop_quadratic_v1.aleo::withdraw_payments(
             1field,  // auction_id — dummy; assert fires before credits CPI
             0u128,   // amount — ZERO triggers assert(amount > 0)
         );
-        f.await();
+        return final { f.run(); };
     }
 
     // withdraw_unsold — amount = 0 fires assert(amount > 0u128) in transition body
     @test
     @should_fail
-    script test_withdraw_unsold_zero() {
-        let (token, f): (token_registry.aleo/Token, Future) =
-            fairdrop_quadratic_v1.aleo/withdraw_unsold(
+    fn test_withdraw_unsold_zero() -> Final {
+        let (token, f): (token_registry.aleo::Token, Final) =
+            fairdrop_quadratic_v1.aleo::withdraw_unsold(
                 1field,   // auction_id
                 0u128,    // amount — ZERO triggers assert(amount > 0)
                 1field,   // sale_token_id — dummy; never reached
             );
-        f.await();
+        return final { f.run(); };
     }
 
     // =========================================================================
@@ -119,15 +127,15 @@ program test_quadratic.aleo {
     //   chance that a credits-balance check masks the proof D12 assertion.
     @test
     @should_fail
-    script test_close_proof_d12() {
-        let f: Future = fairdrop_quadratic_v1.aleo/close_auction(
+    fn test_close_proof_d12() -> Final {
+        let f: Final = fairdrop_quadratic_v1.aleo::close_auction(
             1field,   // auction_id — nonexistent; D12 fires before state read
             aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r,
             false,    // filled
             0u128,    // volume
             0u128,    // closer_reward = 0 — see comment above
         );
-        f.await();
+        return final { f.run(); };
     }
 
     // push_referral_budget → fund_reserve → ref D12 fires:
@@ -136,12 +144,12 @@ program test_quadratic.aleo {
     //   budget = 0u128 so credits.transfer_public uses 0u64.
     @test
     @should_fail
-    script test_push_ref_d12() {
-        let f: Future = fairdrop_quadratic_v1.aleo/push_referral_budget(
+    fn test_push_ref_d12() -> Final {
+        let f: Final = fairdrop_quadratic_v1.aleo::push_referral_budget(
             1field,  // auction_id
             0u128,   // budget = 0
         );
-        f.await();
+        return final { f.run(); };
     }
 
     // =========================================================================
@@ -155,14 +163,14 @@ program test_quadratic.aleo {
     //   supply = 100u128 so transition body passes; role check fires in finalize.
     @test
     @should_fail
-    script test_cancel_no_role() {
-        let (token, f): (token_registry.aleo/Token, Future) =
-            fairdrop_quadratic_v1.aleo/cancel_auction(
+    fn test_cancel_no_role() -> Final {
+        let (token, f): (token_registry.aleo::Token, Final) =
+            fairdrop_quadratic_v1.aleo::cancel_auction(
                 1field,      // auction_id — nonexistent; role check fires before state read
                 12345field,  // sale_token_id — dummy
                 100u128,     // supply
             );
-        f.await();
+        return final { f.run(); };
     }
 
     // withdraw_unsold (nonzero amount) → mint_private → role check fails.
@@ -171,14 +179,14 @@ program test_quadratic.aleo {
     //   states; role check fires before either state is read.
     @test
     @should_fail
-    script test_withdraw_unsold_role() {
-        let (token, f): (token_registry.aleo/Token, Future) =
-            fairdrop_quadratic_v1.aleo/withdraw_unsold(
+    fn test_withdraw_unsold_role() -> Final {
+        let (token, f): (token_registry.aleo::Token, Final) =
+            fairdrop_quadratic_v1.aleo::withdraw_unsold(
                 1field,      // auction_id
                 1u128,       // amount = 1 — passes transition-body assert
                 12345field,  // sale_token_id
             );
-        f.await();
+        return final { f.run(); };
     }
 
     // withdraw_payments (nonzero amount) → credits transfer fails.
@@ -186,20 +194,11 @@ program test_quadratic.aleo {
     //   amount = 1u128 passes assert(amount > 0); credits transfer fires next.
     @test
     @should_fail
-    script test_withdraw_pay_no_cred() {
-        let f: Future = fairdrop_quadratic_v1.aleo/withdraw_payments(
+    fn test_withdraw_pay_no_cred() -> Final {
+        let f: Final = fairdrop_quadratic_v1.aleo::withdraw_payments(
             1field,  // auction_id
             1u128,   // amount = 1 — passes transition-body assert; credits fails
         );
-        f.await();
-    }
-
-    // =========================================================================
-    // Leo requires at least one transition per program.
-    // =========================================================================
-    @test
-    @should_fail
-    transition test_never_passes() {
-        assert_eq(1u32, 2u32);
+        return final { f.run(); };
     }
 }

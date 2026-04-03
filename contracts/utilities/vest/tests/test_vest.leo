@@ -1,4 +1,12 @@
 // Tests for fairdrop_vest_v1.aleo
+// ── Leo 4.0 migration notes ───────────────────────────────────────────────────
+//   @test script → @test fn ... -> Final
+//   f.await()    → return final { f.run(); };
+//   Future       → Final
+//   .aleo/       → .aleo::
+//   async constructor → constructor
+//   test_never_passes removed: @test fn are entry points; dummy stub no longer needed.
+// ─────────────────────────────────────────────────────────────────────────────
 import fairdrop_vest_v1.aleo;
 
 // ── Unit-test coverage scope ─────────────────────────────────────────────────
@@ -20,7 +28,7 @@ import fairdrop_vest_v1.aleo;
 
 program test_vest.aleo {
     @noupgrade
-    async constructor() {}
+    constructor() {}
 
     // -------------------------------------------------------------------------
     // create_vest — D12 caller guard (allowed_callers)
@@ -39,9 +47,9 @@ program test_vest.aleo {
     // Minimal valid-looking parameters — still fails on D12 caller guard first.
     @test
     @should_fail
-    script test_create_vest_unauth() {
-        let (vest, f): (fairdrop_vest_v1.aleo/VestedAllocation, Future) =
-            fairdrop_vest_v1.aleo/create_vest(
+    fn test_create_vest_unauth() -> Final {
+        let (vest, f): (fairdrop_vest_v1.aleo::VestedAllocation, Final) =
+            fairdrop_vest_v1.aleo::create_vest(
                 1field,                                                                         // auction_id
                 aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r,               // owner (private param — any address)
                 1field,                                                                         // sale_token_id
@@ -50,15 +58,15 @@ program test_vest.aleo {
                 0u32,                                                                           // cliff_blocks
                 360u32,                                                                         // vest_end_blocks > cliff_blocks
             );
-        f.await();
+        return final { f.run(); };
     }
 
     // Zero total_amount — still fails on D12 before zero-amount guard.
     @test
     @should_fail
-    script test_create_vest_unauth_zero() {
-        let (vest, f): (fairdrop_vest_v1.aleo/VestedAllocation, Future) =
-            fairdrop_vest_v1.aleo/create_vest(
+    fn test_create_vest_unauth_zero() -> Final {
+        let (vest, f): (fairdrop_vest_v1.aleo::VestedAllocation, Final) =
+            fairdrop_vest_v1.aleo::create_vest(
                 2field,
                 aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r,
                 1field,
@@ -67,15 +75,15 @@ program test_vest.aleo {
                 0u32,
                 360u32,
             );
-        f.await();
+        return final { f.run(); };
     }
 
     // vest_end_blocks <= cliff_blocks — still fails on D12 before that guard.
     @test
     @should_fail
-    script test_create_vest_unauth_bad_dur() {
-        let (vest, f): (fairdrop_vest_v1.aleo/VestedAllocation, Future) =
-            fairdrop_vest_v1.aleo/create_vest(
+    fn test_create_vest_unauth_bad_dur() -> Final {
+        let (vest, f): (fairdrop_vest_v1.aleo::VestedAllocation, Final) =
+            fairdrop_vest_v1.aleo::create_vest(
                 3field,
                 aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r,
                 1field,
@@ -84,15 +92,15 @@ program test_vest.aleo {
                 360u32,   // cliff_blocks
                 360u32,   // vest_end_blocks == cliff_blocks → duration == 0 (if D12 passed)
             );
-        f.await();
+        return final { f.run(); };
     }
 
     // vest_end_blocks < cliff_blocks — same D12 rejection regardless.
     @test
     @should_fail
-    script test_create_vest_unauth_rev_dur() {
-        let (vest, f): (fairdrop_vest_v1.aleo/VestedAllocation, Future) =
-            fairdrop_vest_v1.aleo/create_vest(
+    fn test_create_vest_unauth_rev_dur() -> Final {
+        let (vest, f): (fairdrop_vest_v1.aleo::VestedAllocation, Final) =
+            fairdrop_vest_v1.aleo::create_vest(
                 4field,
                 aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r,
                 1field,
@@ -101,7 +109,7 @@ program test_vest.aleo {
                 720u32,   // cliff_blocks > vest_end_blocks
                 360u32,   // vest_end_blocks < cliff_blocks
             );
-        f.await();
+        return final { f.run(); };
     }
 
     // -------------------------------------------------------------------------
@@ -112,20 +120,11 @@ program test_vest.aleo {
     // (Documents that admin guard is only satisfiable in integration tests.)
     @test
     @should_fail
-    script test_set_allowed_caller_unauth() {
-        let f: Future = fairdrop_vest_v1.aleo/set_allowed_caller(
+    fn test_set_allowed_caller_unauth() -> Final {
+        let f: Final = fairdrop_vest_v1.aleo::set_allowed_caller(
             aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc,  // any program address
             true,
         );
-        f.await();
-    }
-
-    // -------------------------------------------------------------------------
-    // Leo requires at least one transition per program.
-    // -------------------------------------------------------------------------
-    @test
-    @should_fail
-    transition test_never_passes() {
-        assert_eq(1u32, 2u32);
+        return final { f.run(); };
     }
 }

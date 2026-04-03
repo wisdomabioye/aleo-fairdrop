@@ -1,7 +1,8 @@
 // fairdrop_vest_v1.aleo — Post-claim token vesting with block-based linear release.
+// Leo 4.0 migration: fn/Final/final/:: — no behavioural changes.
 //
 // Lifecycle:
-//   1. Auction's claim_vested CPI calls fairdrop_vest_v1.aleo/create_vest(...) with
+//   1. Auction's claim_vested CPI calls fairdrop_vest_v1.aleo::create_vest(...) with
 //      vesting parameters derived from the auction's own config + ended_at_block.
 //      The auction contract is responsible for consuming the token budget from its
 //      own escrow_sales (via mint/burn in its own SUPPLY_MANAGER_ROLE context).
@@ -9,7 +10,7 @@
 //
 //   2. release(vest, amount) — permissionless (record ownership enforced by Aleo).
 //      After cliff_block, releases up to vested_so_far - released tokens to the bidder.
-//      Calls token_registry.aleo/mint_private (vest holds SUPPLY_MANAGER_ROLE).
+//      Calls token_registry.aleo::mint_private (vest holds SUPPLY_MANAGER_ROLE).
 //      Returns updated VestedAllocation with released += amount.
 //
 // Vesting math (S8 fix — uniform base across all bidders on same auction):
@@ -25,7 +26,7 @@
 //
 // Role requirement:
 //   fairdrop_vest_v1.aleo must hold SUPPLY_MANAGER_ROLE (3) on each sale token used with
-//   vesting. Token creators must call token_registry.aleo/set_role(fairdrop_vest_v1.aleo, 3)
+//   vesting. Token creators must call token_registry.aleo::set_role(fairdrop_vest_v1.aleo, 3)
 //   before any create_vest call. Verified in finalize_create_vest (early fail).
 //   Also required for the auction contract (burn_private at close, the same role covers
 //   both programs — token creator must authorize both addresses).
@@ -40,7 +41,7 @@
 //   2. Validate ended_at_block == state.ended_at_block in finalize.
 //   3. Validate cliff_blocks == config.vest_cliff_blocks in finalize.
 //   4. Validate vest_end_blocks == config.vest_end_blocks in finalize.
-//   5. CPI fairdrop_vest_v1.aleo/create_vest(auction_id, bid.owner, sale_token_id,
+//   5. CPI fairdrop_vest_v1.aleo::create_vest(auction_id, bid.owner, sale_token_id,
 //        sale_amount, ended_at_block, cliff_blocks, vest_end_blocks).
 //   6. Return VestedAllocation to bidder instead of Token.
 //
@@ -59,13 +60,35 @@
 // ── KNOWN OPERATIONAL RISK (admin) ──────────────────────────────────────────
 // set_allowed_caller uses INITIAL_ADMIN constant. Address change requires upgrade.
 // Pre-mainnet: We must align INITIAL_ADMIN with the multisig in fairdrop_config.
+//
+// ── Leo 4.0 migration notes ───────────────────────────────────────────────────
+//   async constructor → constructor
+//   async transition  → fn; async function finalize_* → deleted, inlined as final {}
+//   self.caller captured before final {} for D12 guard (create_vest)
+//   self.signer captured before final {} where needed (set_allowed_caller)
+//   record fields captured before final {} in release (all 7 vest fields)
+//   TokenOwner struct moved outside program {}
+//   Future → Final, .aleo/ → .aleo::
 // ─────────────────────────────────────────────────────────────────────────────
 
 import token_registry.aleo;
 
+// ═════════════════════════════════════════════════════════════════════════════
+// Module-level struct definitions
+// Leo 4.0: structs outside program {} (convention; records stay inside).
+// ═════════════════════════════════════════════════════════════════════════════
+
+// From token_registry.aleo — used for role-key BHP256 hashing.
+// Must match token_registry.aleo TokenOwner field order exactly.
+struct TokenOwner { account: address, token_id: field }
+
+// =============================================================================
+// Program interface
+// =============================================================================
+
 program fairdrop_vest_v1.aleo {
     @admin(address="aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r")
-    async constructor() {}
+    constructor() {}
 
     // =========================================================================
     // Constants
@@ -77,14 +100,6 @@ program fairdrop_vest_v1.aleo {
     // Required role for mint_private at release time.
     // Token creators must grant this to fairdrop_vest_v1.aleo.
     const SUPPLY_MANAGER_ROLE: u8 = 3u8;
-
-    // =========================================================================
-    // Structs
-    // =========================================================================
-
-    // From token_registry.aleo — used for role-key BHP256 hashing.
-    // Must match token_registry.aleo/TokenOwner field order exactly.
-    struct TokenOwner { account: address, token_id: field }
 
     // =========================================================================
     // Record
@@ -123,20 +138,18 @@ program fairdrop_vest_v1.aleo {
     // =========================================================================
     // Registers or deregisters an auction program as a trusted caller.
     // Must be called for each auction contract during Phase 1 deployment.
+    //
+    // Leo 4.0: self.signer captured before final {} (proof-context only).
 
-    async transition set_allowed_caller(
+    fn set_allowed_caller(
         public program_addr: address,
         public allowed:      bool,
-    ) -> Future {
-        return finalize_set_allowed_caller(self.signer, program_addr, allowed);
-    }
-    async function finalize_set_allowed_caller(
-        caller:       address,
-        program_addr: address,
-        allowed:      bool,
-    ) {
-        assert_eq(caller, INITIAL_ADMIN);
-        allowed_callers.set(program_addr, allowed);
+    ) -> Final {
+        let caller: address = self.signer;
+        return final {
+            assert_eq(caller, INITIAL_ADMIN);
+            allowed_callers.set(program_addr, allowed);
+        };
     }
 
     // =========================================================================
@@ -145,7 +158,7 @@ program fairdrop_vest_v1.aleo {
     // Issues a VestedAllocation record to the bidder with absolute cliff/end
     // blocks computed from ended_at_block (S8 fix — uniform vesting base).
     //
-    // No token record is consumed here. The auction contract is responsible for 
+    // No token record is consumed here. The auction contract is responsible for
     // decrementing its own escrow_sales budget (the burn/mint accounting). Vest
     // only issues the schedule record and later mints at release time.
     //
@@ -162,16 +175,18 @@ program fairdrop_vest_v1.aleo {
     //   ended_at_block: must equal auction_states[auction_id].ended_at_block.
     //   cliff_blocks:   must equal auction_configs[auction_id].vest_cliff_blocks.
     //   vest_end_blocks: must equal auction_configs[auction_id].vest_end_blocks.
+    //
+    // Leo 4.0: self.caller captured before final {} for D12 guard.
 
-    async transition create_vest(
-        public auction_id:       field,
-        owner:                   address,    // private — bidder address (never finalize)
-        public sale_token_id:    field,
-        public total_amount:     u128,
-        public ended_at_block:   u32,
-        public cliff_blocks:     u32,
-        public vest_end_blocks:  u32,
-    ) -> (VestedAllocation, Future) {
+    fn create_vest(
+        public auction_id:      field,
+        owner:                  address,    // private — bidder address (never finalize)
+        public sale_token_id:   field,
+        public total_amount:    u128,
+        public ended_at_block:  u32,
+        public cliff_blocks:    u32,
+        public vest_end_blocks: u32,
+    ) -> (VestedAllocation, Final) {
         let vest: VestedAllocation = VestedAllocation {
             owner:         owner,
             sale_token_id: sale_token_id,
@@ -181,36 +196,25 @@ program fairdrop_vest_v1.aleo {
             cliff_block:   ended_at_block + cliff_blocks,
             end_block:     ended_at_block + vest_end_blocks,
         };
-        return (vest, finalize_create_vest(
-            self.caller,
-            sale_token_id,
-            total_amount,
-            cliff_blocks,
-            vest_end_blocks,
-        ));
-    }
-    async function finalize_create_vest(
-        caller:          address,
-        sale_token_id:   field,
-        total_amount:    u128,
-        cliff_blocks:    u32,
-        vest_end_blocks: u32,
-    ) {
-        // D12: only registered auction programs may create vests
-        assert(allowed_callers.get_or_use(caller, false));
-        // Prevent zero-amount vests (release would mint 0 tokens — useless and wasteful)
-        assert(total_amount > 0u128);
-        // Prevent division-by-zero in release: vesting_duration = end_block - cliff_block.
-        // vest_end_blocks > cliff_blocks → end_block > cliff_block always.
-        assert(vest_end_blocks > cliff_blocks);
-        // Early fail: verify fairdrop_vest_v1.aleo has SUPPLY_MANAGER_ROLE on sale token.
-        // Ensures release will succeed. Token creator must grant this before create_vest.
-        let role_key: field = BHP256::hash_to_field(TokenOwner {
-            account:  fairdrop_vest_v1.aleo,
-            token_id: sale_token_id,
+        // Capture self.caller — the calling auction program address for D12.
+        let caller: address = self.caller;
+        return (vest, final {
+            // D12: only registered auction programs may create vests.
+            assert(allowed_callers.get_or_use(caller, false));
+            // Prevent zero-amount vests (release would mint 0 tokens — useless and wasteful).
+            assert(total_amount > 0u128);
+            // Prevent division-by-zero in release: vesting_duration = end_block - cliff_block.
+            // vest_end_blocks > cliff_blocks → end_block > cliff_block always.
+            assert(vest_end_blocks > cliff_blocks);
+            // Early fail: verify fairdrop_vest_v1.aleo has SUPPLY_MANAGER_ROLE on sale token.
+            // Ensures release will succeed. Token creator must grant this before create_vest.
+            let role_key: field = BHP256::hash_to_field(TokenOwner {
+                account:  fairdrop_vest_v1.aleo,
+                token_id: sale_token_id,
+            });
+            let role: u8 = token_registry.aleo::roles.get_or_use(role_key, 0u8);
+            assert(role == SUPPLY_MANAGER_ROLE);
         });
-        let role: u8 = token_registry.aleo/roles.get_or_use(role_key, 0u8);
-        assert(role == SUPPLY_MANAGER_ROLE);
     }
 
     // =========================================================================
@@ -219,7 +223,7 @@ program fairdrop_vest_v1.aleo {
     // Permissionless: only the VestedAllocation owner (bidder) can call, because
     // Aleo cryptographically enforces that a record can only be spent by its owner.
     //
-    // Vesting math (all in finalize, where block.height is available):
+    // Vesting math (all in final {}, where block.height is available):
     //   vesting_duration = end_block - cliff_block  (validated > 0 at create_vest)
     //   blocks_vested    = min(block.height - cliff_block, vesting_duration)
     //   vested_so_far    = total_amount * blocks_vested / vesting_duration
@@ -232,22 +236,31 @@ program fairdrop_vest_v1.aleo {
     // tx reverts. Frontend should re-read block.height before submitting.
     //
     // Returns:
-    //   token_registry.aleo/Token — private, minted to vest.owner (never in finalize).
-    //   VestedAllocation          — updated record with released += amount (issued to owner).
+    //   token_registry.aleo::Token — private, minted to vest.owner (never in finalize).
+    //   VestedAllocation           — updated record with released += amount (issued to owner).
     //
     // After full release: vest.released == vest.total_amount.
     //   vested_so_far = total_amount, available = 0.
     //   Any amount > 0 fails assert(amount <= 0). Record is effectively exhausted.
+    //
+    // Leo 4.0: all vest record fields captured before final {} (record fields are
+    // proof-context only — private UTXO data unavailable inside final {}).
 
-    async transition release(
+    fn release(
         vest:          VestedAllocation,
         public amount: u128,
-    ) -> (token_registry.aleo/Token, VestedAllocation, Future) {
+    ) -> (token_registry.aleo::Token, VestedAllocation, Final) {
+        // Capture all private record fields before final block.
+        let total_amount:  u128 = vest.total_amount;
+        let released:      u128 = vest.released;
+        let cliff_block:   u32  = vest.cliff_block;
+        let end_block:     u32  = vest.end_block;
+
         // Mint vested tokens privately to the owner.
         // vest.owner is private (from record) — never reaches finalize.
         // vest.sale_token_id is revealed in finalize (already public auction info).
-        let (token, f_mint): (token_registry.aleo/Token, Future) =
-            token_registry.aleo/mint_private(
+        let (token, f_mint): (token_registry.aleo::Token, Final) =
+            token_registry.aleo::mint_private(
                 vest.sale_token_id,
                 vest.owner,
                 amount,
@@ -267,44 +280,30 @@ program fairdrop_vest_v1.aleo {
             end_block:     vest.end_block,
         };
 
-        return (token, updated, finalize_release(
-            f_mint,
-            vest.total_amount,
-            vest.released,
-            vest.cliff_block,
-            vest.end_block,
-            amount,
-        ));
-    }
-    async function finalize_release(
-        f_mint:       Future,
-        total_amount: u128,
-        released:     u128,
-        cliff_block:  u32,
-        end_block:    u32,
-        amount:       u128,
-    ) {
-        f_mint.await();
+        return (token, updated, final {
+            // Execute the mint Final.
+            f_mint.run();
 
-        // G_V5: zero-amount releases are invalid (and wasteful)
-        assert(amount > 0u128);
+            // G_V5: zero-amount releases are invalid (and wasteful).
+            assert(amount > 0u128);
 
-        // G_V1: cliff must have passed before any tokens can be released
-        assert(block.height >= cliff_block);
+            // G_V1: cliff must have passed before any tokens can be released.
+            assert(block.height >= cliff_block);
 
-        // Compute how many blocks have elapsed within the vesting window.
-        // Cap at vesting_duration when block.height >= end_block (fully elapsed).
-        let vesting_duration: u32 = end_block - cliff_block;  // > 0 (enforced at create_vest)
-        let blocks_vested: u32    = block.height >= end_block
-            ? vesting_duration                      // fully elapsed: all tokens vested
-            : block.height - cliff_block;           // partial: proportional
+            // Compute how many blocks have elapsed within the vesting window.
+            // Cap at vesting_duration when block.height >= end_block (fully elapsed).
+            let vesting_duration: u32 = end_block - cliff_block;  // > 0 (enforced at create_vest)
+            let blocks_vested: u32    = block.height >= end_block
+                ? vesting_duration                  // fully elapsed: all tokens vested
+                : block.height - cliff_block;       // partial: proportional
 
-        // Compute vested_so_far via linear interpolation.
-        // Safe from u128 overflow for realistic values (see file header overflow note).
-        let vested_so_far: u128 = total_amount * (blocks_vested as u128) / (vesting_duration as u128);
+            // Compute vested_so_far via linear interpolation.
+            // Safe from u128 overflow for realistic values (see file header overflow note).
+            let vested_so_far: u128 = total_amount * (blocks_vested as u128) / (vesting_duration as u128);
 
-        // G_V9: amount must not exceed available (vested minus already released)
-        let available: u128 = vested_so_far - released;
-        assert(amount <= available);
+            // G_V9: amount must not exceed available (vested minus already released).
+            let available: u128 = vested_so_far - released;
+            assert(amount <= available);
+        });
     }
 }

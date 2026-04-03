@@ -1,4 +1,12 @@
 // Tests for fairdrop_ref_v1.aleo
+// ── Leo 4.0 migration notes ───────────────────────────────────────────────────
+//   @test script → @test fn ... -> Final
+//   f.await()    → return final { f.run(); };
+//   Future       → Final
+//   .aleo/       → .aleo::
+//   async constructor → constructor
+//   test_never_passes removed: @test fn are entry points; dummy stub no longer needed.
+// ─────────────────────────────────────────────────────────────────────────────
 import fairdrop_ref_v1.aleo;
 
 // ── Unit-test coverage scope ─────────────────────────────────────────────────
@@ -31,13 +39,13 @@ import fairdrop_ref_v1.aleo;
 
 program test_ref.aleo {
     @noupgrade
-    async constructor() {}
+    constructor() {}
 
     // -------------------------------------------------------------------------
     // create_code — bps cap enforcement (fairdrop_config CPI)
     // -------------------------------------------------------------------------
     // create_code is permissionless. The only unit-testable guard is the
-    // commission_bps cap, enforced by fairdrop_config_v1.aleo/assert_ref_bps in
+    // commission_bps cap, enforced by fairdrop_config_v1.aleo::assert_ref_bps in
     // finalize. Default max_referral_bps = 2000u16 (config get_or_use default).
     //
     // code_id = BHP256(CodeKey { referrer: self.signer, auction_id }).
@@ -46,59 +54,59 @@ program test_ref.aleo {
 
     // Within cap — should pass.
     @test
-    script test_create_code_ok() {
-        let (code, f): (fairdrop_ref_v1.aleo/ReferralCode, Future) =
-            fairdrop_ref_v1.aleo/create_code(
+    fn test_create_code_ok() -> Final {
+        let (code, f): (fairdrop_ref_v1.aleo::ReferralCode, Final) =
+            fairdrop_ref_v1.aleo::create_code(
                 1field,  // auction_id
                 500u16,  // commission_bps — below 2000 default cap
             );
-        f.await();
+        return final { f.run(); };
     }
 
     // Exactly at cap — inclusive boundary should pass.
     @test
-    script test_create_code_at_cap() {
-        let (code, f): (fairdrop_ref_v1.aleo/ReferralCode, Future) =
-            fairdrop_ref_v1.aleo/create_code(
+    fn test_create_code_at_cap() -> Final {
+        let (code, f): (fairdrop_ref_v1.aleo::ReferralCode, Final) =
+            fairdrop_ref_v1.aleo::create_code(
                 2field,
                 2000u16,  // exactly equal to default max_referral_bps
             );
-        f.await();
+        return final { f.run(); };
     }
 
     // Zero bps — technically within cap (0 ≤ 2000); functionally useless but valid.
     @test
-    script test_create_code_zero_bps() {
-        let (code, f): (fairdrop_ref_v1.aleo/ReferralCode, Future) =
-            fairdrop_ref_v1.aleo/create_code(
+    fn test_create_code_zero_bps() -> Final {
+        let (code, f): (fairdrop_ref_v1.aleo::ReferralCode, Final) =
+            fairdrop_ref_v1.aleo::create_code(
                 3field,
                 0u16,
             );
-        f.await();
+        return final { f.run(); };
     }
 
     // One bps above cap — assert_ref_bps CPI reverts.
     @test
     @should_fail
-    script test_create_code_over_bps() {
-        let (code, f): (fairdrop_ref_v1.aleo/ReferralCode, Future) =
-            fairdrop_ref_v1.aleo/create_code(
+    fn test_create_code_over_bps() -> Final {
+        let (code, f): (fairdrop_ref_v1.aleo::ReferralCode, Final) =
+            fairdrop_ref_v1.aleo::create_code(
                 4field,
                 2001u16,  // 1 above default cap — config CPI reverts in finalize
             );
-        f.await();
+        return final { f.run(); };
     }
 
     // u16::MAX — well above cap; same revert path.
     @test
     @should_fail
-    script test_create_code_max_bps() {
-        let (code, f): (fairdrop_ref_v1.aleo/ReferralCode, Future) =
-            fairdrop_ref_v1.aleo/create_code(
+    fn test_create_code_max_bps() -> Final {
+        let (code, f): (fairdrop_ref_v1.aleo::ReferralCode, Final) =
+            fairdrop_ref_v1.aleo::create_code(
                 5field,
                 65535u16,
             );
-        f.await();
+        return final { f.run(); };
     }
 
     // -------------------------------------------------------------------------
@@ -114,23 +122,23 @@ program test_ref.aleo {
     // Zero amount — D12 fires before any amount processing.
     @test
     @should_fail
-    script test_fund_reserve_unauth() {
-        let f: Future = fairdrop_ref_v1.aleo/fund_reserve(
+    fn test_fund_reserve_unauth() -> Final {
+        let f: Final = fairdrop_ref_v1.aleo::fund_reserve(
             1field,  // auction_id
             0u128,   // amount — irrelevant; caller guard fires first
         );
-        f.await();
+        return final { f.run(); };
     }
 
     // Non-zero amount — still D12 rejection.
     @test
     @should_fail
-    script test_fund_reserve_unauth_nz() {
-        let f: Future = fairdrop_ref_v1.aleo/fund_reserve(
+    fn test_fund_reserve_unauth_nz() -> Final {
+        let f: Final = fairdrop_ref_v1.aleo::fund_reserve(
             2field,
             1_000_000u128,  // 1 credit in microcredits — irrelevant
         );
-        f.await();
+        return final { f.run(); };
     }
 
     // -------------------------------------------------------------------------
@@ -147,27 +155,27 @@ program test_ref.aleo {
     // Dummy code_id = 0field — still fails on D12 before code_registered check.
     @test
     @should_fail
-    script test_record_ref_unauth() {
-        let f: Future = fairdrop_ref_v1.aleo/record_referral(
+    fn test_record_ref_unauth() -> Final {
+        let f: Final = fairdrop_ref_v1.aleo::record_referral(
             0field,  // code_id — D12 fires before code_registered[code_id] check
             1field,  // auction_id
             0field,  // bidder_key
             0u128,   // payment_amount
         );
-        f.await();
+        return final { f.run(); };
     }
 
     // Non-zero values — same D12 rejection regardless of inputs.
     @test
     @should_fail
-    script test_record_ref_unauth_nz() {
-        let f: Future = fairdrop_ref_v1.aleo/record_referral(
+    fn test_record_ref_unauth_nz() -> Final {
+        let f: Final = fairdrop_ref_v1.aleo::record_referral(
             12345field,
             99field,
             888field,
             500_000u128,
         );
-        f.await();
+        return final { f.run(); };
     }
 
     // -------------------------------------------------------------------------
@@ -185,42 +193,33 @@ program test_ref.aleo {
     // Completely unknown bidder_key → referral_records.get() hard-fail.
     @test
     @should_fail
-    script test_credit_no_record() {
-        let f: Future = fairdrop_ref_v1.aleo/credit_commission(
+    fn test_credit_no_record() -> Final {
+        let f: Final = fairdrop_ref_v1.aleo::credit_commission(
             1field,  // code_id
             1field,  // bidder_key — never set by record_referral → .get() reverts
         );
-        f.await();
+        return final { f.run(); };
     }
 
     // Zero keys — sentinel does not bypass the missing-record check.
     @test
     @should_fail
-    script test_credit_no_record_zero() {
-        let f: Future = fairdrop_ref_v1.aleo/credit_commission(
+    fn test_credit_no_record_zero() -> Final {
+        let f: Final = fairdrop_ref_v1.aleo::credit_commission(
             0field,
             0field,
         );
-        f.await();
+        return final { f.run(); };
     }
 
     // Different unregistered pair — same hard-fail behaviour.
     @test
     @should_fail
-    script test_credit_no_record_alt() {
-        let f: Future = fairdrop_ref_v1.aleo/credit_commission(
+    fn test_credit_no_record_alt() -> Final {
+        let f: Final = fairdrop_ref_v1.aleo::credit_commission(
             999field,
             888field,
         );
-        f.await();
-    }
-
-    // -------------------------------------------------------------------------
-    // Leo requires at least one transition per program.
-    // -------------------------------------------------------------------------
-    @test
-    @should_fail
-    transition test_never_passes() {
-        assert_eq(1u32, 2u32);
+        return final { f.run(); };
     }
 }

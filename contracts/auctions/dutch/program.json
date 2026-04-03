@@ -3,15 +3,41 @@
   "version": "0.1.0",
   "description": "Privacy-preserving descending-price Dutch auction with uniform clearing price",
   "license": "MIT",
-  "leo": "3.4.0",
+  "leo": "4.0.0",
   "dependencies": [
-    { "name": "credits.aleo",        "location": "network" },
-    { "name": "token_registry.aleo", "location": "network" },
-    { "name": "fairdrop_config_v1.aleo","location": "local", "path": "../../utilities/config" },
-    { "name": "fairdrop_gate_v1.aleo",  "location": "local", "path": "../../utilities/gate"   },
-    { "name": "fairdrop_proof_v1.aleo", "location": "local", "path": "../../utilities/proof"  },
-    { "name": "fairdrop_ref_v1.aleo",   "location": "local", "path": "../../utilities/ref"    },
-    { "name": "fairdrop_vest_v1.aleo",  "location": "local", "path": "../../utilities/vest"   }
+    {
+      "name": "credits.aleo",
+      "location": "network"
+    },
+    {
+      "name": "token_registry.aleo",
+      "location": "network"
+    },
+    {
+      "name": "fairdrop_config_v1.aleo",
+      "location": "local",
+      "path": "../../utilities/config"
+    },
+    {
+      "name": "fairdrop_gate_v1.aleo",
+      "location": "local",
+      "path": "../../utilities/gate"
+    },
+    {
+      "name": "fairdrop_proof_v1.aleo",
+      "location": "local",
+      "path": "../../utilities/proof"
+    },
+    {
+      "name": "fairdrop_ref_v1.aleo",
+      "location": "local",
+      "path": "../../utilities/ref"
+    },
+    {
+      "name": "fairdrop_vest_v1.aleo",
+      "location": "local",
+      "path": "../../utilities/vest"
+    }
   ],
   "dev_dependencies": null
 }
