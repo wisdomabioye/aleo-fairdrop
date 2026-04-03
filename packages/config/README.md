@@ -11,8 +11,8 @@ Two independent exports:
 ```ts
 import { PROGRAMS } from '@fairdrop/config'
 
-PROGRAMS.dutch.programId   // 'fairdrop_dutch_v1.aleo'
-PROGRAMS.raise.programId   // 'fairdrop_raise_v1.aleo'
+PROGRAMS.dutch.programId   // 'fairdrop_dutch_v2.aleo'
+PROGRAMS.raise.programId   // 'fairdrop_raise_v2.aleo'
 ```
 
 **`defineConfig`** (e.g. the frontend or a service that needs the RPC URL and accounts):

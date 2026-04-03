@@ -9,63 +9,63 @@
   },
   "programs": {
     "dutch": {
-      "programId":      "fairdrop_dutch_v1.aleo",
+      "programId":      "fairdrop_dutch_v2.aleo",
       "programAddress": "aleo13n9u7zf7x0zpfqqeew2e9eyk5h8wfmssk8h5fwas0xmmp4z7s5zs6avmye",
       "contractPath":   "contracts/auctions/dutch",
       "salt":           "1field"
     },
     "ascending": {
-      "programId":      "fairdrop_ascending_v1.aleo",
+      "programId":      "fairdrop_ascending_v2.aleo",
       "programAddress": "aleo1kf0rw9ml6de66hgglxtdah255dz885uczeffgku7lavjy3qqcs9q4pzvwh",
       "contractPath":   "contracts/auctions/ascending",
       "salt":           "2field"
     },
     "sealed": {
-      "programId":      "fairdrop_sealed_v1.aleo",
+      "programId":      "fairdrop_sealed_v2.aleo",
       "programAddress": "aleo1wnkyc5qez7d2z68w35jelp549k9zxuad05t5pflya0gnzh3wzurszsdne5",
       "contractPath":   "contracts/auctions/sealed",
       "salt":           "3field"
     }, 
     "raise": {
-      "programId":      "fairdrop_raise_v1.aleo",
+      "programId":      "fairdrop_raise_v2.aleo",
       "programAddress": "aleo1uhd5pytlnk3sfsn2x3q6hh4aks56t2l36zknp3m96feynvgqrq9sg4ah0t",
       "contractPath":   "contracts/auctions/raise",
       "salt":           "4field"
     },
     "lbp": {
-      "programId":      "fairdrop_lbp_v1.aleo",
+      "programId":      "fairdrop_lbp_v2.aleo",
       "programAddress": null,
       "contractPath":   "contracts/auctions/lbp",
       "salt":           "5field"
     },
     "quadratic": {
-      "programId":      "fairdrop_quadratic_v1.aleo",
+      "programId":      "fairdrop_quadratic_v2.aleo",
       "programAddress": null,
       "contractPath":   "contracts/auctions/quadratic",
       "salt":           "6field"
     },
     "config": {
-      "programId":      "fairdrop_config_v1.aleo",
+      "programId":      "fairdrop_config_v2.aleo",
       "programAddress": "aleo1337ysdtfvpx6h4we0crz8xuygl0ue7sc9vzqwy6grewmntqe3vyq00ep0g",
       "contractPath":   "contracts/utilities/config"
     },
     "gate": {
-      "programId":      "fairdrop_gate_v1.aleo",
+      "programId":      "fairdrop_gate_v2.aleo",
       "programAddress": "aleo1e4vwv078d7fhra9lp07633zdpn0ln3fedt8lseal0dh9fdr5vvqqeae9hv",
       "contractPath":   "contracts/utilities/gate"
     },
     "proof": {
-      "programId":      "fairdrop_proof_v1.aleo",
+      "programId":      "fairdrop_proof_v2.aleo",
       "programAddress": "aleo1txlfp23827kt592s6lgwrpv990k3ge5798d2jn8047mh4fv0w5ysfg98nt",
       "contractPath":   "contracts/utilities/proof"
     },
     "ref": {
-      "programId":      "fairdrop_ref_v1.aleo",
+      "programId":      "fairdrop_ref_v2.aleo",
       "programAddress": "aleo13xddttavncqn2edx2r6d8ny03wnuc6dmpc9pfr8ytc3m0s06mgyquf7x6t",
       "contractPath":   "contracts/utilities/ref"
     },
     "vest": {
-      "programId":      "fairdrop_vest_v1.aleo",
+      "programId":      "fairdrop_vest_v2.aleo",
       "programAddress": "aleo10r67ky003vgpcu4kvwnhfvrsaaq2gd62j026sylpjgclxl3q4ugs8y34dp",
       "contractPath":   "contracts/utilities/vest"
     }

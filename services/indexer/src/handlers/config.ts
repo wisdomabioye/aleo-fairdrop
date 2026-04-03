@@ -1,5 +1,5 @@
 /**
- * Protocol config handler — syncs fairdrop_config_v1.aleo mappings to the DB.
+ * Protocol config handler — syncs fairdrop_config_v2.aleo mappings to the DB.
  *
  * Registered in the handler registry for PROGRAMS.config.programId so the
  * processor dispatches set_* transitions here automatically.
@@ -112,7 +112,7 @@ const configIdExtractor = () => 'protocol_config' as string | null;
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
-/** Register all set_* transitions for fairdrop_config_v1.aleo. */
+/** Register all set_* transitions for fairdrop_config_v2.aleo. */
 export function buildConfigHandlerMap(): ProgramHandlerMap {
   const entry: HandlerEntry = {
     getAuctionId: configIdExtractor,

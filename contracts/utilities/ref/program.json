@@ -1,12 +1,12 @@
 {
-  "program": "fairdrop_ref_v1.aleo",
+  "program": "fairdrop_ref_v2.aleo",
   "version": "0.1.0",
   "description": "Referral code creation, tracking, and commission distribution.",
   "license": "MIT",
   "leo": "4.0.0",
   "dependencies": [
     {
-      "name": "fairdrop_config_v1.aleo",
+      "name": "fairdrop_config_v2.aleo",
       "location": "local",
       "path": "../config"
     },

@@ -1,5 +1,5 @@
 /**
- * fairdrop_config_v1.aleo — TypeScript types.
+ * fairdrop_config_v2.aleo — TypeScript types.
  *
  * Protocol-level configuration. Stores global params (fee_bps, creation_fee,
  * closer_reward, slash_reward_bps, min_auction_duration) and the paused flag.

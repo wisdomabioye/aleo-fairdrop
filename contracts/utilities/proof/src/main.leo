@@ -1,4 +1,4 @@
-// fairdrop_proof_v1.aleo — Participation receipts and creator reputation.
+// fairdrop_proof_v2.aleo — Participation receipts and creator reputation.
 // Leo 4.0 migration: fn/Final/final/:: — no behavioural changes.
 //
 // Responsibility:
@@ -35,7 +35,7 @@
 // ═════════════════════════════════════════════════════════════════════════════
 
 // Bidder key input for participated mapping hash.
-// Same field layout as fairdrop_gate_v1.aleo BidderKey — consistent hash values.
+// Same field layout as fairdrop_gate_v2.aleo BidderKey — consistent hash values.
 struct BidderKey { bidder: address, auction_id: field }
 
 // Creator reputation aggregate. Default values used via get_or_use.
@@ -49,7 +49,7 @@ struct CreatorStats {
 // Program interface
 // =============================================================================
 
-program fairdrop_proof_v1.aleo {
+program fairdrop_proof_v2.aleo {
     @admin(address="aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r")
     constructor() {}
 

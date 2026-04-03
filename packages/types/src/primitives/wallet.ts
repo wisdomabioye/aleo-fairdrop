@@ -67,7 +67,7 @@ export interface WalletTokenRecord {
 export interface WalletBidRecord {
   /** Commitment (record ID). */
   id:             string;
-  /** Program this record belongs to (e.g. "fairdrop_dutch_v1.aleo"). */
+  /** Program this record belongs to (e.g. "fairdrop_dutch_v2.aleo"). */
   programId:      string;
   /** Auction this bid belongs to (field string). */
   auction_id:     string;
@@ -89,7 +89,7 @@ export interface WalletBidRecord {
 export interface WalletSealedCommitment {
   /** Commitment (record ID). */
   id:             string;
-  /** Program this record belongs to (e.g. "fairdrop_dutch_v1.aleo"). */
+  /** Program this record belongs to (e.g. "fairdrop_dutch_v2.aleo"). */
   programId:      string;
   /** Auction this bid belongs to (field string). */
   auction_id:     string;

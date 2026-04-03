@@ -1,4 +1,4 @@
-// fairdrop_ascending_v1.aleo — Privacy-preserving ascending-price auction.
+// fairdrop_ascending_v2.aleo — Privacy-preserving ascending-price auction.
 //
 // Mechanism: price rises from floor_price toward ceiling_price in discrete steps.
 // Early bidders pay less; late bidders pay more (pay-what-you-bid, no uniform clearing).
@@ -8,8 +8,8 @@
 // Sale tokens   : token_registry.aleo::Token. Burned at create, re-minted at claim.
 //
 // Roles required:
-//   fairdrop_ascending_v1.aleo — SUPPLY_MANAGER_ROLE on sale token (burn + mint).
-//   fairdrop_vest_v1.aleo      — SUPPLY_MANAGER_ROLE on sale token (mint at release),
+//   fairdrop_ascending_v2.aleo — SUPPLY_MANAGER_ROLE on sale token (burn + mint).
+//   fairdrop_vest_v2.aleo      — SUPPLY_MANAGER_ROLE on sale token (mint at release),
 //                             required only when vest_enabled = true.
 //
 // Revenue accounting (set at close_auction):
@@ -29,7 +29,7 @@
 //
 // Auction ID derivation:
 //   auction_id = BHP256(AuctionKey { creator, nonce, PROGRAM_SALT = 2field })
-//   Distinct PROGRAM_SALT prevents cross-type ID collision with fairdrop_dutch_v1.aleo.
+//   Distinct PROGRAM_SALT prevents cross-type ID collision with fairdrop_dutch_v2.aleo.
 //
 // Privacy model:
 //   - Bid payment amount : public (unavoidable — on-chain escrow accounting).
@@ -62,11 +62,11 @@
 
 import credits.aleo;
 import token_registry.aleo;
-import fairdrop_config_v1.aleo;
-import fairdrop_gate_v1.aleo;
-import fairdrop_proof_v1.aleo;
-import fairdrop_ref_v1.aleo;
-import fairdrop_vest_v1.aleo;
+import fairdrop_config_v2.aleo;
+import fairdrop_gate_v2.aleo;
+import fairdrop_proof_v2.aleo;
+import fairdrop_ref_v2.aleo;
+import fairdrop_vest_v2.aleo;
 
 // =============================================================================
 // Module-level structs
@@ -301,7 +301,7 @@ final fn record_bid(
 // Program interface
 // =============================================================================
 
-program fairdrop_ascending_v1.aleo {
+program fairdrop_ascending_v2.aleo {
     // Leo 4.0: `async` removed from constructor.
     @admin(address="aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r")
     constructor() {}
@@ -410,7 +410,7 @@ program fairdrop_ascending_v1.aleo {
             credits.aleo::transfer_public_as_signer(self.address, snapshot.creation_fee as u64);
 
         // CPI 3: D16 — validate snapshotted protocol params and auction duration.
-        let f_cfg: Final = fairdrop_config_v1.aleo::assert_config(
+        let f_cfg: Final = fairdrop_config_v2.aleo::assert_config(
             snapshot.fee_bps,
             snapshot.creation_fee,
             snapshot.closer_reward,
@@ -421,7 +421,7 @@ program fairdrop_ascending_v1.aleo {
         );
 
         // CPI 4: register gate mode for this auction.
-        let f_gate: Final = fairdrop_gate_v1.aleo::register_gate(
+        let f_gate: Final = fairdrop_gate_v2.aleo::register_gate(
             auction_id,
             gate.gate_mode,
             gate.merkle_root,
@@ -462,7 +462,7 @@ program fairdrop_ascending_v1.aleo {
         let creation_fee: u128    = snapshot.creation_fee;
 
         return (remainder, final {
-            assert(!fairdrop_config_v1.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
             f_burn.run();
             f_creation.run();
             f_cfg.run();    // validates params, duration, end_block > start_block
@@ -493,7 +493,7 @@ program fairdrop_ascending_v1.aleo {
 
             // Verify SUPPLY_MANAGER_ROLE on sale token.
             let asc_role_key: field = BHP256::hash_to_field(TokenOwner {
-                account:  fairdrop_ascending_v1.aleo,
+                account:  fairdrop_ascending_v2.aleo,
                 token_id: config.sale_token_id,
             });
             assert_eq(
@@ -507,7 +507,7 @@ program fairdrop_ascending_v1.aleo {
             assert(vest_duration_ok);
 
             let vest_role_key: field = BHP256::hash_to_field(TokenOwner {
-                account:  fairdrop_vest_v1.aleo,
+                account:  fairdrop_vest_v2.aleo,
                 token_id: config.sale_token_id,
             });
             let vest_role_ok: bool =
@@ -579,7 +579,7 @@ program fairdrop_ascending_v1.aleo {
         public auction_id:     field,
         public quantity:       u128,
         public payment_amount: u64,
-    ) -> (credits.aleo::credits, Bid, fairdrop_proof_v1.aleo::ParticipationReceipt, Final) {
+    ) -> (credits.aleo::credits, Bid, fairdrop_proof_v2.aleo::ParticipationReceipt, Final) {
         // bid_setup: asserts, bidder_key, Bid record — shared with all variants.
         // bid_setup: asserts + bidder_key. Bid constructed here because
         // module-level fn cannot return records in Leo 4.0.
@@ -597,12 +597,12 @@ program fairdrop_ascending_v1.aleo {
             credits.aleo::transfer_private_to_public(payment, self.address, payment_amount);
 
         // CPIs shared with public variant (gate + proof).
-        let f_gate: Final = fairdrop_gate_v1.aleo::check_admission(auction_id);
-        let (receipt, f_proof): (fairdrop_proof_v1.aleo::ParticipationReceipt, Final) =
-            fairdrop_proof_v1.aleo::issue_receipt(auction_id, 0field, bidder_key);
+        let f_gate: Final = fairdrop_gate_v2.aleo::check_admission(auction_id);
+        let (receipt, f_proof): (fairdrop_proof_v2.aleo::ParticipationReceipt, Final) =
+            fairdrop_proof_v2.aleo::issue_receipt(auction_id, 0field, bidder_key);
 
         return (change, bid, receipt, final {
-            assert(!fairdrop_config_v1.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
             f_credits.run();
             f_gate.run();
             f_proof.run();
@@ -627,7 +627,7 @@ program fairdrop_ascending_v1.aleo {
         public auction_id:     field,
         public quantity:       u128,
         public payment_amount: u64,
-    ) -> (Bid, fairdrop_proof_v1.aleo::ParticipationReceipt, Final) {
+    ) -> (Bid, fairdrop_proof_v2.aleo::ParticipationReceipt, Final) {
         // bid_setup: asserts + bidder_key. Bid constructed here because
         // module-level fn cannot return records in Leo 4.0.
         let bidder_key: field =
@@ -643,12 +643,12 @@ program fairdrop_ascending_v1.aleo {
         let f_credits: Final =
             credits.aleo::transfer_public_as_signer(self.address, payment_amount);
 
-        let f_gate: Final = fairdrop_gate_v1.aleo::check_admission(auction_id);
-        let (receipt, f_proof): (fairdrop_proof_v1.aleo::ParticipationReceipt, Final) =
-            fairdrop_proof_v1.aleo::issue_receipt(auction_id, 0field, bidder_key);
+        let f_gate: Final = fairdrop_gate_v2.aleo::check_admission(auction_id);
+        let (receipt, f_proof): (fairdrop_proof_v2.aleo::ParticipationReceipt, Final) =
+            fairdrop_proof_v2.aleo::issue_receipt(auction_id, 0field, bidder_key);
 
         return (bid, receipt, final {
-            assert(!fairdrop_config_v1.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
             f_credits.run();
             f_gate.run();
             f_proof.run();
@@ -672,7 +672,7 @@ program fairdrop_ascending_v1.aleo {
         public quantity:       u128,
         public payment_amount: u64,
         public code_id:        field,
-    ) -> (credits.aleo::credits, Bid, fairdrop_proof_v1.aleo::ParticipationReceipt, Final) {
+    ) -> (credits.aleo::credits, Bid, fairdrop_proof_v2.aleo::ParticipationReceipt, Final) {
         // bid_setup: asserts + bidder_key. Bid constructed here because
         // module-level fn cannot return records in Leo 4.0.
         let bidder_key: field =
@@ -687,12 +687,12 @@ program fairdrop_ascending_v1.aleo {
         let (change, f_credits): (credits.aleo::credits, Final) =
             credits.aleo::transfer_private_to_public(payment, self.address, payment_amount);
 
-        let f_gate: Final = fairdrop_gate_v1.aleo::check_admission(auction_id);
-        let (receipt, f_proof): (fairdrop_proof_v1.aleo::ParticipationReceipt, Final) =
-            fairdrop_proof_v1.aleo::issue_receipt(auction_id, 0field, bidder_key);
+        let f_gate: Final = fairdrop_gate_v2.aleo::check_admission(auction_id);
+        let (receipt, f_proof): (fairdrop_proof_v2.aleo::ParticipationReceipt, Final) =
+            fairdrop_proof_v2.aleo::issue_receipt(auction_id, 0field, bidder_key);
 
         // Referral attribution: attribute this bid payment to code_id.
-        let f_ref: Final = fairdrop_ref_v1.aleo::record_referral(
+        let f_ref: Final = fairdrop_ref_v2.aleo::record_referral(
             code_id,
             auction_id,
             bidder_key,
@@ -700,7 +700,7 @@ program fairdrop_ascending_v1.aleo {
         );
 
         return (change, bid, receipt, final {
-            assert(!fairdrop_config_v1.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
             f_credits.run();
             f_gate.run();
             f_proof.run();
@@ -723,7 +723,7 @@ program fairdrop_ascending_v1.aleo {
         public quantity:       u128,
         public payment_amount: u64,
         public code_id:        field,
-    ) -> (Bid, fairdrop_proof_v1.aleo::ParticipationReceipt, Final) {
+    ) -> (Bid, fairdrop_proof_v2.aleo::ParticipationReceipt, Final) {
         // bid_setup: asserts + bidder_key. Bid constructed here because
         // module-level fn cannot return records in Leo 4.0.
         let bidder_key: field =
@@ -738,11 +738,11 @@ program fairdrop_ascending_v1.aleo {
         let f_credits: Final =
             credits.aleo::transfer_public_as_signer(self.address, payment_amount);
 
-        let f_gate: Final = fairdrop_gate_v1.aleo::check_admission(auction_id);
-        let (receipt, f_proof): (fairdrop_proof_v1.aleo::ParticipationReceipt, Final) =
-            fairdrop_proof_v1.aleo::issue_receipt(auction_id, 0field, bidder_key);
+        let f_gate: Final = fairdrop_gate_v2.aleo::check_admission(auction_id);
+        let (receipt, f_proof): (fairdrop_proof_v2.aleo::ParticipationReceipt, Final) =
+            fairdrop_proof_v2.aleo::issue_receipt(auction_id, 0field, bidder_key);
 
-        let f_ref: Final = fairdrop_ref_v1.aleo::record_referral(
+        let f_ref: Final = fairdrop_ref_v2.aleo::record_referral(
             code_id,
             auction_id,
             bidder_key,
@@ -750,7 +750,7 @@ program fairdrop_ascending_v1.aleo {
         );
 
         return (bid, receipt, final {
-            assert(!fairdrop_config_v1.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
             f_credits.run();
             f_gate.run();
             f_proof.run();
@@ -785,10 +785,10 @@ program fairdrop_ascending_v1.aleo {
             credits.aleo::transfer_public(closer, closer_reward as u64);
 
         let f_proof: Final =
-            fairdrop_proof_v1.aleo::update_reputation(creator, filled, volume);
+            fairdrop_proof_v2.aleo::update_reputation(creator, filled, volume);
 
         return final {
-            assert(!fairdrop_config_v1.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
             f_closer.run();
             f_proof.run();
 
@@ -849,9 +849,9 @@ program fairdrop_ascending_v1.aleo {
         public budget:     u128,
     ) -> Final {
         let f_credits: Final =
-            credits.aleo::transfer_public(fairdrop_ref_v1.aleo, budget as u64);
+            credits.aleo::transfer_public(fairdrop_ref_v2.aleo, budget as u64);
 
-        let f_ref: Final = fairdrop_ref_v1.aleo::fund_reserve(auction_id, budget);
+        let f_ref: Final = fairdrop_ref_v2.aleo::fund_reserve(auction_id, budget);
 
         return final {
             f_credits.run();
@@ -906,7 +906,7 @@ program fairdrop_ascending_v1.aleo {
         let auction_id: field = bid.auction_id;
 
         return (sale_token, final {
-            assert(!fairdrop_config_v1.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
             f_mint.run();
 
             let config: AuctionConfig = auction_configs.get(auction_id);
@@ -928,7 +928,7 @@ program fairdrop_ascending_v1.aleo {
     // 9. claim_vested — redeem Bid record (vest_enabled ascending auctions)
     // =========================================================================
     //
-    // Creates a VestedAllocation record in fairdrop_vest_v1.aleo instead of
+    // Creates a VestedAllocation record in fairdrop_vest_v2.aleo instead of
     // minting tokens immediately. Tokens are released on the vest schedule.
     //
     // D11 params: ended_at_block, cliff_blocks, vest_end_blocks validated
@@ -940,12 +940,12 @@ program fairdrop_ascending_v1.aleo {
         public ended_at_block:  u32,
         public cliff_blocks:    u32,
         public vest_end_blocks: u32,
-    ) -> (fairdrop_vest_v1.aleo::VestedAllocation, Final) {
+    ) -> (fairdrop_vest_v2.aleo::VestedAllocation, Final) {
         let sale_amount: u128 = bid.quantity;
         let auction_id: field = bid.auction_id;
 
-        let (vest, f_vest): (fairdrop_vest_v1.aleo::VestedAllocation, Final) =
-            fairdrop_vest_v1.aleo::create_vest(
+        let (vest, f_vest): (fairdrop_vest_v2.aleo::VestedAllocation, Final) =
+            fairdrop_vest_v2.aleo::create_vest(
                 auction_id,
                 bid.owner,
                 sale_token_id,
@@ -956,7 +956,7 @@ program fairdrop_ascending_v1.aleo {
             );
 
         return (vest, final {
-            assert(!fairdrop_config_v1.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
             f_vest.run();
 
             let config: AuctionConfig = auction_configs.get(auction_id);
@@ -995,7 +995,7 @@ program fairdrop_ascending_v1.aleo {
         let f0: Final = credits.aleo::transfer_public(caller, amount as u64);
 
         return final {
-            assert(!fairdrop_config_v1.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
             f0.run();
 
             let config: AuctionConfig = auction_configs.get(auction_id);
@@ -1042,7 +1042,7 @@ program fairdrop_ascending_v1.aleo {
             );
 
         return (token, final {
-            assert(!fairdrop_config_v1.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
             f_mint.run();
 
             let config: AuctionConfig = auction_configs.get(auction_id);
@@ -1089,7 +1089,7 @@ program fairdrop_ascending_v1.aleo {
             );
 
         return (token, final {
-            assert(!fairdrop_config_v1.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
             f_mint.run();
 
             let config: AuctionConfig = auction_configs.get(auction_id);

@@ -1,4 +1,4 @@
-// fairdrop_ref_v1.aleo — Referral code creation, tracking, and commission distribution.
+// fairdrop_ref_v2.aleo — Referral code creation, tracking, and commission distribution.
 // Leo 4.0 migration: fn/Final/final/:: — no behavioural changes.
 //
 // Lifecycle:
@@ -26,7 +26,7 @@
 //   Future → Final, .aleo/ → .aleo::
 // ─────────────────────────────────────────────────────────────────────────────
 
-import fairdrop_config_v1.aleo;
+import fairdrop_config_v2.aleo;
 import credits.aleo;
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -54,7 +54,7 @@ struct RefListKey { code_id: field, index: u64 }
 // Program interface
 // =============================================================================
 
-program fairdrop_ref_v1.aleo {
+program fairdrop_ref_v2.aleo {
     @admin(address="aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r")
     constructor() {}
 
@@ -110,7 +110,7 @@ program fairdrop_ref_v1.aleo {
     // =========================================================================
     // code_id = BHP256(CodeKey { referrer: self.signer, auction_id }).
     // Re-registration permanently rejected.
-    // commission_bps validated against fairdrop_config_v1.aleo::assert_ref_bps.
+    // commission_bps validated against fairdrop_config_v2.aleo::assert_ref_bps.
 
     fn create_code(
         public auction_id:     field,
@@ -127,7 +127,7 @@ program fairdrop_ref_v1.aleo {
             commission_bps: commission_bps,
         };
         // Validate commission_bps against protocol max_referral_bps.
-        let f_config: Final = fairdrop_config_v1.aleo::assert_ref_bps(commission_bps);
+        let f_config: Final = fairdrop_config_v2.aleo::assert_ref_bps(commission_bps);
         return (code, final {
             f_config.run();
             assert(!code_registered.get_or_use(code_id, false));

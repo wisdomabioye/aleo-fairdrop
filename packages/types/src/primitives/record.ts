@@ -9,7 +9,7 @@ export interface RecordCiphertext {
   commitment: string;
   /** AES-GCM ciphertext of the record plaintext. */
   ciphertext: string;
-  /** Program that defines this record type (e.g. "fairdrop_dutch_v1.aleo"). */
+  /** Program that defines this record type (e.g. "fairdrop_dutch_v2.aleo"). */
   programId: string;
   /** Record struct name within the program (e.g. "Bid"). */
   recordName: string;

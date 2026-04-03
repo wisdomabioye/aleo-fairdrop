@@ -47,22 +47,22 @@ The existing frontend lives at `/home/abioye/aleo-guide/fairdrop/` (single-contr
 
 | Feature | Status | Source |
 |---|---|---|
-| Referral code creation, link generation, commission tracking | Missing | `fairdrop_ref_v1.aleo/create_code`, `claim_commission` |
-| Slash unrevealed commitments (sealed auctions) | Missing | `fairdrop_sealed_v1.aleo/slash_unrevealed` |
+| Referral code creation, link generation, commission tracking | Missing | `fairdrop_ref_v2.aleo/create_code`, `claim_commission` |
+| Slash unrevealed commitments (sealed auctions) | Missing | `fairdrop_sealed_v2.aleo/slash_unrevealed` |
 | Close abandoned auction for reward (closer reward) | Missing | any `close_auction` (closer ≠ creator) |
-| Vesting schedule display & token release | Missing | `fairdrop_vest_v1.aleo/release` |
-| Gate verification — Merkle proof submission | Missing | `fairdrop_gate_v1.aleo/verify_merkle` |
-| Gate verification — Credential presentation | Missing | `fairdrop_gate_v1.aleo/verify_credential` |
-| Participation receipt display (auto-issued; no user action) | Missing | `fairdrop_proof_v1.aleo/ParticipationReceipt` records in wallet |
-| Creator reputation display | Missing | `fairdrop_proof_v1.aleo/reputation` mapping |
+| Vesting schedule display & token release | Missing | `fairdrop_vest_v2.aleo/release` |
+| Gate verification — Merkle proof submission | Missing | `fairdrop_gate_v2.aleo/verify_merkle` |
+| Gate verification — Credential presentation | Missing | `fairdrop_gate_v2.aleo/verify_credential` |
+| Participation receipt display (auto-issued; no user action) | Missing | `fairdrop_proof_v2.aleo/ParticipationReceipt` records in wallet |
+| Creator reputation display | Missing | `fairdrop_proof_v2.aleo/reputation` mapping |
 | BidForm for: Raise, Sealed (commit/reveal), Ascending, LBP, Quadratic | Missing | respective auction programs |
 | PriceChart for Ascending (rising price) | Missing | |
 | Create auction form variants (all 6 types) | Stub only | |
-| `claim_commit_voided` for sealed bid cancel flow | Missing | `fairdrop_sealed_v1.aleo/claim_commit_voided` |
+| `claim_commit_voided` for sealed bid cancel flow | Missing | `fairdrop_sealed_v2.aleo/claim_commit_voided` |
 | Search connecting to services/api | Missing | `GET /auctions?q=` |
 | Pagination for auction listing (API-driven) | Direct-chain N+50 RPC calls | `GET /auctions` |
-| `credit_commission` permissionless step (call before `claim_commission`) | Missing | `fairdrop_ref_v1.aleo/credit_commission` |
-| Admin panel for `set_allowed_caller` + `fairdrop_config_v1.aleo` management | Missing | all utility contracts |
+| `credit_commission` permissionless step (call before `claim_commission`) | Missing | `fairdrop_ref_v2.aleo/credit_commission` |
+| Admin panel for `set_allowed_caller` + `fairdrop_config_v2.aleo` management | Missing | all utility contracts |
 
 ### 2.4 Scalability Issues
 
@@ -83,8 +83,8 @@ The existing frontend lives at `/home/abioye/aleo-guide/fairdrop/` (single-contr
 | Detail page assumes Dutch price logic for all auction types | `useCurrentPrice.ts`, `PriceChart.tsx` | Sealed uses Dutch price at `commit_end_block`; ascending rises; raise is fixed |
 | `BidForm` only handles Dutch (quantity × price) | `BidForm.tsx` | Raise = payment only; Sealed = commit hash; Ascending = qty×price; LBP/Quadratic differ |
 | `claim_commit_voided` missing from Claim flow | `ClaimPage.tsx` | Sealed bidders holding Commitment (not yet revealed) call this, not `claim_voided` |
-| `claim_commission` called wrong (was "withdraw_commission") | WEB_DESIGN v1 | Confirmed: `fairdrop_ref_v1.aleo/claim_commission(code, claimed_amount)` |
-| Vesting release called wrong (was "claim_vested") | WEB_DESIGN v1 | Confirmed: `fairdrop_vest_v1.aleo/release(vest, amount)` |
+| `claim_commission` called wrong (was "withdraw_commission") | WEB_DESIGN v1 | Confirmed: `fairdrop_ref_v2.aleo/claim_commission(code, claimed_amount)` |
+| Vesting release called wrong (was "claim_vested") | WEB_DESIGN v1 | Confirmed: `fairdrop_vest_v2.aleo/release(vest, amount)` |
 | `ParticipationReceipt` described as user-mintable | WEB_DESIGN v1 | Auto-issued by CPI at `commit_bid`/`place_bid` — no user action |
 | No `auction_id` URL param format validation | `AuctionDetailPage` | A bad field causes unhandled RPC error |
 | `AleoWorker` singleton never terminated | `AleoWorker.ts` | Memory/thread leak |
@@ -139,7 +139,7 @@ Rule: **no program ID string literals anywhere in app code**. All program refere
 ```ts
 // packages/config/src/types.ts
 interface ProgramEntry {
-  programId:      string;   // e.g. "fairdrop_dutch_v1.aleo"
+  programId:      string;   // e.g. "fairdrop_dutch_v2.aleo"
   programAddress: string;   // e.g. "aleo1..."  — deterministic, filled in programs.json
   salt?:          string;
 }
@@ -304,7 +304,7 @@ features/auctions/
 │   ├── useAuction.ts
 │   ├── useAuctionFilters.ts
 │   ├── useCurrentPrice.ts
-│   └── useProtocolConfig.ts       # reads fairdrop_config_v1.aleo mappings
+│   └── useProtocolConfig.ts       # reads fairdrop_config_v2.aleo mappings
 └── pages/
     ├── AuctionListPage.tsx
     ├── AuctionDetailPage.tsx
@@ -425,7 +425,7 @@ function useAuction(id: string) {
   })
 }
 
-// Protocol config — fairdrop_config_v1.aleo mappings; cached 60s
+// Protocol config — fairdrop_config_v2.aleo mappings; cached 60s
 function useProtocolConfig() {
   return useQuery({
     queryKey: ['protocolConfig'],
@@ -575,7 +575,7 @@ Used in:
 |---|---|
 | Gate → Bid | 1. `verify_merkle` or `verify_credential`; 2. `place_bid` (enabled after step 1 ACCEPTED) |
 | Credit + Claim commission | 1–N. `credit_commission(code_id, bidder_key)` per uncredited bidder (sequential); N+1. `claim_commission(code, amount)` |
-| Wizard authorization | 1. `set_role(auctionProgram, 3)`; 2. (optional) `set_role(fairdrop_vest_v1.aleo, 3)`; 3. `create_auction` |
+| Wizard authorization | 1. `set_role(auctionProgram, 3)`; 2. (optional) `set_role(fairdrop_vest_v2.aleo, 3)`; 3. `create_auction` |
 
 Each step button shows: "Step N of M: [action label]". Prior steps shown as completed (checkmark). Step N+1 button disabled until step N ACCEPTED (polled via TanStack Query).
 
@@ -718,7 +718,7 @@ TanStack Query is an **in-memory cache** — it resets on every page reload. For
 |---|---|---|
 | **Immutable** — no on-chain setter exists | `auction_configs`, `auction_index` entries, token metadata, gate config per auction | localStorage, **no expiry ever** |
 | **Write-once then immutable** | `fairdrop_ref/registrations[code_id]`, `fairdrop_proof/participated[key]` | localStorage, no expiry |
-| **Admin-only, changes rarely** | All `fairdrop_config_v1.aleo` params (`fee_bps`, `creation_fee`, etc.) | API-served with 5-min server TTL; TanStack Query `staleTime: 5min` client-side. Always re-fetch before `create_auction`. |
+| **Admin-only, changes rarely** | All `fairdrop_config_v2.aleo` params (`fee_bps`, `creation_fee`, etc.) | API-served with 5-min server TTL; TanStack Query `staleTime: 5min` client-side. Always re-fetch before `create_auction`. |
 | **Changes per auction activity** | `auction_states`, `earned[code_id]`, `referral_reserve`, `reputation` | TanStack Query only — no persistence |
 | **Real-time** | Block height | TanStack Query only — 5s staleTime |
 
@@ -948,7 +948,7 @@ On mobile: all panels stack vertically. Right column is sticky on desktop so the
 - Vest icon (hourglass if enabled)
 - `auction_id` truncated with copy button
 - Creator address (truncated, links to creator profile)
-- Creator reputation from `fairdrop_proof_v1.aleo/reputation[creator]`:
+- Creator reputation from `fairdrop_proof_v2.aleo/reputation[creator]`:
   `N auctions · N filled · Volume N ALEO`
 
 ### 8.3 Price Panel (type-dispatched via registry)
@@ -1001,7 +1001,7 @@ For all types except Sealed: single "Ends in N blocks" while active; "Ended N bl
 - Reveal phase: `quantity` and `nonce` **pre-filled from the decrypted `Commitment` record** (AutoDecrypt) → `reveal_bid`
 - Past reveal window: "Reveal window closed"
 
-**Sealed bid nonce — no persistence needed (Option A)**: The `Commitment` record stores `quantity: u128` and `nonce: field` as private fields (encrypted to the bidder's view key on-chain). AutoDecrypt makes them available to the frontend from the wallet at reveal time. The frontend reads the decrypted record and pre-fills both fields — no localStorage, no cross-device fragility. See contract change in `fairdrop_sealed_v1.aleo` `Commitment` record.
+**Sealed bid nonce — no persistence needed (Option A)**: The `Commitment` record stores `quantity: u128` and `nonce: field` as private fields (encrypted to the bidder's view key on-chain). AutoDecrypt makes them available to the frontend from the wallet at reveal time. The frontend reads the decrypted record and pre-fills both fields — no localStorage, no cross-device fragility. See contract change in `fairdrop_sealed_v2.aleo` `Commitment` record.
 
 **Commitment record filtering**: a user may hold Commitment records for multiple sealed auctions. The hook `useCommitmentRecord(auctionId)` filters `requestRecords(PROGRAMS.sealed.programId)` by `record.auction_id === auctionId` to find the one relevant to the current detail page. Never assume a single record per program.
 
@@ -1269,10 +1269,10 @@ Step 5 — Gate & Vesting
     If enabled: vestCliffBlocks, vestEndBlocks (blocks; show estimated duration)
 
     ── Vest Authorization Check ──
-      Check: token_registry.aleo/roles[BHP256(TokenOwner{fairdrop_vest_v1.aleo, tokenId})]
+      Check: token_registry.aleo/roles[BHP256(TokenOwner{fairdrop_vest_v2.aleo, tokenId})]
       If SUPPLY_MANAGER_ROLE missing:
-        Show: "Authorize fairdrop_vest_v1.aleo to release vested tokens"
-        "Authorize" button → set_role(fairdrop_vest_v1.aleo, 3) → wait → proceed
+        Show: "Authorize fairdrop_vest_v2.aleo to release vested tokens"
+        "Authorize" button → set_role(fairdrop_vest_v2.aleo, 3) → wait → proceed
     ──────────────────────────────
 
 Step 6 — Referral Budget
@@ -1288,7 +1288,7 @@ Step 7 — Metadata
 Step 8 — Review & Submit
   Summary table of all params
   ── Fee Breakdown ──
-    Creation fee: N ALEO (N µcredits) — from fairdrop_config_v1.aleo/creation_fee
+    Creation fee: N ALEO (N µcredits) — from fairdrop_config_v2.aleo/creation_fee
     Paid from: credit record selector (useCredicRecords)
     "This anti-spam fee is non-refundable"
   ── Protocol fee at close (estimated) ──
@@ -1321,9 +1321,9 @@ Step 8 — Review & Submit
 
 ### 10.4 Token Authorization (Inline, Not a Separate Page)
 
-With 6 auction contracts + `fairdrop_vest_v1.aleo`, token authorization cannot be a one-time step. It must be inline in the wizard:
+With 6 auction contracts + `fairdrop_vest_v2.aleo`, token authorization cannot be a one-time step. It must be inline in the wizard:
 - Step 2: check and authorize the selected auction contract using `PROGRAMS[type].programAddress`
-- Step 5: if vest enabled, check and authorize `fairdrop_vest_v1.aleo` using `PROGRAMS.vest.programAddress`
+- Step 5: if vest enabled, check and authorize `fairdrop_vest_v2.aleo` using `PROGRAMS.vest.programAddress`
 - Each authorization is a blocking step — wizard cannot advance until the tx confirms
 - `token_registry.aleo/set_role` takes an `address` (aleo1...) — always use `programAddress`, never the `.aleo` program name
 
@@ -1374,7 +1374,7 @@ For `VestedAllocation` records:
 - Cliff: block N (estimated date)
 - Fully vested: block N (estimated date)
 - Release input: amount (max = vested_so_far - released)
-- "Release" → `fairdrop_vest_v1.aleo/release(vest, amount)`
+- "Release" → `fairdrop_vest_v2.aleo/release(vest, amount)`
 
 Client-side vesting math (mirrors contract):
 ```ts
@@ -1392,7 +1392,7 @@ function computeVested(vest: VestedAllocation, currentBlock: number): bigint {
 
 Keeps its 3-step structure (Register → Mint). The old Step 3 "Authorize" is removed:
 - Authorization for specific auction contracts → handled inline in Create Auction Wizard (Step 2)
-- Authorization for `fairdrop_vest_v1.aleo` → handled inline in Create Auction Wizard (Step 5)
+- Authorization for `fairdrop_vest_v2.aleo` → handled inline in Create Auction Wizard (Step 5)
 
 The Token Launch page adds a single informational callout at the end: "Before creating an auction with this token, you'll need to authorize the auction contract — this is done automatically in the Create Auction wizard."
 
@@ -1406,7 +1406,7 @@ Route: `/referral`.
 
 - Auction search by name or ID
 - Commission BPS input: validated client-side ≤ `maxReferralBps` from `useProtocolConfig`
-- "Create Code" → `fairdrop_ref_v1.aleo/create_code(auction_id, commission_bps)` → returns `ReferralCode` record
+- "Create Code" → `fairdrop_ref_v2.aleo/create_code(auction_id, commission_bps)` → returns `ReferralCode` record
 - Share link: `https://app.fairdrop.xyz/auctions/:id?ref=<myAddress>`
 
 ### 13.2 Code List
@@ -1428,14 +1428,14 @@ Per-auction gate verification. Reached from auction detail bid panel when gate �
 
 ### 14.1 Merkle Gate
 
-Bidder calls `fairdrop_gate_v1.aleo/verify_merkle(auction_id, proof: [field; 20], path_bits: u32)`.
+Bidder calls `fairdrop_gate_v2.aleo/verify_merkle(auction_id, proof: [field; 20], path_bits: u32)`.
 
 - Explain: "This auction restricts bidding to an allowlist"
 - Show: "Check if your address is included" (off-chain lookup if creator provides tool)
 - Input: 20-element proof array + `path_bits` u32 (computed off-chain per gate spec in contract comments)
 - "Verify & Enable Bidding" → tx → on success `verified[key] = true` → bid panel unlocks
 
-Merkle spec (from `fairdrop_gate_v1.aleo`):
+Merkle spec (from `fairdrop_gate_v2.aleo`):
 - Depth 20 → max 1,048,576 addresses
 - Leaf: `BHP256(LeafHash { addr })`, empty sentinel: `BHP256(LeafHash { ZERO_ADDRESS })`
 - Node: `BHP256(MerkleNode { left, right })`
@@ -1443,7 +1443,7 @@ Merkle spec (from `fairdrop_gate_v1.aleo`):
 
 ### 14.2 Credential Gate
 
-Bidder calls `fairdrop_gate_v1.aleo/verify_credential(auction_id, issuer, sig, expiry)`.
+Bidder calls `fairdrop_gate_v2.aleo/verify_credential(auction_id, issuer, sig, expiry)`.
 
 - Explain: "This auction requires a credential from the issuer"
 - Show issuer address (from `credential_issuers[auction_id]` mapping)
@@ -1465,9 +1465,9 @@ Expiry block shown below the input at all times using `estimateDate(expiry, curr
 
 ## 15. Admin Panel
 
-Route: `/admin`. Only accessible when connected wallet === `protocol_admin` from `fairdrop_config_v1.aleo/protocol_admin` mapping.
+Route: `/admin`. Only accessible when connected wallet === `protocol_admin` from `fairdrop_config_v2.aleo/protocol_admin` mapping.
 
-### 15.1 fairdrop_config_v1.aleo
+### 15.1 fairdrop_config_v2.aleo
 
 Display current value + edit input for each param:
 
@@ -1510,7 +1510,7 @@ This is a critical Phase 1 deployment step — no auction can succeed until all 
 
 Only functions listed here should be called from the frontend. Confirmed by reading Leo source.
 
-### fairdrop_config_v1.aleo (admin only)
+### fairdrop_config_v2.aleo (admin only)
 - `set_fee_bps(new_value: u16)`
 - `set_protocol_admin(new_admin: address)` ← irreversible immediate transfer
 - `set_creation_fee(new_value: u128)`
@@ -1524,31 +1524,31 @@ Only functions listed here should be called from the frontend. Confirmed by read
 - `assert_ref_bps(commission_bps: u16)` — CPI only
 - `check_not_paused()` — CPI only
 
-### fairdrop_ref_v1.aleo
+### fairdrop_ref_v2.aleo
 - `set_allowed_caller(program_addr: address, allowed: bool)` — admin
 - `create_code(auction_id: field, commission_bps: u16)` → `ReferralCode` — user
 - `credit_commission(code_id: field, bidder_key: field)` — **permissionless** (anyone)
 - `claim_commission(code: ReferralCode, claimed_amount: u128)` → private credits — record owner
 - `fund_reserve`, `record_referral` — CPI only
 
-### fairdrop_vest_v1.aleo
+### fairdrop_vest_v2.aleo
 - `set_allowed_caller(program_addr: address, allowed: bool)` — admin
 - `release(vest: VestedAllocation, amount: u128)` → `(Token, VestedAllocation)` — record owner
 - `create_vest(...)` — CPI only
 
-### fairdrop_proof_v1.aleo
+### fairdrop_proof_v2.aleo
 - `set_allowed_caller(program_addr: address, allowed: bool)` — admin
 - `issue_receipt(...)` — CPI only; **no user-callable minting**
 - `update_reputation(...)` — CPI only
 - `ParticipationReceipt` records are auto-issued at bid/commit time; user receives them via wallet
 
-### fairdrop_gate_v1.aleo
+### fairdrop_gate_v2.aleo
 - `set_allowed_caller(program_addr: address, allowed: bool)` — admin
 - `verify_merkle(auction_id: field, proof: [field; 20], path_bits: u32)` — bidder
 - `verify_credential(auction_id: field, issuer: address, sig: signature, expiry: u32)` — bidder
 - `register_gate(...)`, `check_admission(...)` — CPI only
 
-### fairdrop_sealed_v1.aleo (key user-facing transitions)
+### fairdrop_sealed_v2.aleo (key user-facing transitions)
 - `create_auction(...)` — creator
 - `commit_bid_private(...)` / `commit_bid_public(...)` — bidder, commit phase only
 - `commit_bid_private_ref(...)` / `commit_bid_public_ref(...)` — bidder with referral
@@ -1645,7 +1645,7 @@ Only functions listed here should be called from the frontend. Confirmed by read
 
 ### Phase 5 — User Features
 21. Claim page: all record types + `claim_commit_voided` (G7, G12)
-22. Vesting release: `fairdrop_vest_v1.aleo/release` (G7)
+22. Vesting release: `fairdrop_vest_v2.aleo/release` (G7)
 23. Gate page: `verify_merkle`, `verify_credential` (G8)
 24. Participation receipt display (G23)
 25. Creator reputation display (G25)

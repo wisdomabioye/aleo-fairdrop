@@ -1,4 +1,4 @@
-// Tests for fairdrop_proof_v1.aleo
+// Tests for fairdrop_proof_v2.aleo
 // ── Leo 4.0 migration notes ───────────────────────────────────────────────────
 //   @test script → @test fn ... -> Final
 //   f.await()    → return final { f.run(); };
@@ -7,7 +7,7 @@
 //   async constructor → constructor
 //   test_never_passes removed: @test fn are entry points; dummy stub no longer needed.
 // ─────────────────────────────────────────────────────────────────────────────
-import fairdrop_proof_v1.aleo;
+import fairdrop_proof_v2.aleo;
 
 // ── Unit-test coverage scope ─────────────────────────────────────────────────
 //   ✓ issue_receipt     — D12 caller guard rejects the test program.
@@ -42,8 +42,8 @@ program test_proof.aleo {
     @test
     @should_fail
     fn test_receipt_unauth_no_commit() -> Final {
-        let (receipt, f): (fairdrop_proof_v1.aleo::ParticipationReceipt, Final) =
-            fairdrop_proof_v1.aleo::issue_receipt(
+        let (receipt, f): (fairdrop_proof_v2.aleo::ParticipationReceipt, Final) =
+            fairdrop_proof_v2.aleo::issue_receipt(
                 1field,   // auction_id
                 0field,   // commitment_hash (non-sealed auction style)
                 0field,   // bidder_key — dummy; D12 guard fires before it is used
@@ -55,8 +55,8 @@ program test_proof.aleo {
     @test
     @should_fail
     fn test_receipt_unauth_with_commit() -> Final {
-        let (receipt, f): (fairdrop_proof_v1.aleo::ParticipationReceipt, Final) =
-            fairdrop_proof_v1.aleo::issue_receipt(
+        let (receipt, f): (fairdrop_proof_v2.aleo::ParticipationReceipt, Final) =
+            fairdrop_proof_v2.aleo::issue_receipt(
                 2field,
                 12345field,  // dummy commitment_hash
                 99field,     // bidder_key — dummy; D12 guard fires before it is used
@@ -68,8 +68,8 @@ program test_proof.aleo {
     @test
     @should_fail
     fn test_receipt_unauth_zero_id() -> Final {
-        let (receipt, f): (fairdrop_proof_v1.aleo::ParticipationReceipt, Final) =
-            fairdrop_proof_v1.aleo::issue_receipt(0field, 0field, 0field);
+        let (receipt, f): (fairdrop_proof_v2.aleo::ParticipationReceipt, Final) =
+            fairdrop_proof_v2.aleo::issue_receipt(0field, 0field, 0field);
         return final { f.run(); };
     }
 
@@ -84,7 +84,7 @@ program test_proof.aleo {
     @test
     @should_fail
     fn test_reputation_unauth_unfilled() -> Final {
-        let f: Final = fairdrop_proof_v1.aleo::update_reputation(
+        let f: Final = fairdrop_proof_v2.aleo::update_reputation(
             aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r,  // creator
             false,     // not filled
             0u128,     // volume
@@ -96,7 +96,7 @@ program test_proof.aleo {
     @test
     @should_fail
     fn test_reputation_unauth_filled() -> Final {
-        let f: Final = fairdrop_proof_v1.aleo::update_reputation(
+        let f: Final = fairdrop_proof_v2.aleo::update_reputation(
             aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r,
             true,
             1_000_000u128,  // 1 credit in microcredits
@@ -108,7 +108,7 @@ program test_proof.aleo {
     @test
     @should_fail
     fn test_reputation_unauth_max_vol() -> Final {
-        let f: Final = fairdrop_proof_v1.aleo::update_reputation(
+        let f: Final = fairdrop_proof_v2.aleo::update_reputation(
             aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r,
             true,
             340282366920938463463374607431768211455u128,  // u128::MAX

@@ -1,4 +1,4 @@
-// Tests for fairdrop_config_v1.aleo
+// Tests for fairdrop_config_v2.aleo
 // ── Leo 4.0 migration notes ───────────────────────────────────────────────────
 //   @test script → @test fn ... -> Final
 //   f.await()    → return final { f.run(); };
@@ -7,7 +7,7 @@
 //   async constructor → constructor
 //   test_never_passes removed: @test fn are entry points; dummy stub no longer needed.
 // ─────────────────────────────────────────────────────────────────────────────
-import fairdrop_config_v1.aleo;
+import fairdrop_config_v2.aleo;
 
 program test_config.aleo {
     @noupgrade
@@ -20,7 +20,7 @@ program test_config.aleo {
     // Happy path: all defaults, valid block range above minimum.
     @test
     fn test_assert_config_defaults() -> Final {
-        let f: Final = fairdrop_config_v1.aleo::assert_config(
+        let f: Final = fairdrop_config_v2.aleo::assert_config(
             250u16,       // DEFAULT_FEE_BPS
             10_000u128,   // DEFAULT_CREATION_FEE
             10_000u128,   // DEFAULT_CLOSER_REWARD
@@ -35,7 +35,7 @@ program test_config.aleo {
     // Duration exactly at minimum — should pass.
     @test
     fn test_cfg_min_duration_exact() -> Final {
-        let f: Final = fairdrop_config_v1.aleo::assert_config(
+        let f: Final = fairdrop_config_v2.aleo::assert_config(
             250u16,
             10_000u128,
             10_000u128,
@@ -51,7 +51,7 @@ program test_config.aleo {
     @test
     @should_fail
     fn test_cfg_duration_too_short() -> Final {
-        let f: Final = fairdrop_config_v1.aleo::assert_config(
+        let f: Final = fairdrop_config_v2.aleo::assert_config(
             250u16,
             10_000u128,
             10_000u128,
@@ -68,7 +68,7 @@ program test_config.aleo {
     @test
     @should_fail
     fn test_cfg_reversed_blocks() -> Final {
-        let f: Final = fairdrop_config_v1.aleo::assert_config(
+        let f: Final = fairdrop_config_v2.aleo::assert_config(
             250u16,
             10_000u128,
             10_000u128,
@@ -84,7 +84,7 @@ program test_config.aleo {
     @test
     @should_fail
     fn test_assert_config_equal_blocks() -> Final {
-        let f: Final = fairdrop_config_v1.aleo::assert_config(
+        let f: Final = fairdrop_config_v2.aleo::assert_config(
             250u16,
             10_000u128,
             10_000u128,
@@ -100,7 +100,7 @@ program test_config.aleo {
     @test
     @should_fail
     fn test_cfg_wrong_fee_bps() -> Final {
-        let f: Final = fairdrop_config_v1.aleo::assert_config(
+        let f: Final = fairdrop_config_v2.aleo::assert_config(
             300u16,       // wrong — stored is 250
             10_000u128,
             10_000u128,
@@ -116,7 +116,7 @@ program test_config.aleo {
     @test
     @should_fail
     fn test_cfg_wrong_creation_fee() -> Final {
-        let f: Final = fairdrop_config_v1.aleo::assert_config(
+        let f: Final = fairdrop_config_v2.aleo::assert_config(
             250u16,
             5_000u128,    // wrong — stored is 10_000
             10_000u128,
@@ -135,14 +135,14 @@ program test_config.aleo {
     // At the default cap (2000 bps) — should pass.
     @test
     fn test_assert_ref_bps_at_cap() -> Final {
-        let f: Final = fairdrop_config_v1.aleo::assert_ref_bps(2000u16);
+        let f: Final = fairdrop_config_v2.aleo::assert_ref_bps(2000u16);
         return final { f.run(); };
     }
 
     // Below the cap — should pass.
     @test
     fn test_assert_ref_bps_below_cap() -> Final {
-        let f: Final = fairdrop_config_v1.aleo::assert_ref_bps(500u16);
+        let f: Final = fairdrop_config_v2.aleo::assert_ref_bps(500u16);
         return final { f.run(); };
     }
 
@@ -150,7 +150,7 @@ program test_config.aleo {
     @test
     @should_fail
     fn test_assert_ref_bps_exceeds_cap() -> Final {
-        let f: Final = fairdrop_config_v1.aleo::assert_ref_bps(2001u16);
+        let f: Final = fairdrop_config_v2.aleo::assert_ref_bps(2001u16);
         return final { f.run(); };
     }
 
@@ -160,7 +160,7 @@ program test_config.aleo {
 
     @test
     fn test_check_not_paused_default() -> Final {
-        let f: Final = fairdrop_config_v1.aleo::check_not_paused();
+        let f: Final = fairdrop_config_v2.aleo::check_not_paused();
         return final { f.run(); };
     }
 }

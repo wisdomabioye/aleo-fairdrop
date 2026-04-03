@@ -1,5 +1,5 @@
 {
-  "program": "fairdrop_ascending_v1.aleo",
+  "program": "fairdrop_ascending_v2.aleo",
   "version": "0.1.0",
   "description": "",
   "license": "MIT",
@@ -14,22 +14,22 @@
       "location": "network"
     },
     {
-      "name": "fairdrop_config_v1.aleo",
+      "name": "fairdrop_config_v2.aleo",
       "location": "network"
     },
     {
-      "name": "fairdrop_gate_v1.aleo",
+      "name": "fairdrop_gate_v2.aleo",
       "location": "network"
     },
     {
-      "name": "fairdrop_proof_v1.aleo",
+      "name": "fairdrop_proof_v2.aleo",
       "location": "network"
     },
     {
-      "name": "fairdrop_ref_v1.aleo",
+      "name": "fairdrop_ref_v2.aleo",
       "location": "network"    },
     {
-      "name": "fairdrop_vest_v1.aleo",
+      "name": "fairdrop_vest_v2.aleo",
       "location": "network"
     }
   ],

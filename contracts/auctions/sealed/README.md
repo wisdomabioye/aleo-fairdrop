@@ -1,4 +1,4 @@
-# fairdrop_sealed_v1.aleo
+# fairdrop_sealed_v2.aleo
 
 Privacy-preserving sealed-bid commit-reveal auction with uniform Dutch clearing price.
 

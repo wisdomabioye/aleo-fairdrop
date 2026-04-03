@@ -1,4 +1,4 @@
-# fairdrop_raise_v1.aleo
+# fairdrop_raise_v2.aleo
 
 Privacy-preserving fixed-price community raise with pro-rata token allocation.
 

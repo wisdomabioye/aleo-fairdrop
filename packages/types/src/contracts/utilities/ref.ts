@@ -1,5 +1,5 @@
 /**
- * fairdrop_ref_v1.aleo — TypeScript types.
+ * fairdrop_ref_v2.aleo — TypeScript types.
  *
  * Referral attribution and commission settlement.
  * Referrers create codes; bidders attribute bids to codes;

@@ -9,7 +9,7 @@ Issues gate credentials to users who pass an identity check. Separated into its 
 3. Signer generates a `GateCredential` Leo record signed with the issuer key.
 4. Record ciphertext is returned to the user; they spend it on-chain inside `place_bid_*`.
 
-The issuer public key must match the address registered in `fairdrop_gate_v1.aleo` for the target auction's gate config.
+The issuer public key must match the address registered in `fairdrop_gate_v2.aleo` for the target auction's gate config.
 
 ## Security
 

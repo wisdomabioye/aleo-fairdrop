@@ -1,5 +1,5 @@
 /**
- * fairdrop_proof_v1.aleo — TypeScript types.
+ * fairdrop_proof_v2.aleo — TypeScript types.
  *
  * Issues participation receipts (sybil-resistance) and tracks creator reputation.
  * Bidder identity is pseudonymous: only BHP256(bidder, auction_id) stored on-chain.

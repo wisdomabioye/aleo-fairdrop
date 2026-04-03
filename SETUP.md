@@ -59,7 +59,7 @@ After each deployment, fill in the `programAddress` (the `aleo1...` address deri
 
 ```json
 "dutch": {
-  "programId":      "fairdrop_dutch_v1.aleo",
+  "programId":      "fairdrop_dutch_v2.aleo",
   "programAddress": "aleo1...",    // ← fill this in after deploying
   "salt": "1field"
 }
@@ -142,11 +142,11 @@ Navigate to `/admin` — you can get there via the user menu in the top-right co
 
 From the admin panel, approve each auction contract as a caller in each utility contract. Every auction program must be registered in:
 
-- `fairdrop_config_v1.aleo`
-- `fairdrop_gate_v1.aleo`
-- `fairdrop_proof_v1.aleo`
-- `fairdrop_ref_v1.aleo`
-- `fairdrop_vest_v1.aleo`
+- `fairdrop_config_v2.aleo`
+- `fairdrop_gate_v2.aleo`
+- `fairdrop_proof_v2.aleo`
+- `fairdrop_ref_v2.aleo`
+- `fairdrop_vest_v2.aleo`
 
 This is a one-time on-chain operation per auction contract. Until it's done, auction creation will fail.
 

@@ -1,4 +1,4 @@
-// fairdrop_config_v1.aleo — Protocol configuration root contract.
+// fairdrop_config_v2.aleo — Protocol configuration root contract.
 // Leo 4.0 migration: fn/Final/final/:: — no behavioural changes.
 //
 // Root dependency of the entire Fairdrop protocol. Deployed first.
@@ -10,7 +10,7 @@
 //     without redeploying any auction contract.
 //   - Provide assert_config() for auction contracts to validate their snapshotted
 //     params at create_auction time (D16 in DESIGN.md).
-//   - Provide assert_ref_bps() for fairdrop_ref_v1.aleo to enforce the referral cap
+//   - Provide assert_ref_bps() for fairdrop_ref_v2.aleo to enforce the referral cap
 //     at create_code time.
 //   - Provide check_not_paused() as a CPI guard for all auction finalize functions.
 //
@@ -34,7 +34,7 @@
 //   Future → Final, .aleo/ → .aleo::
 // ─────────────────────────────────────────────────────────────────────────────
 
-program fairdrop_config_v1.aleo {
+program fairdrop_config_v2.aleo {
     @admin(address="aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r")
     constructor() {}
 
@@ -173,7 +173,7 @@ program fairdrop_config_v1.aleo {
     // reverts. Also validates auction duration.
     //
     // Usage in auction entry point:
-    //   let f_cfg: Final = fairdrop_config_v1.aleo::assert_config(
+    //   let f_cfg: Final = fairdrop_config_v2.aleo::assert_config(
     //       fee_bps, creation_fee, closer_reward, slash_reward_bps,
     //       referral_pool_bps, start_block, end_block,
     //   );
@@ -201,12 +201,12 @@ program fairdrop_config_v1.aleo {
     }
 
     // =========================================================================
-    // 3. assert_ref_bps — CPI called by fairdrop_ref_v1.aleo at create_code
+    // 3. assert_ref_bps — CPI called by fairdrop_ref_v2.aleo at create_code
     // =========================================================================
     // Validates that commission_bps does not exceed the protocol ceiling.
     //
-    // Usage in fairdrop_ref_v1.aleo entry point:
-    //   let f_ref: Final = fairdrop_config_v1.aleo::assert_ref_bps(commission_bps);
+    // Usage in fairdrop_ref_v2.aleo entry point:
+    //   let f_ref: Final = fairdrop_config_v2.aleo::assert_ref_bps(commission_bps);
     //   // then in final {}: f_ref.run();
 
     fn assert_ref_bps(public commission_bps: u16) -> Final {

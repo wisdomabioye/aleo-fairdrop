@@ -1,10 +1,10 @@
 /**
- * fairdrop_lbp_v1.aleo — TypeScript types.
+ * fairdrop_lbp_v2.aleo — TypeScript types.
  *
  * Liquidity Bootstrapping Pool: token weight shifts over time from high to low,
  * naturally driving price discovery downward and discouraging front-running bots.
  *
- * @todo Define fully when fairdrop_lbp_v1.aleo is implemented.
+ * @todo Define fully when fairdrop_lbp_v2.aleo is implemented.
  */
 
 import type { U128, U16 } from '../../primitives/scalars';

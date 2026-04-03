@@ -1,5 +1,5 @@
 /**
- * Protocol configuration — values stored in fairdrop_config_v1.aleo mappings.
+ * Protocol configuration — values stored in fairdrop_config_v2.aleo mappings.
  *
  * Served by GET /config. The indexer owns reading this from chain and
  * keeping the DB row current. The frontend fetches from the API.

@@ -1,4 +1,4 @@
-# fairdrop_vest_v1.aleo
+# fairdrop_vest_v2.aleo
 
 Linear token vesting with cliff. When `vest_enabled` is set on an auction, winning bidders receive a `VestedAllocation` record instead of tokens directly. They call `release` to unlock tokens linearly after the cliff.
 

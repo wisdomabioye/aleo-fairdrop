@@ -1,4 +1,4 @@
-// fairdrop_gate_v1.aleo — Access control for all Fairdrop auctions.
+// fairdrop_gate_v2.aleo — Access control for all Fairdrop auctions.
 // Leo 4.0 migration: fn/Final/final/:: — no behavioural changes.
 //
 // Three gate modes:
@@ -63,7 +63,7 @@ struct CredentialMessage {
 // Program interface
 // =============================================================================
 
-program fairdrop_gate_v1.aleo {
+program fairdrop_gate_v2.aleo {
     @admin(address="aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r")
     constructor() {}
 

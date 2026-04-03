@@ -1,4 +1,4 @@
-// fairdrop_lbp_v1.aleo — Privacy-preserving Liquidity Bootstrapping Pool auction.
+// fairdrop_lbp_v2.aleo — Privacy-preserving Liquidity Bootstrapping Pool auction.
 //
 // Mechanism: price is a joint function of time elapsed AND remaining supply.
 // High demand (supply decreasing fast) decelerates the price descent.
@@ -35,8 +35,8 @@
 // Sale tokens   : token_registry.aleo::Token. Burned at create, re-minted at claim.
 //
 // Roles required:
-//   fairdrop_lbp_v1.aleo  — SUPPLY_MANAGER_ROLE on sale token (burn + mint).
-//   fairdrop_vest_v1.aleo — SUPPLY_MANAGER_ROLE on sale token (mint at release),
+//   fairdrop_lbp_v2.aleo  — SUPPLY_MANAGER_ROLE on sale token (burn + mint).
+//   fairdrop_vest_v2.aleo — SUPPLY_MANAGER_ROLE on sale token (mint at release),
 //                        required only when vest_enabled = true.
 //
 // Revenue accounting (set at close_auction):
@@ -79,11 +79,11 @@
 
 import credits.aleo;
 import token_registry.aleo;
-import fairdrop_config_v1.aleo;
-import fairdrop_gate_v1.aleo;
-import fairdrop_proof_v1.aleo;
-import fairdrop_ref_v1.aleo;
-import fairdrop_vest_v1.aleo;
+import fairdrop_config_v2.aleo;
+import fairdrop_gate_v2.aleo;
+import fairdrop_proof_v2.aleo;
+import fairdrop_ref_v2.aleo;
+import fairdrop_vest_v2.aleo;
 
 // =========================================================================
 // Structs (moved outside program {} for Leo 4.0)
@@ -164,7 +164,7 @@ struct ConfigSnapshot {
     referral_pool_bps: u16,
 }
 
-program fairdrop_lbp_v1.aleo {
+program fairdrop_lbp_v2.aleo {
     @admin(address="aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r")
     constructor() {}
 
@@ -271,7 +271,7 @@ program fairdrop_lbp_v1.aleo {
         let f_creation: Final =
             credits.aleo::transfer_public_as_signer(self.address, snapshot.creation_fee as u64);
 
-        let f_cfg: Final = fairdrop_config_v1.aleo::assert_config(
+        let f_cfg: Final = fairdrop_config_v2.aleo::assert_config(
             snapshot.fee_bps,
             snapshot.creation_fee,
             snapshot.closer_reward,
@@ -281,7 +281,7 @@ program fairdrop_lbp_v1.aleo {
             end_block,
         );
 
-        let f_gate: Final = fairdrop_gate_v1.aleo::register_gate(
+        let f_gate: Final = fairdrop_gate_v2.aleo::register_gate(
             auction_id,
             gate.gate_mode,
             gate.merkle_root,
@@ -317,7 +317,7 @@ program fairdrop_lbp_v1.aleo {
             f_cfg.run();
             f_gate.run();
 
-            assert(!fairdrop_config_v1.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
 
             assert_eq(config.payment_token_id, CREDITS_RESERVED_TOKEN_ID);
             assert(config.sale_token_id != CREDITS_RESERVED_TOKEN_ID);
@@ -340,7 +340,7 @@ program fairdrop_lbp_v1.aleo {
             assert_eq(config.auction_id, auction_id);
 
             let lbp_role_key: field = BHP256::hash_to_field(TokenOwner {
-                account:  fairdrop_lbp_v1.aleo,
+                account:  fairdrop_lbp_v2.aleo,
                 token_id: config.sale_token_id,
             });
             assert_eq(
@@ -353,7 +353,7 @@ program fairdrop_lbp_v1.aleo {
             assert(vest_duration_ok);
 
             let vest_role_key: field = BHP256::hash_to_field(TokenOwner {
-                account:  fairdrop_vest_v1.aleo,
+                account:  fairdrop_vest_v2.aleo,
                 token_id: config.sale_token_id,
             });
             let vest_role_ok: bool =
@@ -411,7 +411,7 @@ program fairdrop_lbp_v1.aleo {
         public quantity:        u128,
         public payment_amount:  u64,
         public max_bid_price:   u128,   // slippage guard: finalize asserts computed_price <= this
-    ) -> (credits.aleo::credits, LBPBid, fairdrop_proof_v1.aleo::ParticipationReceipt, Final) {
+    ) -> (credits.aleo::credits, LBPBid, fairdrop_proof_v2.aleo::ParticipationReceipt, Final) {
         assert(quantity > 0u128);
         assert(payment_amount > 0u64);
 
@@ -423,10 +423,10 @@ program fairdrop_lbp_v1.aleo {
         let (change, f_credits): (credits.aleo::credits, Final) =
             credits.aleo::transfer_private_to_public(payment, self.address, payment_amount);
 
-        let f_gate: Final = fairdrop_gate_v1.aleo::check_admission(auction_id);
+        let f_gate: Final = fairdrop_gate_v2.aleo::check_admission(auction_id);
 
-        let (receipt, f_proof): (fairdrop_proof_v1.aleo::ParticipationReceipt, Final) =
-            fairdrop_proof_v1.aleo::issue_receipt(auction_id, 0field, bidder_key);
+        let (receipt, f_proof): (fairdrop_proof_v2.aleo::ParticipationReceipt, Final) =
+            fairdrop_proof_v2.aleo::issue_receipt(auction_id, 0field, bidder_key);
 
         let bid: LBPBid = LBPBid {
             owner:          self.signer,
@@ -440,7 +440,7 @@ program fairdrop_lbp_v1.aleo {
             f_credits.run();
             f_gate.run();
             f_proof.run();
-            assert(!fairdrop_config_v1.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
             // ── LBP bid validation and state updates ─────────────────────────────
             let config: AuctionConfig = auction_configs.get(auction_id);
             let state:  AuctionState  = auction_states.get(auction_id);
@@ -506,7 +506,7 @@ program fairdrop_lbp_v1.aleo {
         public quantity:       u128,
         public payment_amount:  u64,
         public max_bid_price:   u128,   // slippage guard: finalize asserts computed_price <= this
-    ) -> (LBPBid, fairdrop_proof_v1.aleo::ParticipationReceipt, Final) {
+    ) -> (LBPBid, fairdrop_proof_v2.aleo::ParticipationReceipt, Final) {
         assert(quantity > 0u128);
         assert(payment_amount > 0u64);
 
@@ -518,10 +518,10 @@ program fairdrop_lbp_v1.aleo {
         let f_credits: Final =
             credits.aleo::transfer_public_as_signer(self.address, payment_amount);
 
-        let f_gate: Final = fairdrop_gate_v1.aleo::check_admission(auction_id);
+        let f_gate: Final = fairdrop_gate_v2.aleo::check_admission(auction_id);
 
-        let (receipt, f_proof): (fairdrop_proof_v1.aleo::ParticipationReceipt, Final) =
-            fairdrop_proof_v1.aleo::issue_receipt(auction_id, 0field, bidder_key);
+        let (receipt, f_proof): (fairdrop_proof_v2.aleo::ParticipationReceipt, Final) =
+            fairdrop_proof_v2.aleo::issue_receipt(auction_id, 0field, bidder_key);
 
         let bid: LBPBid = LBPBid {
             owner:          self.signer,
@@ -535,7 +535,7 @@ program fairdrop_lbp_v1.aleo {
             f_credits.run();
             f_gate.run();
             f_proof.run();
-            assert(!fairdrop_config_v1.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
             // ── LBP bid validation and state updates ─────────────────────────────
             let config: AuctionConfig = auction_configs.get(auction_id);
             let state:  AuctionState  = auction_states.get(auction_id);
@@ -601,7 +601,7 @@ program fairdrop_lbp_v1.aleo {
         public payment_amount:  u64,
         public max_bid_price:   u128,   // slippage guard: finalize asserts computed_price <= this
         public code_id:         field,
-    ) -> (credits.aleo::credits, LBPBid, fairdrop_proof_v1.aleo::ParticipationReceipt, Final) {
+    ) -> (credits.aleo::credits, LBPBid, fairdrop_proof_v2.aleo::ParticipationReceipt, Final) {
         assert(quantity > 0u128);
         assert(payment_amount > 0u64);
 
@@ -613,12 +613,12 @@ program fairdrop_lbp_v1.aleo {
         let (change, f_credits): (credits.aleo::credits, Final) =
             credits.aleo::transfer_private_to_public(payment, self.address, payment_amount);
 
-        let f_gate: Final = fairdrop_gate_v1.aleo::check_admission(auction_id);
+        let f_gate: Final = fairdrop_gate_v2.aleo::check_admission(auction_id);
 
-        let (receipt, f_proof): (fairdrop_proof_v1.aleo::ParticipationReceipt, Final) =
-            fairdrop_proof_v1.aleo::issue_receipt(auction_id, 0field, bidder_key);
+        let (receipt, f_proof): (fairdrop_proof_v2.aleo::ParticipationReceipt, Final) =
+            fairdrop_proof_v2.aleo::issue_receipt(auction_id, 0field, bidder_key);
 
-        let f_ref: Final = fairdrop_ref_v1.aleo::record_referral(
+        let f_ref: Final = fairdrop_ref_v2.aleo::record_referral(
             code_id,
             auction_id,
             bidder_key,
@@ -638,7 +638,7 @@ program fairdrop_lbp_v1.aleo {
             f_gate.run();
             f_proof.run();
             f_ref.run();
-            assert(!fairdrop_config_v1.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
             // ── LBP bid validation and state updates ─────────────────────────────
             let config: AuctionConfig = auction_configs.get(auction_id);
             let state:  AuctionState  = auction_states.get(auction_id);
@@ -703,7 +703,7 @@ program fairdrop_lbp_v1.aleo {
         public payment_amount:  u64,
         public max_bid_price:   u128,   // slippage guard: finalize asserts computed_price <= this
         public code_id:         field,
-    ) -> (LBPBid, fairdrop_proof_v1.aleo::ParticipationReceipt, Final) {
+    ) -> (LBPBid, fairdrop_proof_v2.aleo::ParticipationReceipt, Final) {
         assert(quantity > 0u128);
         assert(payment_amount > 0u64);
 
@@ -715,12 +715,12 @@ program fairdrop_lbp_v1.aleo {
         let f_credits: Final =
             credits.aleo::transfer_public_as_signer(self.address, payment_amount);
 
-        let f_gate: Final = fairdrop_gate_v1.aleo::check_admission(auction_id);
+        let f_gate: Final = fairdrop_gate_v2.aleo::check_admission(auction_id);
 
-        let (receipt, f_proof): (fairdrop_proof_v1.aleo::ParticipationReceipt, Final) =
-            fairdrop_proof_v1.aleo::issue_receipt(auction_id, 0field, bidder_key);
+        let (receipt, f_proof): (fairdrop_proof_v2.aleo::ParticipationReceipt, Final) =
+            fairdrop_proof_v2.aleo::issue_receipt(auction_id, 0field, bidder_key);
 
-        let f_ref: Final = fairdrop_ref_v1.aleo::record_referral(
+        let f_ref: Final = fairdrop_ref_v2.aleo::record_referral(
             code_id,
             auction_id,
             bidder_key,
@@ -740,7 +740,7 @@ program fairdrop_lbp_v1.aleo {
             f_gate.run();
             f_proof.run();
             f_ref.run();
-            assert(!fairdrop_config_v1.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
             // ── LBP bid validation and state updates ─────────────────────────────
             let config: AuctionConfig = auction_configs.get(auction_id);
             let state:  AuctionState  = auction_states.get(auction_id);
@@ -815,12 +815,12 @@ program fairdrop_lbp_v1.aleo {
             credits.aleo::transfer_public(self.signer, closer_reward as u64);
 
         let f_proof: Final =
-            fairdrop_proof_v1.aleo::update_reputation(creator, filled, volume);
+            fairdrop_proof_v2.aleo::update_reputation(creator, filled, volume);
 
         return final {
             f_closer.run();
             f_proof.run();
-            assert(!fairdrop_config_v1.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
 
             let config: AuctionConfig = auction_configs.get(auction_id);
             let state:  AuctionState  = auction_states.get(auction_id);
@@ -873,9 +873,9 @@ program fairdrop_lbp_v1.aleo {
         public budget:     u128,
     ) -> Final {
         let f_credits: Final =
-            credits.aleo::transfer_public(fairdrop_ref_v1.aleo, budget as u64);
+            credits.aleo::transfer_public(fairdrop_ref_v2.aleo, budget as u64);
 
-        let f_ref: Final = fairdrop_ref_v1.aleo::fund_reserve(auction_id, budget);
+        let f_ref: Final = fairdrop_ref_v2.aleo::fund_reserve(auction_id, budget);
 
         return final {
             f_credits.run();
@@ -927,7 +927,7 @@ program fairdrop_lbp_v1.aleo {
 
         return (sale_token, final {
             f_mint.run();
-            assert(!fairdrop_config_v1.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
 
             let config: AuctionConfig = auction_configs.get(bid_auction_id);
             let state:  AuctionState  = auction_states.get(bid_auction_id);
@@ -953,13 +953,13 @@ program fairdrop_lbp_v1.aleo {
         public ended_at_block:  u32,
         public cliff_blocks:    u32,
         public vest_end_blocks: u32,
-    ) -> (fairdrop_vest_v1.aleo::VestedAllocation, Final) {
+    ) -> (fairdrop_vest_v2.aleo::VestedAllocation, Final) {
         let sale_amount: u128     = bid.quantity;
         let bid_auction_id: field = bid.auction_id;
         let bid_owner: address    = bid.owner;
 
-        let (vest, f_vest): (fairdrop_vest_v1.aleo::VestedAllocation, Final) =
-            fairdrop_vest_v1.aleo::create_vest(
+        let (vest, f_vest): (fairdrop_vest_v2.aleo::VestedAllocation, Final) =
+            fairdrop_vest_v2.aleo::create_vest(
                 bid.auction_id,
                 bid.owner,
                 sale_token_id,
@@ -971,7 +971,7 @@ program fairdrop_lbp_v1.aleo {
 
         return (vest, final {
             f_vest.run();
-            assert(!fairdrop_config_v1.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
 
             let config: AuctionConfig = auction_configs.get(bid_auction_id);
             let state:  AuctionState  = auction_states.get(bid_auction_id);
@@ -1003,7 +1003,7 @@ program fairdrop_lbp_v1.aleo {
         let f0: Final = credits.aleo::transfer_public(self.signer, amount as u64);
         return final {
             f0.run();
-            assert(!fairdrop_config_v1.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
 
             let config: AuctionConfig = auction_configs.get(auction_id);
             let state:  AuctionState  = auction_states.get(auction_id);
@@ -1046,7 +1046,7 @@ program fairdrop_lbp_v1.aleo {
 
         return (token, final {
             f_mint.run();
-            assert(!fairdrop_config_v1.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
 
             let config: AuctionConfig = auction_configs.get(auction_id);
             let state:  AuctionState  = auction_states.get(auction_id);
@@ -1090,7 +1090,7 @@ program fairdrop_lbp_v1.aleo {
 
         return (token, final {
             f_mint.run();
-            assert(!fairdrop_config_v1.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
 
             let config: AuctionConfig = auction_configs.get(auction_id);
             let state:  AuctionState  = auction_states.get(auction_id);
