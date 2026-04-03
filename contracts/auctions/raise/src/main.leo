@@ -167,7 +167,9 @@ struct ConfigSnapshot {
 }
 
 program fairdrop_raise_v2.aleo {
-    @admin(address="aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r")
+    // Upgrade governance: 3-of-5 multi-sig must call fairdrop_multisig_v1.aleo::approve_upgrade
+    // with contract_key=9field and this program's compiled checksum before deployment.
+    @checksum(mapping="fairdrop_multisig_v1.aleo::approved_upgrades", key="9field")
     constructor() {}
 
     // =========================================================================

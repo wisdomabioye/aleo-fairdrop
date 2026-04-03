@@ -71,6 +71,7 @@
 //   Future → Final, .aleo/ → .aleo::
 // ─────────────────────────────────────────────────────────────────────────────
 
+import fairdrop_multisig_v1.aleo;
 import token_registry.aleo;
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -87,14 +88,16 @@ struct TokenOwner { account: address, token_id: field }
 // =============================================================================
 
 program fairdrop_vest_v2.aleo {
-    @admin(address="aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r")
+    // Upgrade governance: 3-of-5 multi-sig must call fairdrop_multisig_v1.aleo::approve_upgrade
+    // with contract_key=4field and this program's compiled checksum before deployment.
+    @checksum(mapping="fairdrop_multisig_v1.aleo::approved_upgrades", key="4field")
     constructor() {}
 
     // =========================================================================
     // Constants
     // =========================================================================
 
-    // Initial protocol admin. Must match @admin address above.
+    // Initial protocol admin (runtime guard for set_allowed_caller).
     const INITIAL_ADMIN: address = aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r;
 
     // Required role for mint_private at release time.

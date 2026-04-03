@@ -4,6 +4,12 @@
   "description": "",
   "license": "MIT",
   "leo": "4.0.0",
-  "dependencies": null,
+  "dependencies": [
+    {
+      "name": "fairdrop_multisig_v1.aleo",
+      "location": "local",
+      "path": "../multisig"
+    }
+  ],
   "dev_dependencies": null
 }

@@ -12,9 +12,9 @@
 // referral_records stores pseudonymous bidder_key (BHP256(bidder, auction_id)).
 // Bidder's raw address never reaches any finalize function.
 //
-// ── KNOWN OPERATIONAL RISK (admin) ──────────────────────────────────────────
-// set_allowed_caller uses INITIAL_ADMIN constant.
-// Admin key change requires contract upgrade via @admin.
+// ── GOVERNANCE ───────────────────────────────────────────────────────────────
+// set_allowed_caller is governed by fairdrop_multisig_v1.aleo (two-phase approve_op).
+// Admin rotation requires 3-of-5 multi-sig via fairdrop_multisig_v1.aleo::update_admin.
 //
 // ── Leo 4.0 migration notes ───────────────────────────────────────────────────
 //   async constructor → constructor
@@ -26,6 +26,7 @@
 //   Future → Final, .aleo/ → .aleo::
 // ─────────────────────────────────────────────────────────────────────────────
 
+import fairdrop_multisig_v1.aleo;
 import fairdrop_config_v2.aleo;
 import credits.aleo;
 
@@ -55,7 +56,9 @@ struct RefListKey { code_id: field, index: u64 }
 // =============================================================================
 
 program fairdrop_ref_v2.aleo {
-    @admin(address="aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r")
+    // Upgrade governance: 3-of-5 multi-sig must call fairdrop_multisig_v1.aleo::approve_upgrade
+    // with contract_key=3field and this program's compiled checksum before deployment.
+    @checksum(mapping="fairdrop_multisig_v1.aleo::approved_upgrades", key="3field")
     constructor() {}
 
     // =========================================================================

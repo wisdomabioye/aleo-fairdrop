@@ -14,6 +14,11 @@
       "location": "network"
     },
     {
+      "name": "fairdrop_multisig_v1.aleo",
+      "location": "local",
+      "path": "../../utilities/multisig"
+    },
+    {
       "name": "fairdrop_config_v2.aleo",
       "location": "local",
       "path": "../../utilities/config"

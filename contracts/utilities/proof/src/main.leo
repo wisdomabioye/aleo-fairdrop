@@ -15,10 +15,9 @@
 //   bidder_key = BHP256(bidder, auction_id) — computed by auction transition body
 //   where self.signer is private. Raw bidder address never appears on-chain.
 //
-// ── KNOWN OPERATIONAL RISK (admin) ──────────────────────────────────────────
-// set_allowed_caller uses INITIAL_ADMIN constant, not a CPI to fairdrop_config.
-// If the admin address needs to change, deploy fairdrop_proof_v2 via @admin.
-// Pre-mainnet: align INITIAL_ADMIN with the multisig set in fairdrop_config.
+// ── GOVERNANCE ───────────────────────────────────────────────────────────────
+// set_allowed_caller is governed by fairdrop_multisig_v1.aleo (two-phase approve_op).
+// Admin rotation requires 3-of-5 multi-sig via fairdrop_multisig_v1.aleo::update_admin.
 //
 // ── Leo 4.0 migration notes ───────────────────────────────────────────────────
 //   async constructor → constructor
@@ -28,6 +27,8 @@
 //   structs moved outside program {}
 //   Future → Final, .aleo/ → .aleo::
 // ─────────────────────────────────────────────────────────────────────────────
+
+import fairdrop_multisig_v1.aleo;
 
 // ═════════════════════════════════════════════════════════════════════════════
 // Module-level struct definitions
@@ -50,7 +51,9 @@ struct CreatorStats {
 // =============================================================================
 
 program fairdrop_proof_v2.aleo {
-    @admin(address="aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r")
+    // Upgrade governance: 3-of-5 multi-sig must call fairdrop_multisig_v1.aleo::approve_upgrade
+    // with contract_key=2field and this program's compiled checksum before deployment.
+    @checksum(mapping="fairdrop_multisig_v1.aleo::approved_upgrades", key="2field")
     constructor() {}
 
     // =========================================================================

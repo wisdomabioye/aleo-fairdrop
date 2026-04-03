@@ -11,6 +11,11 @@
       "path": "../config"
     },
     {
+      "name": "fairdrop_multisig_v1.aleo",
+      "location": "local",
+      "path": "../multisig"
+    },
+    {
       "name": "credits.aleo",
       "location": "network"
     }

@@ -61,6 +61,7 @@ import fairdrop_gate_v2.aleo;
 import fairdrop_proof_v2.aleo;
 import fairdrop_ref_v2.aleo;
 import fairdrop_vest_v2.aleo;
+import fairdrop_multisig_v1.aleo;
 
 // ═════════════════════════════════════════════════════════════════════════════
 // Module-level struct definitions
@@ -287,8 +288,9 @@ final fn record_bid(
 // =============================================================================
 
 program fairdrop_dutch_v2.aleo {
-    // Leo 4.0: async removed from constructor.
-    @admin(address="aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r")
+    // Upgrade governance: 3-of-5 multi-sig must call fairdrop_multisig_v1.aleo::approve_upgrade
+    // with contract_key=6field and this program's compiled checksum before deployment.
+    @checksum(mapping="fairdrop_multisig_v1.aleo::approved_upgrades", key="6field")
     constructor() {}
 
     // =========================================================================

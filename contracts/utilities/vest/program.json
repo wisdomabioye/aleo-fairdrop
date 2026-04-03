@@ -8,6 +8,11 @@
     {
       "name": "token_registry.aleo",
       "location": "network"
+    },
+    {
+      "name": "fairdrop_multisig_v1.aleo",
+      "location": "local",
+      "path": "../multisig"
     }
   ],
   "dev_dependencies": null

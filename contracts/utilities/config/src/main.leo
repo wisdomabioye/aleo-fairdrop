@@ -17,15 +17,12 @@
 // No money flows through this contract. No records. No escrow.
 // Admin authority: protocol_admin mapping (defaults to INITIAL_ADMIN constant).
 //
-// ── KNOWN OPERATIONAL RISK ──────────────────────────────────────────────────
-// set_protocol_admin() is a single-step immediate transfer. Calling it with a
-// wrong address permanently locks out the current admin — the only recovery path
-// is a contract upgrade via the @admin mechanism (which is a nuclear option and
-// requires the deployer key, not the protocol_admin key).
-//
-// PLAN: before mainnet, replace INITIAL_ADMIN with a multisig address and call
-// set_protocol_admin(multisig) as the first post-deploy transaction.
-// Tracked: pre-mainnet checklist item — "Transfer protocol_admin to multisig".
+// ── GOVERNANCE ───────────────────────────────────────────────────────────────
+// All admin setters (set_fee_bps, set_creation_fee, etc.) are now governed by
+// fairdrop_multisig_v1.aleo via the two-phase approve_op pattern. The
+// protocol_admin mapping is retained as a fallback for the bootstrap phase only
+// and should be set to the multisig program address post-deployment.
+// Upgrades require 3-of-5 multi-sig via fairdrop_multisig_v1.aleo::approve_upgrade.
 //
 // ── Leo 4.0 migration notes ───────────────────────────────────────────────────
 //   async constructor → constructor
@@ -34,8 +31,12 @@
 //   Future → Final, .aleo/ → .aleo::
 // ─────────────────────────────────────────────────────────────────────────────
 
+import fairdrop_multisig_v1.aleo;
+
 program fairdrop_config_v2.aleo {
-    @admin(address="aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r")
+    // Upgrade governance: 3-of-5 multi-sig must call fairdrop_multisig_v1.aleo::approve_upgrade
+    // with contract_key=0field and this program's compiled checksum before deployment.
+    @checksum(mapping="fairdrop_multisig_v1.aleo::approved_upgrades", key="0field")
     constructor() {}
 
     // =========================================================================
