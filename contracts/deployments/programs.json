@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "$comment": "Single source of truth for all program IDs, program addresses, and deployment salts. Network-specific data lives in testnet/network.json and mainnet/network.json. Validated against contracts/*/program.json by scripts/validate-programs.ts. programAddress is the aleo1... address derived from programId — fill in after deployment.",
+  "$comment": "Single source of truth for all program IDs, program addresses, deployment salts, and upgrade keys. salt = PROGRAM_SALT constant inside each auction contract (namespaces auction_id hashes to prevent cross-type collision). upgradeKey = the key= value in the @checksum annotation — used as contract_key in fairdrop_multisig_v1.aleo::approve_upgrade.",
   "accounts": {
     "defaultAdminAddress": "aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r",
     "protocolTreasury": "aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r",
@@ -8,66 +8,83 @@
     "opsMultisig": ""
   },
   "programs": {
-    "dutch": {
-      "programId":      "fairdrop_dutch_v2.aleo",
-      "programAddress": "aleo13n9u7zf7x0zpfqqeew2e9eyk5h8wfmssk8h5fwas0xmmp4z7s5zs6avmye",
-      "contractPath":   "contracts/auctions/dutch",
-      "salt":           "1field"
+    "multisig": {
+      "programId":      "fairdrop_multisig_v1.aleo",
+      "programAddress": null,
+      "contractPath":   "contracts/utilities/multisig",
+      "upgradeKey":     "0field"
+    },
+    "config": {
+      "programId":      "fairdrop_config_v2.aleo",
+      "programAddress": "aleo1337ysdtfvpx6h4we0crz8xuygl0ue7sc9vzqwy6grewmntqe3vyq00ep0g",
+      "contractPath":   "contracts/utilities/config",
+      "upgradeKey":     "1field"
+    },
+    "gate": {
+      "programId":      "fairdrop_gate_v2.aleo",
+      "programAddress": "aleo1e4vwv078d7fhra9lp07633zdpn0ln3fedt8lseal0dh9fdr5vvqqeae9hv",
+      "contractPath":   "contracts/utilities/gate",
+      "upgradeKey":     "2field"
+    },
+    "proof": {
+      "programId":      "fairdrop_proof_v2.aleo",
+      "programAddress": "aleo1txlfp23827kt592s6lgwrpv990k3ge5798d2jn8047mh4fv0w5ysfg98nt",
+      "contractPath":   "contracts/utilities/proof",
+      "upgradeKey":     "3field"
+    },
+    "ref": {
+      "programId":      "fairdrop_ref_v2.aleo",
+      "programAddress": "aleo13xddttavncqn2edx2r6d8ny03wnuc6dmpc9pfr8ytc3m0s06mgyquf7x6t",
+      "contractPath":   "contracts/utilities/ref",
+      "upgradeKey":     "4field"
+    },
+    "vest": {
+      "programId":      "fairdrop_vest_v2.aleo",
+      "programAddress": "aleo10r67ky003vgpcu4kvwnhfvrsaaq2gd62j026sylpjgclxl3q4ugs8y34dp",
+      "contractPath":   "contracts/utilities/vest",
+      "upgradeKey":     "5field"
     },
     "ascending": {
       "programId":      "fairdrop_ascending_v2.aleo",
       "programAddress": "aleo1kf0rw9ml6de66hgglxtdah255dz885uczeffgku7lavjy3qqcs9q4pzvwh",
       "contractPath":   "contracts/auctions/ascending",
-      "salt":           "2field"
+      "salt":           "2field",
+      "upgradeKey":     "6field"
     },
-    "sealed": {
-      "programId":      "fairdrop_sealed_v2.aleo",
-      "programAddress": "aleo1wnkyc5qez7d2z68w35jelp549k9zxuad05t5pflya0gnzh3wzurszsdne5",
-      "contractPath":   "contracts/auctions/sealed",
-      "salt":           "3field"
-    }, 
-    "raise": {
-      "programId":      "fairdrop_raise_v2.aleo",
-      "programAddress": "aleo1uhd5pytlnk3sfsn2x3q6hh4aks56t2l36zknp3m96feynvgqrq9sg4ah0t",
-      "contractPath":   "contracts/auctions/raise",
-      "salt":           "4field"
+    "dutch": {
+      "programId":      "fairdrop_dutch_v2.aleo",
+      "programAddress": "aleo13n9u7zf7x0zpfqqeew2e9eyk5h8wfmssk8h5fwas0xmmp4z7s5zs6avmye",
+      "contractPath":   "contracts/auctions/dutch",
+      "salt":           "1field",
+      "upgradeKey":     "7field"
     },
     "lbp": {
       "programId":      "fairdrop_lbp_v2.aleo",
       "programAddress": null,
       "contractPath":   "contracts/auctions/lbp",
-      "salt":           "5field"
+      "salt":           "5field",
+      "upgradeKey":     "8field"
     },
     "quadratic": {
       "programId":      "fairdrop_quadratic_v2.aleo",
       "programAddress": null,
       "contractPath":   "contracts/auctions/quadratic",
-      "salt":           "6field"
+      "salt":           "6field",
+      "upgradeKey":     "9field"
     },
-    "config": {
-      "programId":      "fairdrop_config_v2.aleo",
-      "programAddress": "aleo1337ysdtfvpx6h4we0crz8xuygl0ue7sc9vzqwy6grewmntqe3vyq00ep0g",
-      "contractPath":   "contracts/utilities/config"
+    "raise": {
+      "programId":      "fairdrop_raise_v2.aleo",
+      "programAddress": "aleo1uhd5pytlnk3sfsn2x3q6hh4aks56t2l36zknp3m96feynvgqrq9sg4ah0t",
+      "contractPath":   "contracts/auctions/raise",
+      "salt":           "4field",
+      "upgradeKey":     "10field"
     },
-    "gate": {
-      "programId":      "fairdrop_gate_v2.aleo",
-      "programAddress": "aleo1e4vwv078d7fhra9lp07633zdpn0ln3fedt8lseal0dh9fdr5vvqqeae9hv",
-      "contractPath":   "contracts/utilities/gate"
-    },
-    "proof": {
-      "programId":      "fairdrop_proof_v2.aleo",
-      "programAddress": "aleo1txlfp23827kt592s6lgwrpv990k3ge5798d2jn8047mh4fv0w5ysfg98nt",
-      "contractPath":   "contracts/utilities/proof"
-    },
-    "ref": {
-      "programId":      "fairdrop_ref_v2.aleo",
-      "programAddress": "aleo13xddttavncqn2edx2r6d8ny03wnuc6dmpc9pfr8ytc3m0s06mgyquf7x6t",
-      "contractPath":   "contracts/utilities/ref"
-    },
-    "vest": {
-      "programId":      "fairdrop_vest_v2.aleo",
-      "programAddress": "aleo10r67ky003vgpcu4kvwnhfvrsaaq2gd62j026sylpjgclxl3q4ugs8y34dp",
-      "contractPath":   "contracts/utilities/vest"
+    "sealed": {
+      "programId":      "fairdrop_sealed_v2.aleo",
+      "programAddress": "aleo1wnkyc5qez7d2z68w35jelp549k9zxuad05t5pflya0gnzh3wzurszsdne5",
+      "contractPath":   "contracts/auctions/sealed",
+      "salt":           "3field",
+      "upgradeKey":     "11field"
     }
   }
 }

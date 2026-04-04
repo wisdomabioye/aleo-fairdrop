@@ -10,15 +10,17 @@
 import fairdrop_vest_v2.aleo;
 
 // ── Unit-test coverage scope ─────────────────────────────────────────────────
+//   ✓ set_allowed_caller — unapproved op guard: approved_ops defaults false → revert.
 //   ✓ create_vest — D12 caller guard rejects test program (not in allowed_callers).
 //   ✓ create_vest — zero total_amount guard fires before other checks.
 //   ✓ create_vest — vest_end_blocks <= cliff_blocks guard fires (division-by-zero prevention).
 //   ✓ release     — cliff guard: block.height < cliff_block → revert.
 //                   (Tested via zero cliff_block + zero-amount which hits guard ordering.)
 //
-// ── Integration-test only (require admin key == INITIAL_ADMIN) ────────────────
-//   - set_allowed_caller: admin signer guard cannot be satisfied in unit tests.
-//   - create_vest happy path: requires allowed_callers pre-set by admin.
+// ── Integration-test only (require prior multisig approve_op on-chain) ─────────
+//   - set_allowed_caller happy path: requires prior fairdrop_multisig_v1.aleo::approve_op
+//       to write approved_ops[op_hash] = true. Only testable on real chain state.
+//   - create_vest happy path: requires allowed_callers pre-set via multisig.
 //       Also tests: SUPPLY_MANAGER_ROLE check (early fail if role absent).
 //   - release happy path: requires a real VestedAllocation record (from create_vest)
 //       and block.height >= cliff_block on-chain.
@@ -113,17 +115,18 @@ program test_vest.aleo {
     }
 
     // -------------------------------------------------------------------------
-    // set_allowed_caller — admin guard (integration test)
+    // set_allowed_caller — unapproved op guard
     // -------------------------------------------------------------------------
-    // set_allowed_caller uses self.signer == INITIAL_ADMIN.
-    // The test signer is NOT INITIAL_ADMIN → finalize reverts.
-    // (Documents that admin guard is only satisfiable in integration tests.)
+    // No multisig approval exists in test state.
+    // finalize reads approved_ops.get_or_use(op_hash, false) → false → assert fails.
+    // Happy path requires a prior fairdrop_multisig_v1.aleo::approve_op on-chain.
     @test
     @should_fail
-    fn test_set_allowed_caller_unauth() -> Final {
+    fn test_set_allowed_caller_unapproved() -> Final {
         let f: Final = fairdrop_vest_v2.aleo::set_allowed_caller(
             aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc,  // any program address
             true,
+            1u64,  // op_nonce — no approved_ops entry for this hash → assert fails
         );
         return final { f.run(); };
     }

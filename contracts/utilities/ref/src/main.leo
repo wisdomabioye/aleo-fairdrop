@@ -51,21 +51,19 @@ struct ReferralRecord {
 // BHP256 input for the referral list index key.
 struct RefListKey { code_id: field, index: u64 }
 
+// Op struct for set_allowed_caller two-phase multisig approval.
+// op_hash = BHP256::hash_to_field(AllowedCallerOp { caller, allowed, nonce })
+struct AllowedCallerOp { caller: address, allowed: bool, nonce: u64 }
+
 // =============================================================================
 // Program interface
 // =============================================================================
 
 program fairdrop_ref_v2.aleo {
     // Upgrade governance: 3-of-5 multi-sig must call fairdrop_multisig_v1.aleo::approve_upgrade
-    // with contract_key=3field and this program's compiled checksum before deployment.
-    @checksum(mapping="fairdrop_multisig_v1.aleo::approved_upgrades", key="3field")
+    // with contract_key=4field and this program's compiled checksum before deployment.
+    @checksum(mapping="fairdrop_multisig_v1.aleo::approved_upgrades", key="4field")
     constructor() {}
-
-    // =========================================================================
-    // Constants
-    // =========================================================================
-
-    const INITIAL_ADMIN: address = aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r;
 
     // =========================================================================
     // Records
@@ -84,6 +82,8 @@ program fairdrop_ref_v2.aleo {
     // =========================================================================
 
     mapping allowed_callers:  address => bool;
+    // Consumed op hashes — prevents the same multisig approval from executing twice.
+    mapping consumed_ops:     field   => bool;
     mapping code_registered:  field   => bool;
     mapping registrations:    field   => ReferralConfig;
     mapping referral_reserve: field   => u128;
@@ -94,16 +94,23 @@ program fairdrop_ref_v2.aleo {
     mapping referral_list:    field   => field;
 
     // =========================================================================
-    // 1. set_allowed_caller — admin only
+    // 1. set_allowed_caller — admin only (two-phase multisig)
     // =========================================================================
 
     fn set_allowed_caller(
         public program_addr: address,
         public allowed:      bool,
+        public op_nonce:     u64,
     ) -> Final {
-        let caller: address = self.signer;
+        let op_hash: field = BHP256::hash_to_field(AllowedCallerOp {
+            caller:  program_addr,
+            allowed: allowed,
+            nonce:   op_nonce,
+        });
         return final {
-            assert_eq(caller, INITIAL_ADMIN);
+            assert(fairdrop_multisig_v1.aleo::approved_ops.get_or_use(op_hash, false));
+            assert(!consumed_ops.get_or_use(op_hash, false));
+            consumed_ops.set(op_hash, true);
             allowed_callers.set(program_addr, allowed);
         };
     }
@@ -251,26 +258,37 @@ program fairdrop_ref_v2.aleo {
     // Leo 4.0: capture code.code_id and code.owner before final {} —
     // record fields are proof-context only (private UTXO data).
 
-    fn claim_commission(
-        code:                  ReferralCode,
-        public claimed_amount: u128,
-    ) -> (credits.aleo::credits, Final) {
-        // Capture private record fields before final block.
-        let code_id: field = code.code_id;
-        let owner: address = code.owner;
+    // !! COMMENTED OUT — Leo 4.0 compiler bug: "Finalization not found"
+    // credits.aleo::transfer_public_to_private returns a Final. When this function is enabled,
+    // any program that imports fairdrop_ref_v2.aleo AND independently calls
+    // credits.aleo::transfer_public_to_private (or any other Final-returning CPI) fails to build
+    // with "Finalization not found: credits.aleo::transfer_public_to_private".
+    // Root cause: Leo compiler panics when the same Final-returning CPI appears in multiple
+    // programs in the import tree. ReferralCode is a record of this program and earned is a
+    // mapping of this program — claim_commission cannot be moved elsewhere.
+    // Re-enable once Leo fixes the finalization deduplication bug.
+    // Tracked in: docs/leo_bug_finalization_not_found.md | https://github.com/ProvableHQ/leo/issues/29297
+    //
+    // fn claim_commission(
+    //     code:                  ReferralCode,
+    //     public claimed_amount: u128,
+    // ) -> (credits.aleo::credits, Final) {
+    //     // Capture private record fields before final block.
+    //     let code_id: field = code.code_id;
+    //     let owner: address = code.owner;
 
-        let (credit_record, f_credits): (credits.aleo::credits, Final) =
-            credits.aleo::transfer_public_to_private(owner, claimed_amount as u64);
+    //     let (credit_record, f_credits): (credits.aleo::credits, Final) =
+    //         credits.aleo::transfer_public_to_private(owner, claimed_amount as u64);
 
-        return (credit_record, final {
-            // G10: zero-amount credit transfers are invalid.
-            assert(claimed_amount > 0u128);
-            // D11: validate claimed_amount matches on-chain earned[code_id].
-            assert_eq(earned.get_or_use(code_id, 0u128), claimed_amount);
-            // Drain earned.
-            earned.set(code_id, 0u128);
-            // Execute the credits transfer.
-            f_credits.run();
-        });
-    }
+    //     return (credit_record, final {
+    //         // G10: zero-amount credit transfers are invalid.
+    //         assert(claimed_amount > 0u128);
+    //         // D11: validate claimed_amount matches on-chain earned[code_id].
+    //         assert_eq(earned.get_or_use(code_id, 0u128), claimed_amount);
+    //         // Drain earned.
+    //         earned.set(code_id, 0u128);
+    //         // Execute the credits transfer.
+    //         f_credits.run();
+    //     });
+    // }
 }

@@ -10,13 +10,15 @@
 import fairdrop_ref_v2.aleo;
 
 // ── Unit-test coverage scope ─────────────────────────────────────────────────
+//   ✓ set_allowed_caller — unapproved op guard: approved_ops defaults false → revert.
 //   ✓ create_code       — bps within cap passes; bps above cap reverts (config CPI).
 //   ✓ fund_reserve      — D12 caller guard rejects test program (not in allowed_callers).
 //   ✓ record_referral   — D12 caller guard rejects test program.
 //   ✓ credit_commission — unregistered bidder_key → .get() hard-fail reverts.
 //
-// ── Integration-test only (require admin key == INITIAL_ADMIN) ────────────────
-//   - set_allowed_caller: admin signer guard cannot be satisfied in unit tests.
+// ── Integration-test only (require prior multisig approve_op on-chain) ─────────
+//   - set_allowed_caller happy path: requires prior fairdrop_multisig_v1.aleo::approve_op
+//       to write approved_ops[op_hash] = true. Only testable on real chain state.
 //   - create_code double-registration: assert(!code_registered[code_id])
 //       fires on second call for same (signer, auction_id) pair.
 //       Requires ordered transactions on real chain state.
@@ -40,6 +42,24 @@ import fairdrop_ref_v2.aleo;
 program test_ref.aleo {
     @noupgrade
     constructor() {}
+
+    // -------------------------------------------------------------------------
+    // set_allowed_caller — unapproved op guard
+    // -------------------------------------------------------------------------
+    // No multisig approval exists in test state.
+    // finalize reads approved_ops.get_or_use(op_hash, false) → false → assert fails.
+    // Happy path requires a prior fairdrop_multisig_v1.aleo::approve_op on-chain.
+
+    @test
+    @should_fail
+    fn test_set_allowed_caller_unapproved() -> Final {
+        let f: Final = fairdrop_ref_v2.aleo::set_allowed_caller(
+            aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc,
+            true,
+            1u64,  // op_nonce — no approved_ops entry for this hash → assert fails
+        );
+        return final { f.run(); };
+    }
 
     // -------------------------------------------------------------------------
     // create_code — bps cap enforcement (fairdrop_config CPI)

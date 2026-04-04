@@ -25,36 +25,38 @@
 //      → Target reads approved_ops[op_hash], asserts true, marks consumed locally.
 //
 // ── Op hash patterns (TypedOpStruct defined in each target contract) ─────────
-//   config setters:     BHP256::hash_to_field(ConfigOp    { fn_key: field, value: field, nonce: u64 })
+//   config setters:     BHP256::hash_to_field(ConfigOp    { fn_key: field, op_value: field, nonce: u64 })
 //   set_allowed_caller: BHP256::hash_to_field(AllowedOp   { caller: address, allowed: bool, nonce: u64 })
 //   withdraw_treasury:  BHP256::hash_to_field(WithdrawalOp{ amount: u128, recipient: address, nonce: u64 })
 //
 // ── Contract key assignments for approved_upgrades ───────────────────────────
-//   0field  fairdrop_config_v2.aleo
-//   1field  fairdrop_gate_v2.aleo
-//   2field  fairdrop_proof_v2.aleo
-//   3field  fairdrop_ref_v2.aleo
-//   4field  fairdrop_vest_v2.aleo
-//   5field  fairdrop_ascending_v2.aleo
-//   6field  fairdrop_dutch_v2.aleo
-//   7field  fairdrop_lbp_v2.aleo
-//   8field  fairdrop_quadratic_v2.aleo
-//   9field  fairdrop_raise_v2.aleo
-//  10field  fairdrop_sealed_v2.aleo
+//   0field  fairdrop_multisig_v1.aleo (self — governs its own upgrades)
+//   1field  fairdrop_config_v2.aleo
+//   2field  fairdrop_gate_v2.aleo
+//   3field  fairdrop_proof_v2.aleo
+//   4field  fairdrop_ref_v2.aleo
+//   5field  fairdrop_vest_v2.aleo
+//   6field  fairdrop_ascending_v2.aleo
+//   7field  fairdrop_dutch_v2.aleo
+//   8field  fairdrop_lbp_v2.aleo
+//   9field  fairdrop_quadratic_v2.aleo
+//  10field  fairdrop_raise_v2.aleo
+//  11field  fairdrop_sealed_v2.aleo
+//  12field+ reserved for future contracts
 //
 // ── Upgrade governance for this contract ─────────────────────────────────────
-// Uses @admin(address=...) because this contract cannot bootstrap itself via
-// @checksum. The deployer key must be held on a hardware wallet (Ledger).
-// In an emergency, the deployer key can deploy a new version of this contract.
+// Uses @checksum pointing to its OWN approved_upgrades mapping (key=0field).
+// First deployment always succeeds (edition=0 bypasses the checksum check).
+// All future upgrades require 3-of-5 via approve_upgrade(0field, new_checksum).
+// No single key controls this contract — the admin set governs itself.
 //
 // ── Pre-mainnet checklist ─────────────────────────────────────────────────────
 //   [ ] Replace ADMIN_0..4 with real prod key addresses
-//   [ ] Replace @admin address with the prod deployer address
 //   [ ] Call initialize() as the first transaction after deployment
-//   [ ] Call approve_upgrade for all 11 contracts before deploying them
+//   [ ] Call approve_upgrade for all 11 governed contracts before deploying them
 
 program fairdrop_multisig_v1.aleo {
-    @admin(address="aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r")
+    @checksum(mapping="fairdrop_multisig_v1.aleo::approved_upgrades", key="0field")
     constructor() {}
 
     // =========================================================================
@@ -71,17 +73,18 @@ program fairdrop_multisig_v1.aleo {
     // Contract keys for approved_upgrades (must match @checksum key= in each contract)
     // =========================================================================
 
-    const KEY_CONFIG:    field = 0field;
-    const KEY_GATE:      field = 1field;
-    const KEY_PROOF:     field = 2field;
-    const KEY_REF:       field = 3field;
-    const KEY_VEST:      field = 4field;
-    const KEY_ASCENDING: field = 5field;
-    const KEY_DUTCH:     field = 6field;
-    const KEY_LBP:       field = 7field;
-    const KEY_QUADRATIC: field = 8field;
-    const KEY_RAISE:     field = 9field;
-    const KEY_SEALED:    field = 10field;
+    const KEY_MULTISIG:  field = 0field;  // self-governance key
+    const KEY_CONFIG:    field = 1field;
+    const KEY_GATE:      field = 2field;
+    const KEY_PROOF:     field = 3field;
+    const KEY_REF:       field = 4field;
+    const KEY_VEST:      field = 5field;
+    const KEY_ASCENDING: field = 6field;
+    const KEY_DUTCH:     field = 7field;
+    const KEY_LBP:       field = 8field;
+    const KEY_QUADRATIC: field = 9field;
+    const KEY_RAISE:     field = 10field;
+    const KEY_SEALED:    field = 11field;
 
     // =========================================================================
     // Mappings

@@ -78,6 +78,7 @@
 //   Future → Final, .aleo/ → .aleo::
 // ─────────────────────────────────────────────────────────────────────────────
 
+import fairdrop_multisig_v1.aleo;
 import credits.aleo;
 import token_registry.aleo;
 import fairdrop_config_v2.aleo;
@@ -98,6 +99,9 @@ struct AuctionKey { creator: address, nonce: u64, program_salt: field }
 
 // BHP256 input for pseudonymous per-bidder key. Raw bidder address never on-chain.
 struct BidderKey { bidder: address, auction_id: field }
+
+// BHP256 input for multisig-approved treasury withdrawal. Matches multisig doc.
+struct WithdrawalOp { amount: u128, recipient: address, nonce: u64 }
 
 // Immutable auction parameters. Written once at create_auction; never modified.
 struct AuctionConfig {
@@ -168,8 +172,8 @@ struct ConfigSnapshot {
 
 program fairdrop_raise_v2.aleo {
     // Upgrade governance: 3-of-5 multi-sig must call fairdrop_multisig_v1.aleo::approve_upgrade
-    // with contract_key=9field and this program's compiled checksum before deployment.
-    @checksum(mapping="fairdrop_multisig_v1.aleo::approved_upgrades", key="9field")
+    // with contract_key=10field and this program's compiled checksum before deployment.
+    @checksum(mapping="fairdrop_multisig_v1.aleo::approved_upgrades", key="10field")
     constructor() {}
 
     // =========================================================================
@@ -234,6 +238,9 @@ program fairdrop_raise_v2.aleo {
 
     // Protocol-owned credits accounting. Keyed by 0field.
     mapping protocol_treasury: field => u128;
+
+    // Replay protection for withdraw_treasury_fees approvals.
+    mapping consumed_ops: field => bool;
 
     // =========================================================================
     // 1. create_auction
@@ -1240,6 +1247,46 @@ program fairdrop_raise_v2.aleo {
             let remaining: u128 = escrow_payments.get_or_use(bid_auction_id, 0u128);
             assert(bid_payment_amount <= remaining);
             escrow_payments.set(bid_auction_id, remaining - bid_payment_amount);
+        });
+    }
+
+    // =========================================================================
+    // 14. withdraw_treasury_fees — sweep protocol treasury to a private recipient
+    // =========================================================================
+    //
+    // Transfers `amount` microcredits from the on-chain protocol_treasury balance
+    // to `recipient` as a private credits record. Requires prior 3-of-5 multisig
+    // approval via fairdrop_multisig_v1.aleo::approve_op.
+    //
+    // Op hash pre-image (must match off-chain computation):
+    //   BHP256::hash_to_field(WithdrawalOp { amount, recipient, nonce: op_nonce })
+    //
+    // Leo 4.0: transfer_public_to_private returns (credits, Final).
+
+    fn withdraw_treasury_fees(
+        public amount:    u128,
+        public recipient: address,
+        public op_nonce:  u64,
+    ) -> (credits.aleo::credits, Final) {
+        let op_hash: field = BHP256::hash_to_field(WithdrawalOp {
+            amount,
+            recipient,
+            nonce: op_nonce,
+        });
+
+        let (out, f_transfer): (credits.aleo::credits, Final) =
+            credits.aleo::transfer_public_to_private(recipient, amount as u64);
+
+        return (out, final {
+            assert(fairdrop_multisig_v1.aleo::approved_ops.get_or_use(op_hash, false));
+            assert(!consumed_ops.get_or_use(op_hash, false));
+            consumed_ops.set(op_hash, true);
+
+            f_transfer.run();
+
+            let treasury: u128 = protocol_treasury.get_or_use(0field, 0u128);
+            assert(amount <= treasury);
+            protocol_treasury.set(0field, treasury - amount);
         });
     }
 }

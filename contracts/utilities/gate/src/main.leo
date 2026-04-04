@@ -67,8 +67,8 @@ struct CredentialMessage {
 
 program fairdrop_gate_v2.aleo {
     // Upgrade governance: 3-of-5 multi-sig must call fairdrop_multisig_v1.aleo::approve_upgrade
-    // with contract_key=1field and this program's compiled checksum before deployment.
-    @checksum(mapping="fairdrop_multisig_v1.aleo::approved_upgrades", key="1field")
+    // with contract_key=2field and this program's compiled checksum before deployment.
+    @checksum(mapping="fairdrop_multisig_v1.aleo::approved_upgrades", key="2field")
     constructor() {}
 
     // =========================================================================
@@ -81,8 +81,6 @@ program fairdrop_gate_v2.aleo {
 
     const ZERO_ADDRESS: address = aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc;
 
-    const INITIAL_ADMIN: address = aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r;
-
     // =========================================================================
     // Mappings
     // =========================================================================
@@ -93,18 +91,37 @@ program fairdrop_gate_v2.aleo {
     mapping allowlists:         field   => field;
     mapping credential_issuers: field   => address;
     mapping verified:           field   => bool;
+    mapping consumed_ops:       field   => bool;
 
     // =========================================================================
-    // 1. set_allowed_caller — admin only
+    // Op struct — hashed by callers to compute op_hash for approve_op
+    // =========================================================================
+    // op_hash = BHP256::hash_to_field(AllowedCallerOp { caller, allowed, nonce })
+
+    struct AllowedCallerOp {
+        caller:  address,
+        allowed: bool,
+        nonce:   u64,
+    }
+
+    // =========================================================================
+    // 1. set_allowed_caller — multisig two-phase approval
     // =========================================================================
 
     fn set_allowed_caller(
         public program_addr: address,
         public allowed:      bool,
+        public op_nonce:     u64,
     ) -> Final {
-        let caller: address = self.signer;
+        let op_hash: field = BHP256::hash_to_field(AllowedCallerOp {
+            caller:  program_addr,
+            allowed: allowed,
+            nonce:   op_nonce,
+        });
         return final {
-            assert_eq(caller, INITIAL_ADMIN);
+            assert(fairdrop_multisig_v1.aleo::approved_ops.get_or_use(op_hash, false));
+            assert(!consumed_ops.get_or_use(op_hash, false));
+            consumed_ops.set(op_hash, true);
             allowed_callers.set(program_addr, allowed);
         };
     }

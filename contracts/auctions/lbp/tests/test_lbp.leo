@@ -10,6 +10,7 @@
 import fairdrop_lbp_v2.aleo;
 import fairdrop_proof_v2.aleo;
 import token_registry.aleo;
+import credits.aleo;
 
 // ── Unit-test coverage scope ──────────────────────────────────────────────────
 //   ✓ place_bid_public         — zero quantity: transition-body assert fires.
@@ -27,6 +28,7 @@ import token_registry.aleo;
 //                                SUPPLY_MANAGER_ROLE in unit-test env.
 //   ✓ withdraw_unsold (nonzero)— mint_private role check: same reason.
 //   ✓ withdraw_payments (1u128)— credits transfer: lbp has 0 public balance.
+//   ✓ withdraw_treasury_fees   — unapproved op guard: approved_ops defaults false → revert.
 //
 // ── Integration-test only (require admin keys, real on-chain state, token roles)
 //   - create_auction: requires exact-amount Token record, assert_config CPI,
@@ -41,6 +43,8 @@ import token_registry.aleo;
 //     Client SDK computes max_bid_price = current_price * (10000 + slippage_bps) / 10000.
 //   - Revenue invariant: creator_revenue + protocol_fee = total_payments verified
 //     by running the full lifecycle and checking escrow balances reach 0.
+//   - withdraw_treasury_fees happy path: requires prior fairdrop_multisig_v1.aleo::approve_op
+//       to write approved_ops[op_hash] = true. Only testable on real chain state.
 // ─────────────────────────────────────────────────────────────────────────────
 
 program test_lbp.aleo {
@@ -232,6 +236,26 @@ program test_lbp.aleo {
             1field,  // auction_id
             1u128,   // amount = 1 — passes transition-body assert; credits fails
         );
+        return final { f.run(); };
+    }
+
+    // =========================================================================
+    // Group 4: Treasury withdrawal approval guard
+    // =========================================================================
+
+    // withdraw_treasury_fees — unapproved op guard.
+    //   No multisig approval exists in test state.
+    //   finalize reads approved_ops.get_or_use(op_hash, false) → false → assert fails.
+    //   f_transfer.run() is never reached — the approval check fires first.
+    @test
+    @should_fail
+    fn test_treasury_unapproved() -> Final {
+        let (out, f): (credits.aleo::credits, Final) =
+            fairdrop_lbp_v2.aleo::withdraw_treasury_fees(
+                1u128,  // amount — approval check fires before credits transfer runs
+                aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc,  // recipient
+                1u64,   // op_nonce — no approved_ops entry for this hash → assert fails
+            );
         return final { f.run(); };
     }
 }

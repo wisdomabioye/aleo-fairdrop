@@ -6,14 +6,6 @@
   "leo": "4.0.0",
   "dependencies": [
     {
-      "name": "credits.aleo",
-      "location": "network"
-    },
-    {
-      "name": "token_registry.aleo",
-      "location": "network"
-    },
-    {
       "name": "fairdrop_multisig_v1.aleo",
       "location": "local",
       "path": "../../utilities/multisig"
@@ -42,6 +34,14 @@
       "name": "fairdrop_vest_v2.aleo",
       "location": "local",
       "path": "../../utilities/vest"
+    },
+    {
+      "name": "credits.aleo",
+      "location": "network"
+    },
+    {
+      "name": "token_registry.aleo",
+      "location": "network"
     }
   ],
   "dev_dependencies": null

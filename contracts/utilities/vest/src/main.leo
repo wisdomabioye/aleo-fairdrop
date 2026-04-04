@@ -57,15 +57,10 @@
 //   These are already derivable from the public auction config for any observer who
 //   identifies the bidder — no new privacy loss beyond the bid itself.
 //
-// ── KNOWN OPERATIONAL RISK (admin) ──────────────────────────────────────────
-// set_allowed_caller uses INITIAL_ADMIN constant. Address change requires upgrade.
-// Pre-mainnet: We must align INITIAL_ADMIN with the multisig in fairdrop_config.
-//
 // ── Leo 4.0 migration notes ───────────────────────────────────────────────────
 //   async constructor → constructor
 //   async transition  → fn; async function finalize_* → deleted, inlined as final {}
 //   self.caller captured before final {} for D12 guard (create_vest)
-//   self.signer captured before final {} where needed (set_allowed_caller)
 //   record fields captured before final {} in release (all 7 vest fields)
 //   TokenOwner struct moved outside program {}
 //   Future → Final, .aleo/ → .aleo::
@@ -83,22 +78,23 @@ import token_registry.aleo;
 // Must match token_registry.aleo TokenOwner field order exactly.
 struct TokenOwner { account: address, token_id: field }
 
+// Op struct for set_allowed_caller two-phase multisig approval.
+// op_hash = BHP256::hash_to_field(AllowedCallerOp { caller, allowed, nonce })
+struct AllowedCallerOp { caller: address, allowed: bool, nonce: u64 }
+
 // =============================================================================
 // Program interface
 // =============================================================================
 
 program fairdrop_vest_v2.aleo {
     // Upgrade governance: 3-of-5 multi-sig must call fairdrop_multisig_v1.aleo::approve_upgrade
-    // with contract_key=4field and this program's compiled checksum before deployment.
-    @checksum(mapping="fairdrop_multisig_v1.aleo::approved_upgrades", key="4field")
+    // with contract_key=5field and this program's compiled checksum before deployment.
+    @checksum(mapping="fairdrop_multisig_v1.aleo::approved_upgrades", key="5field")
     constructor() {}
 
     // =========================================================================
     // Constants
     // =========================================================================
-
-    // Initial protocol admin (runtime guard for set_allowed_caller).
-    const INITIAL_ADMIN: address = aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r;
 
     // Required role for mint_private at release time.
     // Token creators must grant this to fairdrop_vest_v2.aleo.
@@ -136,6 +132,9 @@ program fairdrop_vest_v2.aleo {
     // Auction programs authorised to call create_vest (D12).
     mapping allowed_callers: address => bool;
 
+    // Consumed op hashes — prevents the same multisig approval from executing twice.
+    mapping consumed_ops: field => bool;
+
     // =========================================================================
     // 1. set_allowed_caller — admin only
     // =========================================================================
@@ -147,10 +146,17 @@ program fairdrop_vest_v2.aleo {
     fn set_allowed_caller(
         public program_addr: address,
         public allowed:      bool,
+        public op_nonce:     u64,
     ) -> Final {
-        let caller: address = self.signer;
+        let op_hash: field = BHP256::hash_to_field(AllowedCallerOp {
+            caller:  program_addr,
+            allowed: allowed,
+            nonce:   op_nonce,
+        });
         return final {
-            assert_eq(caller, INITIAL_ADMIN);
+            assert(fairdrop_multisig_v1.aleo::approved_ops.get_or_use(op_hash, false));
+            assert(!consumed_ops.get_or_use(op_hash, false));
+            consumed_ops.set(op_hash, true);
             allowed_callers.set(program_addr, allowed);
         };
     }
@@ -249,64 +255,74 @@ program fairdrop_vest_v2.aleo {
     // Leo 4.0: all vest record fields captured before final {} (record fields are
     // proof-context only — private UTXO data unavailable inside final {}).
 
-    fn release(
-        vest:          VestedAllocation,
-        public amount: u128,
-    ) -> (token_registry.aleo::Token, VestedAllocation, Final) {
-        // Capture all private record fields before final block.
-        let total_amount:  u128 = vest.total_amount;
-        let released:      u128 = vest.released;
-        let cliff_block:   u32  = vest.cliff_block;
-        let end_block:     u32  = vest.end_block;
+    // !! COMMENTED OUT — Leo 4.0 compiler bug: "Finalization not found"
+    // token_registry.aleo::mint_private returns a Final. When this function is enabled,
+    // any program that imports fairdrop_vest_v2.aleo AND independently calls
+    // token_registry.aleo::mint_private (or any other Final-returning CPI) fails to build
+    // with "Finalization not found: token_registry.aleo::mint_private".
+    // Root cause: Leo compiler panics when the same Final-returning CPI appears in multiple
+    // programs in the import tree. VestedAllocation is a record of this program — release
+    // cannot be moved elsewhere. Re-enable once Leo fixes the finalization deduplication bug.
+    // Tracked in: docs/leo_bug_finalization_not_found.md | https://github.com/ProvableHQ/leo/issues/29297
+    //
+    // fn release(
+    //     vest:          VestedAllocation,
+    //     public amount: u128,
+    // ) -> (token_registry.aleo::Token, VestedAllocation, Final) {
+    //     // Capture all private record fields before final block.
+    //     let total_amount:  u128 = vest.total_amount;
+    //     let released:      u128 = vest.released;
+    //     let cliff_block:   u32  = vest.cliff_block;
+    //     let end_block:     u32  = vest.end_block;
 
-        // Mint vested tokens privately to the owner.
-        // vest.owner is private (from record) — never reaches finalize.
-        // vest.sale_token_id is revealed in finalize (already public auction info).
-        let (token, f_mint): (token_registry.aleo::Token, Final) =
-            token_registry.aleo::mint_private(
-                vest.sale_token_id,
-                vest.owner,
-                amount,
-                false,          // external_authorization_required
-                4294967295u32,  // authorized_until — no expiry
-            );
+    //     // Mint vested tokens privately to the owner.
+    //     // vest.owner is private (from record) — never reaches finalize.
+    //     // vest.sale_token_id is revealed in finalize (already public auction info).
+    //     let (token, f_mint): (token_registry.aleo::Token, Final) =
+    //         token_registry.aleo::mint_private(
+    //             vest.sale_token_id,
+    //             vest.owner,
+    //             amount,
+    //             false,          // external_authorization_required
+    //             4294967295u32,  // authorized_until — no expiry
+    //         );
 
-        // Consume the old VestedAllocation, issue updated one with released += amount.
-        // Leo reverts on overflow: released + amount > u128::MAX — impossible in practice.
-        let updated: VestedAllocation = VestedAllocation {
-            owner:         vest.owner,
-            sale_token_id: vest.sale_token_id,
-            auction_id:    vest.auction_id,
-            total_amount:  vest.total_amount,
-            released:      vest.released + amount,
-            cliff_block:   vest.cliff_block,
-            end_block:     vest.end_block,
-        };
+    //     // Consume the old VestedAllocation, issue updated one with released += amount.
+    //     // Leo reverts on overflow: released + amount > u128::MAX — impossible in practice.
+    //     let updated: VestedAllocation = VestedAllocation {
+    //         owner:         vest.owner,
+    //         sale_token_id: vest.sale_token_id,
+    //         auction_id:    vest.auction_id,
+    //         total_amount:  vest.total_amount,
+    //         released:      vest.released + amount,
+    //         cliff_block:   vest.cliff_block,
+    //         end_block:     vest.end_block,
+    //     };
 
-        return (token, updated, final {
-            // Execute the mint Final.
-            f_mint.run();
+    //     return (token, updated, final {
+    //         // Execute the mint Final.
+    //         f_mint.run();
 
-            // G_V5: zero-amount releases are invalid (and wasteful).
-            assert(amount > 0u128);
+    //         // G_V5: zero-amount releases are invalid (and wasteful).
+    //         assert(amount > 0u128);
 
-            // G_V1: cliff must have passed before any tokens can be released.
-            assert(block.height >= cliff_block);
+    //         // G_V1: cliff must have passed before any tokens can be released.
+    //         assert(block.height >= cliff_block);
 
-            // Compute how many blocks have elapsed within the vesting window.
-            // Cap at vesting_duration when block.height >= end_block (fully elapsed).
-            let vesting_duration: u32 = end_block - cliff_block;  // > 0 (enforced at create_vest)
-            let blocks_vested: u32    = block.height >= end_block
-                ? vesting_duration                  // fully elapsed: all tokens vested
-                : block.height - cliff_block;       // partial: proportional
+    //         // Compute how many blocks have elapsed within the vesting window.
+    //         // Cap at vesting_duration when block.height >= end_block (fully elapsed).
+    //         let vesting_duration: u32 = end_block - cliff_block;  // > 0 (enforced at create_vest)
+    //         let blocks_vested: u32    = block.height >= end_block
+    //             ? vesting_duration                  // fully elapsed: all tokens vested
+    //             : block.height - cliff_block;       // partial: proportional
 
-            // Compute vested_so_far via linear interpolation.
-            // Safe from u128 overflow for realistic values (see file header overflow note).
-            let vested_so_far: u128 = total_amount * (blocks_vested as u128) / (vesting_duration as u128);
+    //         // Compute vested_so_far via linear interpolation.
+    //         // Safe from u128 overflow for realistic values (see file header overflow note).
+    //         let vested_so_far: u128 = total_amount * (blocks_vested as u128) / (vesting_duration as u128);
 
-            // G_V9: amount must not exceed available (vested minus already released).
-            let available: u128 = vested_so_far - released;
-            assert(amount <= available);
-        });
-    }
+    //         // G_V9: amount must not exceed available (vested minus already released).
+    //         let available: u128 = vested_so_far - released;
+    //         assert(amount <= available);
+    //     });
+    // }
 }
