@@ -4,17 +4,19 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./parse":     "./src/parse/index.ts",
-    "./credits":   "./src/credits/index.ts",
-    "./format":    "./src/format/index.ts",
-    "./cache":     "./src/cache/index.ts",
-    "./client":    "./src/client.ts",
-    "./registry":  "./src/registry/index.ts",
+    "./parse": "./src/parse/index.ts",
+    "./credits": "./src/credits/index.ts",
+    "./format": "./src/format/index.ts",
+    "./cache": "./src/cache/index.ts",
+    "./client": "./src/client.ts",
+    "./registry": "./src/registry/index.ts",
     "./constants": "./src/constants.ts",
-    "./hash":      "./src/hash/index.ts"
+    "./hash": "./src/hash/index.ts"
   },
   "scripts": {
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@fairdrop/types": "workspace:*"
@@ -23,9 +25,12 @@
     "@provablehq/sdk": "*"
   },
   "peerDependenciesMeta": {
-    "@provablehq/sdk": { "optional": true }
+    "@provablehq/sdk": {
+      "optional": true
+    }
   },
   "devDependencies": {
-    "typescript": "~5.9.3"
+    "typescript": "~5.9.3",
+    "vitest": "^4.1.2"
   }
 }

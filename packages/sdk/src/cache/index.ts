@@ -1,10 +1,19 @@
 /**
  * Cache barrel — re-exports all cache modules.
  *
- * import { getPersisted, getCachedAuctionConfig, getCachedTokenInfo … } from '@fairdrop/sdk/cache'
+ * import { getPersisted, setStorage, MemoryStorageAdapter, … } from '@fairdrop/sdk/cache'
  */
 
-export { cacheKey, getPersisted, setPersisted, removePersisted, CACHE_VERSION } from './persist';
+export { type IStorage, LocalStorageAdapter, MemoryStorageAdapter } from './storage';
+
+export {
+  CACHE_VERSION,
+  setStorage,
+  cacheKey,
+  getPersisted,
+  setPersisted,
+  removePersisted,
+} from './persist';
 
 export {
   getCachedAuctionConfig,
