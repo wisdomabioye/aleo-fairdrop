@@ -1,18 +1,17 @@
 /**
  * token_registry.aleo mapping queries — browser-only.
  *
- * Uses BHP256 hashing from @provablehq/sdk to compute the (account, tokenId)
- * mapping keys used by token_registry.aleo for balance and role lookups.
- *
  * All functions return null on any error (network, hash, parse) rather than
  * throwing — callers treat null as "unknown" and retry on demand.
+ *
+ * Key derivation (computeTokenOwnerKey, generateTokenId) lives in @fairdrop/sdk/hash.
  */
 
-import { BHP256, Plaintext } from '@provablehq/sdk';
 import type { TokenInfo, TokenBalance } from '@fairdrop/types/domain';
 import { SYSTEM_PROGRAMS } from '../constants';
 import { getAleoClient } from '../client';
 import { parseTokenInfo, parseRawTokenBalance } from '../parse/token';
+import { computeTokenOwnerKey } from '../hash';
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
@@ -27,23 +26,6 @@ async function getMappingValue(mapping: string, key: string): Promise<string | n
   } catch {
     return null;
   }
-}
-
-/**
- * Compute the mapping key for (account, tokenId) pairs.
- * Mirrors: BHP256::hash_to_field(TokenOwner { account, token_id })
- * Struct field order matches Leo: struct TokenOwner { account: address, token_id: field }
- */
-export function computeTokenOwnerKey(account: string, tokenId: string): string {
-  const struct = Plaintext.fromString(`{ account: ${account}, token_id: ${tokenId} }`);
-  const bits   = struct.toBitsLe();
-  const bhp    = new BHP256();
-  const field  = bhp.hash(bits);
-  const key    = field.toString();
-  field.free();
-  bhp.free();
-  struct.free();
-  return key;
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
@@ -133,10 +115,3 @@ export async function fetchCreditsBalance(account: string): Promise<bigint | nul
   }
 }
 
-export function generateTokenId(): string {
-  const bytes = new Uint8Array(16);
-  crypto.getRandomValues(bytes);
-  let v = 0n;
-  for (const b of bytes) v = (v << 8n) | BigInt(b);
-  return v.toString() + 'field';
-}
