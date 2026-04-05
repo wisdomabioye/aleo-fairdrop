@@ -17,3 +17,5 @@ export {
   formatMicrocredits,
   isCreditsToken,
 } from './convert';
+
+export { shieldCredits } from './transactions';

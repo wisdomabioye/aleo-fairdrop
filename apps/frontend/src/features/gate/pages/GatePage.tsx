@@ -1,40 +1,33 @@
-import { useState, useRef }        from 'react';
-import { Link, useParams }         from 'react-router-dom';
-import { useWallet }               from '@provablehq/aleo-wallet-adaptor-react';
+import { useState, useRef, useEffect } from 'react';
+import { Link, useParams }             from 'react-router-dom';
+import { useWallet }                   from '@provablehq/aleo-wallet-adaptor-react';
 import { Button, Input, Label, Spinner, Skeleton, Textarea } from '@/components';
-import { isValidField }            from '@fairdrop/sdk/parse';
-import { GateMode, AuctionStatus } from '@fairdrop/types/domain';
-import { AppRoutes }               from '@/config';
-import { config, TX_DEFAULT_FEE }                  from '@/env';
-import { parseExecutionError }     from '@/shared/utils/errors';
-import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
-import { ConnectWalletPrompt }     from '@/shared/components/wallet/ConnectWalletPrompt';
-import { useAuction }              from '../../auctions/hooks/useAuction';
-
-const GATE_PROGRAM = config.programs.gate.programId;
+import { isValidField }                from '@fairdrop/sdk/parse';
+import { verifyMerkle, verifyCredential } from '@fairdrop/sdk/transactions';
+import { fetchGateConfig }             from '@fairdrop/sdk/chain';
+import { GateMode, AuctionStatus }     from '@fairdrop/types/domain';
+import { AppRoutes }                   from '@/config';
+import { parseExecutionError }         from '@/shared/utils/errors';
+import { useConfirmedSequentialTx }    from '@/shared/hooks/useConfirmedSequentialTx';
+import { ConnectWalletPrompt }         from '@/shared/components/wallet/ConnectWalletPrompt';
+import { useAuction }                  from '../../auctions/hooks/useAuction';
 
 // ── Merkle gate form ──────────────────────────────────────────────────────────
 
 function MerkleGateForm({ auctionId }: { auctionId: string }) {
   const { connected, executeTransaction } = useWallet();
 
-  const [proofJson,   setProofJson]   = useState('');
-  const [parseError,  setParseError]  = useState('');
-  const parsedRef = useRef<{ leaf: string; siblings: string[]; path_bits: string[] } | null>(null);
+  const [proofJson,  setProofJson]  = useState('');
+  const [parseError, setParseError] = useState('');
+  const parsedRef = useRef<{ siblings: string[]; pathBits: number } | null>(null);
 
   const tx = useConfirmedSequentialTx([{
     label: 'Prove Merkle gate',
     execute: async () => {
       const parsed = parsedRef.current;
       if (!parsed) throw new Error('Proof not parsed');
-      const siblingsLeo = `[${parsed.siblings.join(', ')}]`;
-      const pathBitsLeo = `[${parsed.path_bits.join(', ')}]`;
-      const result = await executeTransaction({
-        program:  GATE_PROGRAM,
-        function: 'prove_merkle',
-        inputs:   [auctionId, parsed.leaf, siblingsLeo, pathBitsLeo],
-        fee:      TX_DEFAULT_FEE,
-      });
+      const spec   = verifyMerkle(auctionId, parsed.siblings, parsed.pathBits);
+      const result = await executeTransaction({ ...spec, inputs: spec.inputs as string[] });
       return result?.transactionId;
     },
   }]);
@@ -51,22 +44,29 @@ function MerkleGateForm({ auctionId }: { auctionId: string }) {
     );
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setParseError('');
 
-    let parsed: { leaf: string; siblings: string[]; path_bits: string[] };
+    let raw: { leaf?: string; siblings: string[]; path_bits: (string | boolean)[] };
     try {
-      parsed = JSON.parse(proofJson);
-      if (!parsed.leaf || !Array.isArray(parsed.siblings) || !Array.isArray(parsed.path_bits)) {
-        throw new Error('Missing required fields: leaf, siblings, path_bits');
+      raw = JSON.parse(proofJson);
+      if (!Array.isArray(raw.siblings) || !Array.isArray(raw.path_bits)) {
+        throw new Error('Missing required fields: siblings, path_bits');
+      }
+      if (raw.siblings.length !== 20) {
+        throw new Error(`siblings must have exactly 20 elements (got ${raw.siblings.length})`);
       }
     } catch (err) {
       setParseError(`Invalid proof JSON: ${err instanceof Error ? err.message : String(err)}`);
       return;
     }
 
-    parsedRef.current = parsed;
+    // Pack path_bits boolean array → u32
+    const pathBits = raw.path_bits.reduce((acc: number, bit: string | boolean, i: number) =>
+      (bit === true || bit === 'true') ? acc | (1 << i) : acc, 0);
+
+    parsedRef.current = { siblings: raw.siblings, pathBits };
     tx.advance();
   }
 
@@ -80,14 +80,14 @@ function MerkleGateForm({ auctionId }: { auctionId: string }) {
         <Textarea
           id="merkle-proof"
           rows={8}
-          placeholder={`{\n  "leaf": "123field",\n  "siblings": ["456field", "789field"],\n  "path_bits": ["true", "false"]\n}`}
+          placeholder={`{\n  "siblings": ["0field", "123...field", ...],\n  "path_bits": [false, true, ...]\n}`}
           value={proofJson}
           onChange={(e) => setProofJson(e.target.value)}
           className="font-mono text-xs"
           disabled={busy}
         />
         <p className="text-xs text-muted-foreground">
-          Provided by the auction creator or their allowlist tooling.
+          20-element Merkle proof provided by the auction creator or their allowlist tooling.
         </p>
       </div>
 
@@ -103,31 +103,28 @@ function MerkleGateForm({ auctionId }: { auctionId: string }) {
 // ── Credential gate form ──────────────────────────────────────────────────────
 
 function CredentialGateForm({ auctionId }: { auctionId: string }) {
-  const { connected, requestRecords, executeTransaction } = useWallet();
+  const { connected, executeTransaction } = useWallet();
 
-  const [credKey, setCredKey] = useState('');
+  const [issuer,     setIssuer]     = useState<string | null>(null);
+  const [credJson,   setCredJson]   = useState('');
+  const [parseError, setParseError] = useState('');
+  const parsedRef = useRef<{ signature: string; expiry: number } | null>(null);
+
+  // Fetch the credential issuer address from chain
+  useEffect(() => {
+    fetchGateConfig(auctionId)
+      .then((cfg) => setIssuer(cfg?.issuer ?? null))
+      .catch(() => setIssuer(null));
+  }, [auctionId]);
 
   const tx = useConfirmedSequentialTx([{
     label: 'Prove credential gate',
     execute: async () => {
-      const recs = await (requestRecords as (p: string) => Promise<Record<string, unknown>[]>)(
-        config.programs.proof.programId,
-      ).catch(() => [] as Record<string, unknown>[]);
-
-      const cred = (recs ?? []).find((r) => {
-        const data = (r.data ?? r) as Record<string, string>;
-        const key  = String(data['credential_id'] ?? data['id'] ?? '');
-        return key === credKey;
-      });
-
-      if (!cred) throw new Error('Credential record not found in your wallet.');
-
-      const result = await executeTransaction({
-        program:  GATE_PROGRAM,
-        function: 'prove_credential',
-        inputs:   [cred as unknown as string, auctionId],
-        fee:      TX_DEFAULT_FEE,
-      });
+      const parsed = parsedRef.current;
+      if (!parsed) throw new Error('Credential not parsed');
+      if (!issuer)  throw new Error('Issuer address not loaded');
+      const spec   = verifyCredential(auctionId, issuer, parsed.signature, parsed.expiry);
+      const result = await executeTransaction({ ...spec, inputs: spec.inputs as string[] });
       return result?.transactionId;
     },
   }]);
@@ -144,34 +141,65 @@ function CredentialGateForm({ auctionId }: { auctionId: string }) {
     );
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!credKey.trim()) return;
+    setParseError('');
+
+    let raw: { signature: string; expiry: number };
+    try {
+      raw = JSON.parse(credJson);
+      if (!raw.signature || typeof raw.expiry !== 'number') {
+        throw new Error('Missing required fields: signature (string), expiry (number)');
+      }
+    } catch (err) {
+      setParseError(`Invalid credential JSON: ${err instanceof Error ? err.message : String(err)}`);
+      return;
+    }
+
+    parsedRef.current = { signature: raw.signature, expiry: raw.expiry };
     tx.advance();
   }
 
   const busy     = tx.busy || tx.isWaiting;
-  const errorMsg = tx.error ? parseExecutionError(tx.error) : '';
+  const errorMsg = parseError || (tx.error ? parseExecutionError(tx.error) : '');
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Issuer (read-only, fetched from chain) */}
       <div className="space-y-1.5">
-        <Label htmlFor="cred-id">Credential ID</Label>
-        <Input
-          id="cred-id"
-          placeholder="Credential field ID (e.g. 12345…field)"
-          value={credKey}
-          onChange={(e) => setCredKey(e.target.value)}
+        <Label>Credential Issuer</Label>
+        {issuer === null ? (
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Spinner className="size-3" /> Fetching issuer…
+          </div>
+        ) : (
+          <Input value={issuer} readOnly className="font-mono text-xs" />
+        )}
+        <p className="text-xs text-muted-foreground">
+          Only credentials signed by this address are accepted.
+        </p>
+      </div>
+
+      {/* Credential JSON */}
+      <div className="space-y-1.5">
+        <Label htmlFor="cred-json">Credential (JSON)</Label>
+        <Textarea
+          id="cred-json"
+          rows={5}
+          placeholder={`{\n  "signature": "sign1...",\n  "expiry": 1234567\n}`}
+          value={credJson}
+          onChange={(e) => setCredJson(e.target.value)}
+          className="font-mono text-xs"
           disabled={busy}
         />
         <p className="text-xs text-muted-foreground">
-          The credential record must be in your wallet, issued by the auction creator.
+          Provided by the auction creator. Contains your issuer-signed credential and its expiry block.
         </p>
       </div>
 
       {errorMsg && <p className="text-xs text-destructive">{errorMsg}</p>}
 
-      <Button type="submit" disabled={busy || !credKey.trim()}>
+      <Button type="submit" disabled={busy || !credJson.trim() || !issuer}>
         {busy ? <><Spinner className="mr-2 h-4 w-4" />Submitting…</> : 'Submit Credential'}
       </Button>
     </form>

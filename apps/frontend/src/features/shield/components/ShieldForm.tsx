@@ -7,13 +7,12 @@ import {
 import { ShieldCheck, Info } from 'lucide-react';
 import {
   CREDITS_DECIMALS, CREDITS_SYMBOL, CREDITS_RESERVED_TOKEN_ID,
-  aleoToMicro, formatMicrocredits, microToAleo,
+  aleoToMicro, formatMicrocredits, microToAleo, shieldCredits,
 } from '@fairdrop/sdk/credits';
-import { SYSTEM_PROGRAMS } from '@fairdrop/sdk/constants';
-import { WizardTxStatus }          from '@/shared/components/WizardTxStatus';
+import { DEFAULT_TX_FEE }           from '@fairdrop/sdk/transactions';
+import { WizardTxStatus }           from '@/shared/components/WizardTxStatus';
 import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
 import { useTokenBalance }          from '@/shared/hooks/useTokenBalance';
-import { TX_DEFAULT_FEE } from '@/env';
 
 export function ShieldForm() {
   const { address, executeTransaction } = useWallet();
@@ -35,13 +34,8 @@ export function ShieldForm() {
   const steps = [{
     label: 'Shield Credits',
     execute: async () => {
-      const result = await executeTransaction({
-        program:    SYSTEM_PROGRAMS.credits,
-        function:   'transfer_public_to_private',
-        inputs:     [address!, `${rawAmount}u64`],
-        fee:        TX_DEFAULT_FEE,
-        privateFee: false,
-      });
+      const spec   = shieldCredits(address!, rawAmount);
+      const result = await executeTransaction({ ...spec, inputs: spec.inputs as string[] });
       if (!result?.transactionId) {
         throw new Error('Wallet did not return a transaction ID — check your wallet for status.');
       }
@@ -69,7 +63,7 @@ export function ShieldForm() {
           <div className="text-sm text-muted-foreground space-y-1">
             <p>
               Shielding moves credits from your public{' '}
-              <code className="text-foreground">{SYSTEM_PROGRAMS.credits}</code> balance
+              <code className="text-foreground">credits.aleo</code> balance
               into a private on-chain UTXO record.
             </p>
             <p>
@@ -134,7 +128,7 @@ export function ShieldForm() {
 
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>Network fee (paid from public balance)</span>
-                <span>{microToAleo(BigInt(TX_DEFAULT_FEE))} {CREDITS_SYMBOL}</span>
+                <span>{microToAleo(BigInt(DEFAULT_TX_FEE))} {CREDITS_SYMBOL}</span>
               </div>
 
               {error && (
