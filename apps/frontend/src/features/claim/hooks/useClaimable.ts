@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
-import { parsePlaintext, stripVisibility, parseU128, u128ToBigInt } from '@fairdrop/sdk/parse';
+import { scanAuctionRecords } from '@fairdrop/sdk/records';
 import type { WalletRecord } from '@fairdrop/types/primitives';
 import { config } from '@/env';
 import { auctionsService } from '@/services/auctions.service';
@@ -54,20 +54,18 @@ export function useClaimable() {
             prog.programId, true,
           ).catch(() => [] as unknown[]);
 
-          for (const rec of (recs ?? [])) {
-            const entry = rec as WalletRecord;
-            if (typeof entry.recordPlaintext !== 'string') continue;
-            const isBid        = entry.recordName === 'Bid';
-            const isCommitment = entry.recordName === 'Commitment';
-            if (!isBid && !isCommitment) continue;
-            try {
-              const fields    = parsePlaintext(entry.recordPlaintext);
-              const auctionId = stripVisibility(fields['auction_id'] ?? '');
-              if (!auctionId) continue;
-              const paymentAmount = u128ToBigInt(parseU128(fields['payment_amount'] ?? '0u128'));
-              const kind: RecordKind = isCommitment ? 'commitment' : 'bid';
-              allRecords.push({ raw: entry, programId: prog.programId, auctionId, paymentAmount, kind });
-            } catch { /* skip malformed */ }
+          const entries  = (recs ?? []) as WalletRecord[];
+          const entryMap = new Map(entries.map((e) => [e.commitment, e]));
+          const { bids, commitments } = scanAuctionRecords(entries, prog.programId);
+          for (const b of bids) {
+            const raw = entryMap.get(b.id);
+            if (!raw || !b.auction_id) continue;
+            allRecords.push({ raw, programId: prog.programId, auctionId: b.auction_id, paymentAmount: b.payment_amount, kind: 'bid' });
+          }
+          for (const c of commitments) {
+            const raw = entryMap.get(c.id);
+            if (!raw || !c.auction_id) continue;
+            allRecords.push({ raw, programId: prog.programId, auctionId: c.auction_id, paymentAmount: c.payment_amount, kind: 'commitment' });
           }
         }),
       );
