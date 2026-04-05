@@ -1,76 +1,121 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
-import { Button, Input, Label, Spinner, Switch } from '@/components';
-import { formatMicrocredits, aleoToMicro } from '@fairdrop/sdk/credits';
-import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
+import { Input, Label } from '@/components';
 import { TX_DEFAULT_FEE } from '@/env';
+import { formatMicrocredits, aleoToMicro } from '@fairdrop/sdk/credits';
+import { formatAmount } from '@fairdrop/sdk/format';
+import {
+  placeBidPublic,
+  placeBidPublicRef,
+  placeBidPrivate,
+  placeBidPrivateRef,
+  type BidParams,
+} from '@fairdrop/sdk/transactions';
+import { AuctionType } from '@fairdrop/types/domain';
+import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
+import { useCreditRecords } from '@/shared/hooks/useCreditRecords';
+import {
+  BidModeToggle,
+  CreditRecordSelect,
+  ReferralInput,
+  BidSummaryPanel,
+  BidSubmitButton,
+  BidErrorBanner,
+  FormBlockerNotice,
+} from './_parts';
 import type { BidFormProps } from './types';
 
-/** LBP bid: payment amount drives the bonding curve swap. */
+/** LBP bid: user specifies ALEO to spend; quantity and max price are derived from currentPrice. */
 export function LbpBidForm({ auction, protocolConfig, onBidSuccess }: BidFormProps) {
   const { connected, executeTransaction } = useWallet();
   const [searchParams] = useSearchParams();
+  const { creditRecords, loading: creditsLoading } = useCreditRecords();
 
-  const [payInput, setPayInput] = useState('');
-  const [usePrivate, setUsePrivate] = useState(false);
-  const [codeId, setCodeId] = useState(searchParams.get('ref') ?? '');
+  const decimals     = auction.saleTokenDecimals ?? 0;
+  const currentPrice = auction.currentPrice ?? 0n;
+
+  const [mode,             setMode]             = useState<'private' | 'public'>('public');
+  const [payInput,         setPayInput]         = useState('');
+  const [selectedRecordId, setSelectedRecordId] = useState('');
+  const [recordTouched,    setRecordTouched]    = useState(false);
+  const [codeId,           setCodeId]           = useState(searchParams.get('ref') ?? '');
+  const [showReferral,     setShowReferral]     = useState(Boolean(searchParams.get('ref')));
 
   const payment = aleoToMicro(payInput) ?? 0n;
+
+  // Derived: expected token quantity at current price (bonding curve approximation).
+  // max_bid_price uses 5% slippage ceiling — finalize reverts if price moved above it.
+  const quantity    = currentPrice > 0n ? payment / currentPrice : 0n;
+  const maxBidPrice = currentPrice * 105n / 100n;
+
   const protocolFee = payment * BigInt(protocolConfig.feeBps) / 10_000n;
+  const referralCut = codeId.trim()
+    ? (protocolFee * BigInt(protocolConfig.referralPoolBps)) / 10_000n
+    : 0n;
+
+  const unspentRecords = useMemo(() => creditRecords.filter((r) => !r.spent), [creditRecords]);
+  const selectedRecord = unspentRecords.find((r) => r.id === selectedRecordId) ?? null;
+
+  const recordError = useMemo(() => {
+    if (mode !== 'private' || !recordTouched) return null;
+    if (!selectedRecord) return 'Select a payment source.';
+    if (payment > 0n && selectedRecord.microcredits < payment) return 'Insufficient record balance.';
+    return null;
+  }, [mode, recordTouched, selectedRecord, payment]);
+
+  const formBlocker = useMemo(() => {
+    if (!connected) return 'Connect wallet to place a bid.';
+    if (currentPrice <= 0n) return 'Current price unavailable.';
+    if (!payment) return 'Enter an amount.';
+    if (mode === 'private') {
+      if (!selectedRecord) return 'Select a payment source.';
+      if (selectedRecord.microcredits < payment) return 'Insufficient record balance.';
+    }
+    return null;
+  }, [connected, currentPrice, payment, mode, selectedRecord]);
 
   const bidSteps = [
     {
-      label: 'Place LBP Bid',
+      label: 'Swap',
       execute: async () => {
-        const hasRef = codeId.trim().length > 0;
-        const fn = hasRef
-          ? (usePrivate ? 'place_bid_private_ref' : 'place_bid_public_ref')
-          : (usePrivate ? 'place_bid_private' : 'place_bid_public');
+        const hasRef    = codeId.trim().length > 0;
+        const isPrivate = mode === 'private';
 
-        const inputs: string[] = [
-          auction.id,
-          `${payment}u64`,
-          ...(hasRef ? [codeId.trim()] : []),
-        ];
+        const params: BidParams = { type: AuctionType.Lbp, quantity, paymentAmount: payment, maxBidPrice };
+        const spec = isPrivate && selectedRecord
+          ? hasRef
+            ? placeBidPrivateRef(auction, params, selectedRecord._record, codeId.trim(), TX_DEFAULT_FEE)
+            : placeBidPrivate(auction, params, selectedRecord._record, TX_DEFAULT_FEE)
+          : hasRef
+            ? placeBidPublicRef(auction, params, codeId.trim(), TX_DEFAULT_FEE)
+            : placeBidPublic(auction, params, TX_DEFAULT_FEE);
 
-        const result = await executeTransaction({
-          program: auction.programId,
-          function: fn,
-          inputs,
-          fee: TX_DEFAULT_FEE,
-          privateFee: false,
-        });
-
+        const result = await executeTransaction({ ...spec, inputs: spec.inputs as string[] });
         return result?.transactionId;
       },
     },
   ];
 
   const {
-    done: bidDone,
-    busy: bidBusy,
-    isWaiting: bidWaiting,
-    error: bidError,
-    advance: placeBid,
-    reset: resetBid,
+    done: bidDone, busy: bidBusy, isWaiting: bidWaiting,
+    error: bidError, advance: placeBid, reset: resetBid,
   } = useConfirmedSequentialTx(bidSteps);
 
   useEffect(() => {
-    if (bidDone) {
-      setPayInput('');
-      onBidSuccess?.();
-      resetBid();
-    }
+    if (bidDone) { setPayInput(''); onBidSuccess?.(); resetBid(); }
   }, [bidDone]);
 
-  const isDisabled = !connected || bidBusy || bidWaiting || !payment;
-
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <p className="text-xs text-muted-foreground">
         Price shifts dynamically with token weight. Earlier participation typically yields better prices.
       </p>
+
+      <BidModeToggle
+        mode={mode}
+        onChange={(m) => { setMode(m); setRecordTouched(false); if (m === 'public') setSelectedRecordId(''); }}
+      />
 
       <div className="space-y-1.5">
         <Label htmlFor="lbp-pay">Amount (ALEO)</Label>
@@ -79,62 +124,48 @@ export function LbpBidForm({ auction, protocolConfig, onBidSuccess }: BidFormPro
           inputMode="decimal"
           placeholder="0.0"
           value={payInput}
+          className="h-8 text-xs"
           onChange={(e) => setPayInput(e.target.value)}
         />
       </div>
 
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-muted-foreground">Use private credits</span>
-        <Switch checked={usePrivate} onCheckedChange={setUsePrivate} />
-      </div>
-
-      <div className="space-y-1.5">
-        <Label htmlFor="lbp-ref">Referral code (optional)</Label>
-        <Input
-          id="lbp-ref"
-          placeholder="code_id field"
-          value={codeId}
-          onChange={(e) => setCodeId(e.target.value)}
+      {mode === 'private' && (
+        <CreditRecordSelect
+          records={unspentRecords}
+          loading={creditsLoading}
+          value={selectedRecordId}
+          onChange={(id) => { if (!recordTouched) setRecordTouched(true); setSelectedRecordId(id); }}
+          error={recordError}
         />
-      </div>
-
-      {payment > 0n && (
-        <div className="rounded-md border border-border bg-muted/40 p-3 text-xs space-y-1">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Payment</span>
-            <span>{formatMicrocredits(payment)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">
-              Protocol fee ({protocolConfig.feeBps / 100}%)
-            </span>
-            <span>−{formatMicrocredits(protocolFee)}</span>
-          </div>
-        </div>
       )}
 
-      <Button
-        type="button"
-        className="w-full"
-        disabled={isDisabled}
-        onClick={() => void placeBid()}
-      >
-        {bidBusy ? (
-          <>
-            <Spinner className="mr-2 h-3 w-3" />
-            Authorizing…
-          </>
-        ) : bidWaiting ? (
-          <>
-            <Spinner className="mr-2 h-3 w-3" />
-            Confirming…
-          </>
-        ) : (
-          'Swap'
-        )}
-      </Button>
+      <ReferralInput
+        value={codeId}
+        onChange={setCodeId}
+        show={showReferral}
+        onToggle={() => { setShowReferral((p) => { if (p) setCodeId(''); return !p; }); }}
+        inputId="lbp-ref"
+      />
 
-      {bidError && <p className="text-xs text-destructive">{bidError.message}</p>}
+      <BidSummaryPanel title="Summary" rows={[
+        payment > 0n     && ['You pay',            formatMicrocredits(payment)],
+        quantity > 0n    && ['Est. tokens out',    formatAmount(quantity, decimals)],
+        currentPrice > 0n && ['Max price (5% slip)', formatMicrocredits(maxBidPrice)],
+        payment > 0n     && [`Protocol fee (${protocolConfig.feeBps / 100}%)`, `-${formatMicrocredits(protocolFee)}`],
+        referralCut > 0n && ['Referral',           formatMicrocredits(referralCut)],
+      ]} />
+
+      <FormBlockerNotice message={formBlocker} />
+
+      <BidSubmitButton
+        busy={bidBusy}
+        waiting={bidWaiting}
+        disabled={!!formBlocker || bidBusy || bidWaiting}
+        onClick={() => void placeBid()}
+        label="Swap"
+      />
+
+      <BidErrorBanner error={bidError} />
     </div>
   );
 }

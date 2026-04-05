@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
-import { Button, Label, Spinner, Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components';
+import { Label, Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components';
 import { formatMicrocredits } from '@fairdrop/sdk/credits';
+import { revealBid } from '@fairdrop/sdk/transactions';
 import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
 import { useCommitmentRecords } from '@/shared/hooks/useCommitmentRecords';
-import type { AuctionView } from '@fairdrop/types/domain';
 import { TX_DEFAULT_FEE } from '@/env';
+import type { AuctionView } from '@fairdrop/types/domain';
+import { BidSubmitButton, BidErrorBanner } from './_parts';
 
 interface Props {
   auction:      AuctionView;
@@ -17,7 +19,7 @@ export function SealedRevealForm({ auction, onBidSuccess }: Props) {
   const [selectedCommitId, setSelectedCommitId] = useState('');
 
   const { commitmentRecords, loading } = useCommitmentRecords(auction.programId);
-  const commitments = commitmentRecords.filter((c) => !c.spent && c.auction_id === auction.id);
+  const commitments    = commitmentRecords.filter((c) => !c.spent && c.auction_id === auction.id);
   const selectedCommit = commitments.find((c) => c.id === selectedCommitId) ?? null;
 
   const maxBidAmount = auction.maxBidAmount ?? 0n;
@@ -26,17 +28,16 @@ export function SealedRevealForm({ auction, onBidSuccess }: Props) {
     label: 'Reveal bid',
     execute: async () => {
       if (!selectedCommit) throw new Error('Select a commitment record.');
-      const result = await executeTransaction({
-        program: auction.programId, function: 'reveal_bid',
-        inputs: [selectedCommit._record, `${selectedCommit.quantity}u128`, selectedCommit.nonce, `${maxBidAmount}u128`] as string[],
-        fee: TX_DEFAULT_FEE, privateFee: false,
-      });
+      const spec   = revealBid(selectedCommit._record, selectedCommit.quantity, selectedCommit.nonce, maxBidAmount, TX_DEFAULT_FEE);
+      const result = await executeTransaction({ ...spec, inputs: spec.inputs as string[] });
       return result?.transactionId;
     },
   }];
 
-  const { done: bidDone, busy: bidBusy, isWaiting: bidWaiting, error: bidError, advance: submitBid, reset: resetBid } =
-    useConfirmedSequentialTx(bidSteps);
+  const {
+    done: bidDone, busy: bidBusy, isWaiting: bidWaiting,
+    error: bidError, advance: submitBid, reset: resetBid,
+  } = useConfirmedSequentialTx(bidSteps);
 
   useEffect(() => {
     if (!bidDone) return;
@@ -94,15 +95,15 @@ export function SealedRevealForm({ auction, onBidSuccess }: Props) {
         </div>
       )}
 
-      <Button type="button" className="w-full" disabled={isDisabled || !selectedCommit} onClick={() => void submitBid()}>
-        {bidBusy ? <><Spinner className="mr-2 h-3 w-3" />Authorizing…</> : bidWaiting ? <><Spinner className="mr-2 h-3 w-3" />Confirming…</> : 'Reveal Bid'}
-      </Button>
+      <BidSubmitButton
+        busy={bidBusy}
+        waiting={bidWaiting}
+        disabled={isDisabled || !selectedCommit}
+        onClick={() => void submitBid()}
+        label="Reveal Bid"
+      />
 
-      {bidError && (
-        <div className="rounded-lg border border-destructive/15 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-          {bidError.message}
-        </div>
-      )}
+      <BidErrorBanner error={bidError} />
     </div>
   );
 }

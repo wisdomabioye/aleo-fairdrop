@@ -1,91 +1,79 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { Eye, Shield } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
-import {
-  Button,
-  Input,
-  Label,
-  Spinner,
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from '@/components';
-import { AppRoutes } from '@/config';
+import { Input, Label } from '@/components';
 import { TX_DEFAULT_FEE } from '@/env';
 import { formatMicrocredits } from '@fairdrop/sdk/credits';
 import { formatAmount, parseTokenAmount } from '@fairdrop/sdk/format';
+import {
+  placeBidPublic,
+  placeBidPublicRef,
+  placeBidPrivate,
+  placeBidPrivateRef,
+  type BidParams,
+} from '@fairdrop/sdk/transactions';
+import { AuctionType } from '@fairdrop/types/domain';
 import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
 import { useCreditRecords } from '@/shared/hooks/useCreditRecords';
-import { cn } from '@/lib/utils';
+import {
+  BidModeToggle,
+  CreditRecordSelect,
+  ReferralInput,
+  BidSummaryPanel,
+  BidSubmitButton,
+  BidErrorBanner,
+  FormBlockerNotice,
+} from './_parts';
 import type { BidFormProps } from './types';
 
-/** Ascending bid: pay-what-you-bid — price rises over time, no uniform clearing. */
 export function AscendingBidForm({ auction, protocolConfig, onBidSuccess }: BidFormProps) {
   const { connected, executeTransaction } = useWallet();
   const [searchParams] = useSearchParams();
   const { creditRecords, loading: creditsLoading } = useCreditRecords();
-  
-  const totalCommitted = BigInt(auction.totalCommitted);
-  const supply = BigInt(auction.supply);
-  const remaining = supply > totalCommitted ? supply - totalCommitted : 0n;
-  const supplyMet = remaining === 0n;
-  const decimals = auction.saleTokenDecimals ?? 0;
-  const saleScale = BigInt(auction.saleScale);
-  const currentPrice = BigInt(auction.currentPrice ?? 0);
 
-  const minBidAmount = auction.minBidAmount ?? 0n;
-  const maxBidAmount = auction.maxBidAmount ?? 0n;
-  // If remaining supply is less than the minimum bid, the auction is effectively closed to new bids
+  const totalCommitted   = BigInt(auction.totalCommitted);
+  const supply           = BigInt(auction.supply);
+  const remaining        = supply > totalCommitted ? supply - totalCommitted : 0n;
+  const supplyMet        = remaining === 0n;
+  const decimals         = auction.saleTokenDecimals ?? 0;
+  const saleScale        = BigInt(auction.saleScale);
+  const currentPrice     = BigInt(auction.currentPrice ?? 0);
+  const minBidAmount     = auction.minBidAmount ?? 0n;
+  const maxBidAmount     = auction.maxBidAmount ?? 0n;
   const remainingTooSmall = !supplyMet && minBidAmount > 0n && remaining < minBidAmount;
 
-  const [mode, setMode] = useState<'private' | 'public'>('private');
-  const [qtyInput, setQtyInput] = useState('');
-  const [qtyTouched, setQtyTouched] = useState(false);
+  const [mode,             setMode]             = useState<'private' | 'public'>('private');
+  const [qtyInput,         setQtyInput]         = useState('');
+  const [qtyTouched,       setQtyTouched]       = useState(false);
   const [selectedRecordId, setSelectedRecordId] = useState('');
-  const [recordTouched, setRecordTouched] = useState(false);
-  const [codeId, setCodeId] = useState(searchParams.get('ref') ?? '');
-  const [showReferral, setShowReferral] = useState(Boolean(searchParams.get('ref')));
+  const [recordTouched,    setRecordTouched]    = useState(false);
+  const [codeId,           setCodeId]           = useState(searchParams.get('ref') ?? '');
+  const [showReferral,     setShowReferral]     = useState(Boolean(searchParams.get('ref')));
 
-  const qtyRaw = parseTokenAmount(qtyInput, decimals);
-  const qtyHuman = saleScale > 0n ? qtyRaw / saleScale : 0n;
-  const payment = qtyHuman * currentPrice;
+  const qtyRaw      = parseTokenAmount(qtyInput, decimals);
+  const qtyHuman    = saleScale > 0n ? qtyRaw / saleScale : 0n;
+  const payment     = qtyHuman * currentPrice;
   const protocolFee = (payment * BigInt(protocolConfig.feeBps)) / 10_000n;
   const referralCut = codeId.trim()
     ? (protocolFee * BigInt(protocolConfig.referralPoolBps)) / 10_000n
     : 0n;
 
-  const unspentRecords = useMemo(
-    () => creditRecords.filter((record) => !record.spent),
-    [creditRecords]
-  );
-
-  const selectedRecord =
-    unspentRecords.find((record) => record.id === selectedRecordId) ?? null;
+  const unspentRecords = useMemo(() => creditRecords.filter((r) => !r.spent), [creditRecords]);
+  const selectedRecord = unspentRecords.find((r) => r.id === selectedRecordId) ?? null;
 
   const quantityError = useMemo(() => {
     if (!qtyTouched) return null;
     if (qtyRaw <= 0n) return 'Enter a quantity.';
-    if (minBidAmount > 0n && qtyRaw < minBidAmount) {
-      return `Minimum ${formatAmount(minBidAmount, decimals)}.`;
-    }
-    if (maxBidAmount > 0n && qtyRaw > maxBidAmount) {
-      return `Maximum ${formatAmount(maxBidAmount, decimals)}.`;
-    }
-    if (remaining > 0n && qtyRaw > remaining) {
-      return `Only ${formatAmount(remaining, decimals)} remaining.`;
-    }
+    if (minBidAmount > 0n && qtyRaw < minBidAmount) return `Minimum ${formatAmount(minBidAmount, decimals)}.`;
+    if (maxBidAmount > 0n && qtyRaw > maxBidAmount) return `Maximum ${formatAmount(maxBidAmount, decimals)}.`;
+    if (remaining > 0n && qtyRaw > remaining) return `Only ${formatAmount(remaining, decimals)} remaining.`;
     return null;
   }, [qtyTouched, qtyRaw, minBidAmount, maxBidAmount, remaining, decimals]);
 
   const recordError = useMemo(() => {
     if (mode !== 'private' || !recordTouched) return null;
     if (!selectedRecord) return 'Select a payment source.';
-    if (payment > 0n && selectedRecord.microcredits < payment) {
-      return 'Selected record does not have enough balance.';
-    }
+    if (payment > 0n && selectedRecord.microcredits < payment) return 'Selected record does not have enough balance.';
     return null;
   }, [mode, recordTouched, selectedRecord, payment]);
 
@@ -97,102 +85,55 @@ export function AscendingBidForm({ auction, protocolConfig, onBidSuccess }: BidF
     if (quantityError) return quantityError;
     if (mode === 'private') {
       if (!selectedRecord) return 'Select a payment source.';
-      if (payment > 0n && selectedRecord.microcredits < payment) {
-        return 'Selected record does not have enough balance.';
-      }
+      if (payment > 0n && selectedRecord.microcredits < payment) return 'Selected record does not have enough balance.';
     }
     return null;
   }, [supplyMet, remainingTooSmall, remaining, decimals, connected, currentPrice, quantityError, mode, selectedRecord, payment]);
 
   const bidSteps = useMemo(
-    () => [
-      {
-        label: mode === 'private' ? 'Place Private Ascending Bid' : 'Place Public Ascending Bid',
-        execute: async () => {
-          const hasRef = codeId.trim().length > 0;
-          const isPrivate = mode === 'private';
+    () => [{
+      label: mode === 'private' ? 'Place Private Ascending Bid' : 'Place Public Ascending Bid',
+      execute: async () => {
+        const hasRef    = codeId.trim().length > 0;
+        const isPrivate = mode === 'private';
 
-          const fn = hasRef
-            ? isPrivate
-              ? 'place_bid_private_ref'
-              : 'place_bid_public_ref'
-            : isPrivate
-              ? 'place_bid_private'
-              : 'place_bid_public';
+        const params: BidParams = { type: AuctionType.Ascending, quantity: qtyRaw, paymentAmount: payment };
+        const spec = isPrivate && selectedRecord
+          ? hasRef
+            ? placeBidPrivateRef(auction, params, selectedRecord._record, codeId.trim(), TX_DEFAULT_FEE)
+            : placeBidPrivate(auction, params, selectedRecord._record, TX_DEFAULT_FEE)
+          : hasRef
+            ? placeBidPublicRef(auction, params, codeId.trim(), TX_DEFAULT_FEE)
+            : placeBidPublic(auction, params, TX_DEFAULT_FEE);
 
-          const inputs: string[] = [
-            ...(isPrivate && selectedRecord ? [selectedRecord._record] : []),
-            auction.id,
-            `${qtyRaw}u128`,
-            `${payment}u64`,
-            ...(hasRef ? [codeId.trim()] : []),
-          ];
-
-          const result = await executeTransaction({
-            program: auction.programId,
-            function: fn,
-            inputs,
-            fee: TX_DEFAULT_FEE,
-            privateFee: false,
-          });
-
-          return result?.transactionId;
-        },
+        const result = await executeTransaction({ ...spec, inputs: spec.inputs as string[] });
+        return result?.transactionId;
       },
-    ],
-    [auction.id, auction.programId, codeId, executeTransaction, mode, payment, qtyRaw, selectedRecord]
+    }],
+    [auction, codeId, executeTransaction, mode, payment, qtyRaw, selectedRecord],
   );
 
   const {
-    done: bidDone,
-    busy: bidBusy,
-    isWaiting: bidWaiting,
-    error: bidError,
-    advance: placeBid,
-    reset: resetBid,
+    done: bidDone, busy: bidBusy, isWaiting: bidWaiting,
+    error: bidError, advance: placeBid, reset: resetBid,
   } = useConfirmedSequentialTx(bidSteps);
 
   useEffect(() => {
     if (!bidDone) return;
-    setQtyInput('');
-    setQtyTouched(false);
-    setRecordTouched(false);
-    onBidSuccess?.();
-    resetBid();
+    setQtyInput(''); setQtyTouched(false); setRecordTouched(false);
+    onBidSuccess?.(); resetBid();
   }, [bidDone]);
 
-  const isDisabled = !!formBlocker || bidBusy || bidWaiting;
-  const showSummary = qtyRaw > 0n || (mode === 'private' && !!selectedRecord) || !!codeId.trim();
+  const isDisabled       = !!formBlocker || bidBusy || bidWaiting;
+  const showSummary      = qtyRaw > 0n || (mode === 'private' && !!selectedRecord) || !!codeId.trim();
   const showWalletNotice = supplyMet || remainingTooSmall || !connected || currentPrice <= 0n;
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-2">
-        {(['private', 'public'] as const).map((value) => {
-          const active = mode === value;
-
-          return (
-            <button
-              key={value}
-              type="button"
-              onClick={() => {
-                setMode(value);
-                setRecordTouched(false);
-                if (value === 'public') setSelectedRecordId('');
-              }}
-              className={cn(
-                'flex h-9 items-center justify-center gap-1.5 rounded-xl border px-3 text-xs font-medium transition-colors',
-                active
-                  ? 'border-sky-500/16 bg-sky-500/10 text-sky-700 dark:text-sky-300'
-                  : 'border-border/70 bg-background/50 text-muted-foreground hover:border-sky-500/10 hover:text-foreground'
-              )}
-            >
-              {value === 'private' ? <Shield className="size-3.5" /> : <Eye className="size-3.5" />}
-              {value === 'private' ? 'Private' : 'Public'}
-            </button>
-          );
-        })}
-      </div>
+      <BidModeToggle
+        mode={mode}
+        onChange={(m) => { setMode(m); setRecordTouched(false); if (m === 'public') setSelectedRecordId(''); }}
+      />
 
       <p className="text-[11px] text-muted-foreground py-2">
         Price rises over time. You pay the price at the moment you bid, no uniform clearing price.
@@ -209,10 +150,7 @@ export function AscendingBidForm({ auction, protocolConfig, onBidSuccess }: BidF
           value={qtyInput}
           className="h-8 text-xs"
           onBlur={() => setQtyTouched(true)}
-          onChange={(e) => {
-            if (!qtyTouched) setQtyTouched(true);
-            setQtyInput(e.target.value);
-          }}
+          onChange={(e) => { if (!qtyTouched) setQtyTouched(true); setQtyInput(e.target.value); }}
           aria-invalid={!!quantityError}
         />
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px]">
@@ -223,196 +161,50 @@ export function AscendingBidForm({ auction, protocolConfig, onBidSuccess }: BidF
               {maxBidAmount > 0n ? `Max ${formatAmount(maxBidAmount, decimals)}` : null}
             </span>
           )}
-          {quantityError ? <span className="text-destructive">{quantityError}</span> : null}
+          {quantityError && <span className="text-destructive">{quantityError}</span>}
         </div>
       </div>
 
       {mode === 'private' && (
-        <div className="flex flex-col gap-1">
-          <Label className="text-xs text-muted-foreground">Payment source</Label>
-
-          {unspentRecords.length > 0 ? (
-            <>
-              <Select
-                value={selectedRecordId}
-                onValueChange={(value) => {
-                  if (!recordTouched) setRecordTouched(true);
-                  setSelectedRecordId(value);
-                }}
-              >
-                <SelectTrigger className="h-8 w-full text-xs">
-                  <SelectValue
-                    placeholder={creditsLoading ? 'Loading records…' : 'Select record'}
-                  />
-                </SelectTrigger>
-
-                <SelectContent>
-                  {unspentRecords.map((record, index) => (
-                    <SelectItem key={record.id} value={record.id} className="text-xs">
-                      {`Record ${index + 1} • ${formatMicrocredits(record.microcredits)} ALEO`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {recordError ? (
-                <p className="text-[11px] text-destructive">{recordError}</p>
-              ) : (
-                <p className="text-[11px] text-muted-foreground">
-                  Choose the shielded record used to fund this bid.
-                </p>
-              )}
-            </>
-          ) : (
-            <div className="rounded-xl border border-border/70 bg-background/50 px-3 py-2.5 text-xs text-muted-foreground">
-              {creditsLoading ? (
-                'Loading private records…'
-              ) : (
-                <>
-                  No private credits records.{' '}
-                  <Link
-                    to={AppRoutes.shield}
-                    className="font-medium text-foreground underline underline-offset-4"
-                  >
-                    Shield credits
-                  </Link>
-                  .
-                </>
-              )}
-            </div>
-          )}
-        </div>
+        <CreditRecordSelect
+          records={unspentRecords}
+          loading={creditsLoading}
+          value={selectedRecordId}
+          onChange={(id) => { if (!recordTouched) setRecordTouched(true); setSelectedRecordId(id); }}
+          error={recordError}
+        />
       )}
 
-      {!showReferral && !codeId ? (
-        <button
-          type="button"
-          onClick={() => setShowReferral(true)}
-          className="text-left text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground"
-        >
-          + Add referral code
-        </button>
-      ) : (
-        <div className="space-y-1.5">
-          <button
-            type="button"
-            onClick={() => {
-              setShowReferral((prev) => {
-                const next = !prev;
-                if (!next) setCodeId('');
-                return next;
-              });
-            }}
-            className="text-left text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground"
-          >
-            {showReferral ? '− Hide referral code' : '+ Add referral code'}
-          </button>
+      <ReferralInput
+        value={codeId}
+        onChange={setCodeId}
+        show={showReferral}
+        onToggle={() => { setShowReferral((p) => { if (p) setCodeId(''); return !p; }); }}
+        inputId="asc-ref"
+      />
 
-          {showReferral ? (
-            <div className="space-y-1.5">
-              <Label htmlFor="asc-ref">Referral code</Label>
-              <Input
-                id="asc-ref"
-                placeholder="Optional"
-                value={codeId}
-                className="h-8 text-xs"
-                onChange={(e) => setCodeId(e.target.value)}
-              />
-            </div>
-          ) : null}
-        </div>
+      {showSummary && (
+        <BidSummaryPanel rows={[
+          currentPrice > 0n  && ['Price',          formatMicrocredits(currentPrice)],
+          qtyRaw > 0n        && ['Amount',         formatAmount(qtyRaw, decimals)],
+          payment > 0n       && ['Total',          formatMicrocredits(payment)],
+          payment > 0n       && [`Fee (${protocolConfig.feeBps / 100}%)`, formatMicrocredits(protocolFee)],
+          selectedRecord     && ['Record balance', formatMicrocredits(selectedRecord.microcredits)],
+          referralCut > 0n   && ['Referral',       formatMicrocredits(referralCut)],
+        ]} />
       )}
 
-      {showSummary ? (
-        <div className="rounded-xl border border-border/70 bg-background/50 px-3 py-3">
-          <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground/80">
-            Cost
-          </p>
+      {showWalletNotice && <FormBlockerNotice message={formBlocker} />}
 
-          <div className="space-y-1.5 text-xs">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-muted-foreground">Price</span>
-              <span className="font-medium text-foreground">
-                {currentPrice > 0n ? formatMicrocredits(currentPrice) : '—'}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-muted-foreground">Amount</span>
-              <span className="font-medium text-foreground">
-                {qtyRaw > 0n ? formatAmount(qtyRaw, decimals) : '—'}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-muted-foreground">Total</span>
-              <span className="font-medium text-foreground">
-                {payment > 0n ? formatMicrocredits(payment) : '—'}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-muted-foreground">Fee ({protocolConfig.feeBps / 100}%)</span>
-              <span className="font-medium text-foreground">
-                {payment > 0n ? formatMicrocredits(protocolFee) : '—'}
-              </span>
-            </div>
-
-            {mode === 'private' && selectedRecord ? (
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-muted-foreground">Record balance</span>
-                <span className="font-medium text-foreground">
-                  {formatMicrocredits(selectedRecord.microcredits)}
-                </span>
-              </div>
-            ) : null}
-
-            {referralCut > 0n ? (
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-muted-foreground">Referral</span>
-                <span className="font-medium text-foreground">
-                  {formatMicrocredits(referralCut)}
-                </span>
-              </div>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
-
-      {showWalletNotice ? (
-        <div className="rounded-lg border border-border/70 bg-background/60 px-3 py-2 text-xs text-muted-foreground">
-          {formBlocker}
-        </div>
-      ) : null}
-
-      <Button
-        type="button"
-        className="w-full"
+      <BidSubmitButton
+        busy={bidBusy}
+        waiting={bidWaiting}
         disabled={isDisabled}
         onClick={() => void placeBid()}
-      >
-        {bidBusy ? (
-          <>
-            <Spinner className="mr-2 h-3 w-3" />
-            Authorizing…
-          </>
-        ) : bidWaiting ? (
-          <>
-            <Spinner className="mr-2 h-3 w-3" />
-            Confirming…
-          </>
-        ) : supplyMet ? (
-          'Supply Met'
-        ) : (
-          `Place ${mode === 'private' ? 'Private' : 'Public'} Bid`
-        )}
-      </Button>
+        label={supplyMet ? 'Supply Met' : `Place ${mode === 'private' ? 'Private' : 'Public'} Bid`}
+      />
 
-      {bidError ? (
-        <div className="rounded-lg border border-destructive/15 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-          {bidError.message}
-        </div>
-      ) : null}
+      <BidErrorBanner error={bidError} />
     </div>
   );
 }

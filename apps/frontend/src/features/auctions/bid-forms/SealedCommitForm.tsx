@@ -1,21 +1,30 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { Eye, Shield } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
-import {
-  Button, Input, Label, Spinner,
-  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
-} from '@/components';
+import { Input, Label } from '@/components';
 import { formatMicrocredits, aleoToMicro } from '@fairdrop/sdk/credits';
 import { parseTokenAmount } from '@fairdrop/sdk/format';
-import { generateTokenId } from '@fairdrop/sdk/registry';
+import { generateTokenId } from '@fairdrop/sdk/hash';
+import {
+  commitBidPublic,
+  commitBidPublicRef,
+  commitBidPrivate,
+  commitBidPrivateRef,
+} from '@fairdrop/sdk/transactions';
 import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
 import { useCreditRecords } from '@/shared/hooks/useCreditRecords';
 import { useCommitmentRecords } from '@/shared/hooks/useCommitmentRecords';
-import { AppRoutes } from '@/config';
-import { cn } from '@/lib/utils';
-import type { AuctionView, ProtocolConfig } from '@fairdrop/types/domain';
 import { TX_DEFAULT_FEE } from '@/env';
+import type { AuctionView, ProtocolConfig } from '@fairdrop/types/domain';
+import {
+  BidModeToggle,
+  CreditRecordSelect,
+  ReferralInput,
+  BidSummaryPanel,
+  BidSubmitButton,
+  BidErrorBanner,
+  FormBlockerNotice,
+} from './_parts';
 
 interface Props {
   auction:        AuctionView;
@@ -102,16 +111,14 @@ export function SealedCommitForm({ auction, protocolConfig, onBidSuccess }: Prop
       const nonce     = generateTokenId();
       const isPrivate = mode === 'private';
       const hasRef    = codeId.trim().length > 0;
-      const fn = hasRef
-        ? (isPrivate ? 'commit_bid_private_ref' : 'commit_bid_public_ref')
-        : (isPrivate ? 'commit_bid_private'     : 'commit_bid_public');
-
-      const inputs: string[] = [
-        ...(isPrivate && selectedRecord ? [selectedRecord._record] : []),
-        auction.id, `${qtyRaw}u128`, nonce, `${paymentMicro}u64`,
-        ...(hasRef ? [codeId.trim()] : []),
-      ];
-      const result = await executeTransaction({ program: auction.programId, function: fn, inputs, fee: TX_DEFAULT_FEE, privateFee: false });
+      const spec = isPrivate && selectedRecord
+        ? hasRef
+          ? commitBidPrivateRef(selectedRecord._record, auction.id, qtyRaw, nonce, paymentMicro, codeId.trim(), TX_DEFAULT_FEE)
+          : commitBidPrivate(selectedRecord._record, auction.id, qtyRaw, nonce, paymentMicro, TX_DEFAULT_FEE)
+        : hasRef
+          ? commitBidPublicRef(auction.id, qtyRaw, nonce, paymentMicro, codeId.trim(), TX_DEFAULT_FEE)
+          : commitBidPublic(auction.id, qtyRaw, nonce, paymentMicro, TX_DEFAULT_FEE);
+      const result = await executeTransaction({ ...spec, inputs: spec.inputs as string[] });
       return result?.transactionId;
     },
   }], [auction.id, auction.programId, codeId, executeTransaction, mode, paymentMicro, qtyRaw, selectedRecord]);
@@ -170,23 +177,10 @@ export function SealedCommitForm({ auction, protocolConfig, onBidSuccess }: Prop
         )}
       </div>
 
-      {/* Private / Public tabs */}
-      <div className="grid grid-cols-2 gap-2">
-        {(['private', 'public'] as const).map((value) => {
-          const active = mode === value;
-          return (
-            <button key={value} type="button"
-              onClick={() => { setMode(value); setRecordTouched(false); if (value === 'public') setSelectedRecordId(''); }}
-              className={cn('flex h-9 items-center justify-center gap-1.5 rounded-xl border px-3 text-xs font-medium transition-colors',
-                active ? 'border-sky-500/16 bg-sky-500/10 text-sky-700 dark:text-sky-300'
-                       : 'border-border/70 bg-background/50 text-muted-foreground hover:border-sky-500/10 hover:text-foreground'
-              )}>
-              {value === 'private' ? <Shield className="size-3.5" /> : <Eye className="size-3.5" />}
-              {value === 'private' ? 'Private' : 'Public'}
-            </button>
-          );
-        })}
-      </div>
+      <BidModeToggle
+        mode={mode}
+        onChange={(m) => { setMode(m); setRecordTouched(false); if (m === 'public') setSelectedRecordId(''); }}
+      />
 
       {/* Quantity */}
       <div className="space-y-1.5">
@@ -200,7 +194,8 @@ export function SealedCommitForm({ auction, protocolConfig, onBidSuccess }: Prop
         <Label htmlFor="sealed-pay">Collateral (ALEO)</Label>
         <Input id="sealed-pay" inputMode="decimal"
           placeholder={qtyHuman > 0n && clearingPriceEst > 0n ? `est: ${formatMicrocredits(qtyHuman * clearingPriceEst)}` : 'auto-computed'}
-          value={payInput} className={cn('h-8 text-xs', paymentError && 'border-destructive focus-visible:ring-destructive/30')}
+          value={payInput}
+          className={`h-8 text-xs${paymentError ? ' border-destructive focus-visible:ring-destructive/30' : ''}`}
           aria-invalid={!!paymentError}
           onBlur={() => setPayTouched(true)}
           onChange={(e) => { if (!payTouched) setPayTouched(true); setPayInput(e.target.value); }} />
@@ -212,86 +207,45 @@ export function SealedCommitForm({ auction, protocolConfig, onBidSuccess }: Prop
         </div>
       </div>
 
-      {/* Credit record (private only) */}
       {mode === 'private' && (
-        <div className="flex flex-col gap-1">
-          <Label className="text-xs text-muted-foreground">Payment record</Label>
-          {unspentRecords.length > 0 ? (
-            <Select value={selectedRecordId} onValueChange={(v) => { if (!recordTouched) setRecordTouched(true); setSelectedRecordId(v); }}>
-              <SelectTrigger className="h-8 w-full text-xs">
-                <SelectValue placeholder={creditsLoading ? 'Loading records…' : 'Select record'} />
-              </SelectTrigger>
-              <SelectContent>
-                {unspentRecords.map((r, i) => (
-                  <SelectItem key={r.id} value={r.id} className="text-xs">
-                    {`Record ${i + 1} · ${formatMicrocredits(r.microcredits)}`}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : (
-            <div className="rounded-xl border border-border/70 bg-background/50 px-3 py-2.5 text-xs text-muted-foreground">
-              {creditsLoading ? 'Loading…' : <>No private credits. <Link to={AppRoutes.shield} className="font-medium text-foreground underline underline-offset-4">Shield credits</Link>.</>}
-            </div>
-          )}
-          {recordError && <p className="text-[11px] text-destructive">{recordError}</p>}
-        </div>
+        <CreditRecordSelect
+          records={unspentRecords}
+          loading={creditsLoading}
+          value={selectedRecordId}
+          onChange={(v) => { if (!recordTouched) setRecordTouched(true); setSelectedRecordId(v); }}
+          error={recordError}
+          label="Payment record"
+        />
       )}
 
-      {/* Referral */}
-      {!showReferral && !codeId ? (
-        <button type="button" onClick={() => setShowReferral(true)}
-          className="text-left text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground">
-          + Add referral code
-        </button>
-      ) : (
-        <div className="space-y-1.5">
-          <button type="button" onClick={() => { setShowReferral((p) => { if (p) setCodeId(''); return !p; }); }}
-            className="text-left text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground">
-            {showReferral ? '− Hide referral code' : '+ Add referral code'}
-          </button>
-          {showReferral && <Input placeholder="Optional" value={codeId} className="h-8 text-xs" onChange={(e) => setCodeId(e.target.value)} />}
-        </div>
-      )}
+      <ReferralInput
+        value={codeId}
+        onChange={setCodeId}
+        show={showReferral}
+        onToggle={() => { setShowReferral((p) => { if (p) setCodeId(''); return !p; }); }}
+      />
 
-      {/* Cost summary */}
-      {paymentMicro > 0n && (
-        <div className="rounded-xl border border-border/70 bg-background/50 px-3 py-3">
-          <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground/80">Summary</p>
-          <div className="space-y-1.5 text-xs">
-            {([
-              floorPrice > 0n        ? ['Floor price',       formatMicrocredits(floorPrice)]                    : null,
-              clearingPriceEst > 0n  ? ['Est. clearing',     formatMicrocredits(clearingPriceEst)]              : null,
-              qtyRaw > 0n            ? ['Quantity',          qtyInput]                                          : null,
-              paymentMicro > 0n      ? ['Collateral locked', formatMicrocredits(paymentMicro)]                  : null,
-              paymentMicro > 0n      ? ['Fee est.',          `~${formatMicrocredits(protocolFee)}`]             : null,
-              selectedRecord         ? ['Record balance',    formatMicrocredits(selectedRecord.microcredits)]   : null,
-              referralCut > 0n       ? ['Referral',          formatMicrocredits(referralCut)]                   : null,
-            ] as const).filter((r): r is [string, string] => r !== null).map(([label, val]) => (
-              <div key={label} className="flex items-center justify-between gap-3">
-                <span className="text-muted-foreground">{label}</span>
-                <span className="font-medium">{val}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      <BidSummaryPanel title="Summary" rows={[
+        floorPrice > 0n       && ['Floor price',       formatMicrocredits(floorPrice)],
+        clearingPriceEst > 0n && ['Est. clearing',     formatMicrocredits(clearingPriceEst)],
+        qtyRaw > 0n           && ['Quantity',          qtyInput],
+        paymentMicro > 0n     && ['Collateral locked', formatMicrocredits(paymentMicro)],
+        paymentMicro > 0n     && ['Fee est.',          `~${formatMicrocredits(protocolFee)}`],
+        selectedRecord        && ['Record balance',    formatMicrocredits(selectedRecord.microcredits)],
+        referralCut > 0n      && ['Referral',          formatMicrocredits(referralCut)],
+      ]} />
 
-      {formBlocker && (
-        <div className="rounded-lg border border-border/70 bg-background/60 px-3 py-2 text-xs text-muted-foreground">{formBlocker}</div>
-      )}
+      <FormBlockerNotice message={formBlocker} />
 
-      <Button type="button" className="w-full"
+      <BidSubmitButton
+        busy={bidBusy}
+        waiting={bidWaiting}
         disabled={isDisabled || !!paymentError || !qtyRaw || !paymentMicro}
-        onClick={() => void submitBid()}>
-        {bidBusy ? <><Spinner className="mr-2 h-3 w-3" />Authorizing…</> : bidWaiting ? <><Spinner className="mr-2 h-3 w-3" />Confirming…</> : `Commit ${mode === 'private' ? 'Private' : 'Public'} Bid`}
-      </Button>
+        onClick={() => void submitBid()}
+        label={`Commit ${mode === 'private' ? 'Private' : 'Public'} Bid`}
+      />
 
-      {bidError && (
-        <div className="rounded-lg border border-destructive/15 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-          {bidError.message}
-        </div>
-      )}
+      <BidErrorBanner error={bidError} />
     </div>
   );
 }
