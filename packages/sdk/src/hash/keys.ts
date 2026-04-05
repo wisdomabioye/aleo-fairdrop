@@ -135,6 +135,23 @@ export function computeUpdateAdminOpHash(
   );
 }
 
+// ── fairdrop_gate_v2.aleo ─────────────────────────────────────────────────────
+
+/**
+ * Compute the message hash a credential issuer must sign.
+ * Mirrors: BHP256::hash_to_field(CredentialMessage { holder, auction_id, expiry })
+ *
+ * Field order is canonical — must match the Leo struct definition exactly.
+ * Used by the credential-signer service before calling Signature.sign().
+ */
+export function computeCredentialMsgHash(
+  holder:    string, // aleo1... address of the bidder
+  auctionId: string, // field
+  expiry:    number, // u32 block height
+): string {
+  return hashStruct(`{ holder: ${holder}, auction_id: ${auctionId}, expiry: ${expiry}u32 }`);
+}
+
 // ── Utilities ─────────────────────────────────────────────────────────────────
 
 /**

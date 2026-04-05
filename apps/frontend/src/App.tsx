@@ -20,7 +20,6 @@ import { ClaimPage }          from '@/features/claim/pages/ClaimPage';
 import { EarningsPage }       from '@/features/earnings/pages/EarningsPage';
 import { ReferralPage }       from '@/features/referral/pages/ReferralPage';
 import { VestingPage }        from '@/features/vesting/pages/VestingPage';
-import { GatePage }           from '@/features/gate/pages/GatePage';
 import { ShieldPage }         from '@/features/shield/pages/ShieldPage';
 import { TokenLaunchPage }    from '@/features/token-manager/pages/TokenLaunchPage';
 import { TokenManagerPage }   from '@/features/token-manager/pages/TokenManagerPage';
@@ -83,9 +82,6 @@ export function App() {
           <Route path={AppRoutes.earnings}           element={<EarningsPage />} />
           <Route path={AppRoutes.referral}           element={<ReferralPage />} />
           <Route path={AppRoutes.vesting}            element={<VestingPage />} />
-
-          {/* Gate */}
-          <Route path={AppRoutes.gate}               element={<GatePage />} />
 
           {/* Tools */}
           <Route path={AppRoutes.shield}             element={<ShieldPage />} />

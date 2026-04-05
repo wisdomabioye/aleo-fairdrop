@@ -15,6 +15,7 @@ import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { fetchTokenRole, authorizeSupplyManager } from '@fairdrop/sdk/token-registry';
 import { config } from '@/env';
 import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
+import { MerkleTreeBuilder } from './MerkleTreeBuilder';
 import { GATE_LABEL } from './types';
 import type { StepProps } from './types';
 
@@ -73,30 +74,15 @@ export function GateVestStep({ form, onChange }: StepProps) {
             <SelectValue placeholder="Select gate mode" />
           </SelectTrigger>
           <SelectContent>
-            {
-              GATE_LABEL.map((gate, gateMode) => (
-                <SelectItem key={gate} value={gateMode.toString()}>{gate}</SelectItem>
-              ))
-            }
-            
-            <SelectItem value="1">Merkle allowlist — proof required at bid</SelectItem>
-            <SelectItem value="2">Credential — issuer-signed credential required</SelectItem>
+            {GATE_LABEL.map((gate, gateMode) => (
+              <SelectItem key={gate} value={gateMode.toString()}>{gate}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
 
       {form.gateMode === 1 && (
-        <div className="space-y-1.5">
-          <Label>Merkle root</Label>
-          <Input
-            value={form.merkleRoot === '0field' ? '' : form.merkleRoot}
-            onChange={(e) => onChange({ merkleRoot: e.target.value || '0field' })}
-            placeholder="BHP256 root field hex"
-          />
-          <p className="text-xs text-muted-foreground">
-            Root of the allowlist Merkle tree. Bidders prove inclusion with a 20-element path at bid time.
-          </p>
-        </div>
+        <MerkleTreeBuilder onRootComputed={(root) => onChange({ merkleRoot: root })} />
       )}
 
       {form.gateMode === 2 && (

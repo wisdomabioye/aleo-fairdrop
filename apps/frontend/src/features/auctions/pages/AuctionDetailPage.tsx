@@ -24,6 +24,7 @@ import { AuctionInfoTab } from '../components/AuctionInfoTab';
 import { AuctionEarnTab } from '../components/AuctionEarnTab';
 import { AuctionReferralTab } from '../components/AuctionReferralTab';
 import { DefaultPostAuctionPanel } from '../post-auction-panels/DefaultPostAuctionPanel';
+import { GateGuard }               from '@/features/gate/components/GateGuard';
 import { getRegistrySlot } from '../registry';
 
 export function AuctionDetailPage() {
@@ -198,16 +199,18 @@ function AuctionDetailContent({ id }: { id: string }) {
                 {showPricePanel ? <Separator /> : null}
 
                 {isActive && BidForm && protocolConfig ? (
-                  <BidForm
-                    auction={auction}
-                    blockHeight={blockHeight ?? 0}
-                    protocolConfig={protocolConfig}
-                    lagBlocks={lagBlocks}
-                    onBidSuccess={async () => {
-                      await new Promise(resolve => setTimeout(resolve, 5000)) // wait for indexer to catch up
-                      void refetchAuction()
-                    }}
-                  />
+                  <GateGuard auction={auction}>
+                    <BidForm
+                      auction={auction}
+                      blockHeight={blockHeight ?? 0}
+                      protocolConfig={protocolConfig}
+                      lagBlocks={lagBlocks}
+                      onBidSuccess={async () => {
+                        await new Promise(resolve => setTimeout(resolve, 5000)) // wait for indexer to catch up
+                        void refetchAuction()
+                      }}
+                    />
+                  </GateGuard>
                 ) : isPostAuction ? (
                   <DefaultPostAuctionPanel auction={auction} />
                 ) : (

@@ -24,9 +24,6 @@ export const AppRoutes = {
   referral: '/referral',
   vesting:  '/vesting',
 
-  // Gate
-  gate: '/gate/:id',
-
   // Token tools
   tokenLaunch:    '/token-launch',
   tokenManager:   '/token-manager',
@@ -50,9 +47,4 @@ export function auctionDetailUrl(id: string): string {
 /** Build a concrete creator auction management URL from an auction ID. */
 export function creatorAuctionUrl(id: string): string {
   return `/creator/auctions/${id}`;
-}
-
-/** Build a concrete gate URL for an auction. */
-export function gateUrl(id: string): string {
-  return `/gate/${id}`;
 }
