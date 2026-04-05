@@ -41,3 +41,12 @@ export async function fetchIsGateRegistered(auctionId: string): Promise<boolean>
   const raw = await getMappingValue(GATE_PROGRAM, 'gate_registered', auctionId);
   return raw?.trim() === 'true';
 }
+
+/**
+ * Check whether an address is authorised to call register_gate.
+ * Reads allowed_callers[address]. Returns false on miss.
+ */
+export async function fetchIsAllowedGateCaller(address: string): Promise<boolean> {
+  const raw = await getMappingValue(GATE_PROGRAM, 'allowed_callers', address);
+  return raw?.trim() === 'true';
+}

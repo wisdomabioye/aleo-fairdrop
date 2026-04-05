@@ -1,35 +1,32 @@
-import { useEffect }             from 'react';
-import { useNavigate }            from 'react-router-dom';
-import { useWallet }              from '@provablehq/aleo-wallet-adaptor-react';
-import { Spinner, Card, CardContent, CardHeader, CardTitle,
-         Tabs, TabsList, TabsTrigger, TabsContent }          from '@/components';
-import { ConnectWalletPrompt }    from '@/shared/components/wallet/ConnectWalletPrompt';
-import { AppRoutes }              from '@/config';
-import { useProtocolConfig }      from '@/shared/hooks/useProtocolConfig';
-import { ConfigParamRow }         from '../components/ConfigParamRow';
-import { PauseToggle }            from '../components/PauseToggle';
-import { AdminTransfer }          from '../components/AdminTransfer';
-import { CallerMatrix }           from '../components/CallerMatrix';
-import type { ConfigParamRowProps } from '../components/ConfigParamRow';
-import type { ProtocolConfig }    from '@fairdrop/types/domain';
+import { useEffect }                    from 'react';
+import { useNavigate }                   from 'react-router-dom';
+import { Spinner, Tabs, TabsList, TabsTrigger, TabsContent } from '@/components';
+import { ConnectWalletPrompt }           from '@/shared/components/wallet/ConnectWalletPrompt';
+import { useWallet }                     from '@provablehq/aleo-wallet-adaptor-react';
+import { AppRoutes }                     from '@/config';
+import { ConfigPanel }                   from '../components/config/ConfigPanel';
+import { AuthorizationPanel }            from '../components/authorization/AuthorizationPanel';
+import { TreasuryPanel }                 from '../components/treasury/TreasuryPanel';
+import { UpgradePanel }                  from '../components/upgrades/UpgradePanel';
+import { GovernancePanel }               from '../components/governance/GovernancePanel';
+import { useAdminGate }                  from '../hooks/useAdminGate';
 
 export function AdminPage() {
-  const { connected, address }  = useWallet();
-  const navigate                = useNavigate();
-  const { data: pc, isLoading } = useProtocolConfig();
+  const { connected }                   = useWallet();
+  const { isAdmin, isLoading, address } = useAdminGate();
+  const navigate                        = useNavigate();
 
-  const isAdmin = connected && pc && address === pc.protocolAdmin;
-
+  // Redirect non-admins once we know their status.
   useEffect(() => {
-    if (!isLoading && pc && connected && address && address !== pc.protocolAdmin) {
+    if (!isLoading && connected && !isAdmin) {
       navigate(AppRoutes.dashboard, { replace: true });
     }
-  }, [pc, connected, address, isLoading, navigate]);
+  }, [isAdmin, isLoading, connected, navigate]);
 
   if (!connected) {
     return (
-      <div className="max-w-4xl mx-auto py-8 px-4">
-        <h1 className="text-2xl font-semibold">Admin</h1>
+      <div className="max-w-3xl mx-auto py-8 px-4 space-y-4">
+        <h1 className="text-2xl font-semibold">Multisig Admin</h1>
         <ConnectWalletPrompt message="Connect your wallet to access the admin panel." />
       </div>
     );
@@ -42,150 +39,41 @@ export function AdminPage() {
   if (!isAdmin) return null;
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4 space-y-6">
+    <div className="max-w-3xl mx-auto py-8 px-4 space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Admin</h1>
-        <p className="text-xs text-muted-foreground mt-1 font-mono">{address}</p>
+        <h1 className="text-2xl font-semibold">Multisig Admin</h1>
+        <p className="text-xs text-muted-foreground font-mono mt-1">{address}</p>
       </div>
 
-      <Tabs defaultValue="parameters">
-        <TabsList>
-          <TabsTrigger value="parameters">Parameters</TabsTrigger>
-          <TabsTrigger value="contracts">Contracts</TabsTrigger>
-          <TabsTrigger value="danger">Danger Zone</TabsTrigger>
+      <Tabs defaultValue="config">
+        <TabsList className="w-full">
+          <TabsTrigger value="config"        className="flex-1">Config</TabsTrigger>
+          <TabsTrigger value="authorization" className="flex-1">Authorization</TabsTrigger>
+          <TabsTrigger value="treasury"      className="flex-1">Treasury</TabsTrigger>
+          <TabsTrigger value="upgrades"      className="flex-1">Upgrades</TabsTrigger>
+          <TabsTrigger value="governance"    className="flex-1">Governance</TabsTrigger>
         </TabsList>
 
-        {/* ── Parameters tab ──────────────────────────────────────────────── */}
-        <TabsContent value="parameters" className="mt-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Protocol Parameters</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {buildParams(pc).map((p) => (
-                <ConfigParamRow key={p.transition} {...p} />
-              ))}
-            </CardContent>
-          </Card>
+        <TabsContent value="config" className="mt-4">
+          <ConfigPanel />
         </TabsContent>
 
-        {/* ── Contracts tab ───────────────────────────────────────────────── */}
-        <TabsContent value="contracts" className="mt-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Auction Contract Authorization</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-xs text-muted-foreground mb-4">
-                Each auction contract must be authorized on all 4 utility contracts
-                before it can call <code className="font-mono">register_gate</code>,{' '}
-                <code className="font-mono">record_referral</code>,{' '}
-                <code className="font-mono">create_vest</code>, and{' '}
-                <code className="font-mono">issue_receipt</code> via CPI.
-              </p>
-              <CallerMatrix />
-            </CardContent>
-          </Card>
+        <TabsContent value="authorization" className="mt-4">
+          <AuthorizationPanel />
         </TabsContent>
 
-        {/* ── Danger Zone tab ─────────────────────────────────────────────── */}
-        <TabsContent value="danger" className="mt-4 space-y-4">
-          <Card className={pc.paused ? 'border-destructive' : ''}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-destructive">Emergency Pause</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <PauseToggle paused={pc.paused} />
-            </CardContent>
-          </Card>
+        <TabsContent value="treasury" className="mt-4">
+          <TreasuryPanel />
+        </TabsContent>
 
-          <Card className="border-destructive">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-destructive">Transfer Protocol Admin</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <AdminTransfer />
-            </CardContent>
-          </Card>
+        <TabsContent value="upgrades" className="mt-4">
+          <UpgradePanel />
+        </TabsContent>
+
+        <TabsContent value="governance" className="mt-4">
+          <GovernancePanel />
         </TabsContent>
       </Tabs>
     </div>
   );
-}
-
-// ── Param definitions ──────────────────────────────────────────────────────
-
-function buildParams(pc: ProtocolConfig): ConfigParamRowProps[] {
-  return [
-    {
-      label:       'Protocol Fee',
-      description: 'Fee rate on total payments at close_auction.',
-      currentRaw:  String(pc.feeBps),
-      hardCap:     '1000 bps (10%)',
-      unit:        'bps',
-      transition:  'set_fee_bps',
-      inputType:   'u16',
-      maxValue:    1000,
-    },
-    {
-      label:       'Creation Fee',
-      description: 'Microcredits deducted from creator at create_auction (anti-spam).',
-      currentRaw:  pc.creationFee,
-      hardCap:     '1,000,000,000 µcredits (1000 ALEO)',
-      unit:        'microcredits',
-      transition:  'set_creation_fee',
-      inputType:   'u128',
-      maxValue:    1_000_000_000n,
-    },
-    {
-      label:       'Closer Reward',
-      description: 'Microcredits rewarded to the permissionless close_auction caller.',
-      currentRaw:  pc.closerReward,
-      hardCap:     '1,000,000,000 µcredits (1000 ALEO)',
-      unit:        'microcredits',
-      transition:  'set_closer_reward',
-      inputType:   'u128',
-      maxValue:    1_000_000_000n,
-    },
-    {
-      label:       'Slash Reward',
-      description: "Slasher's share of a forfeited sealed-bid payment.",
-      currentRaw:  String(pc.slashRewardBps),
-      hardCap:     '5000 bps (50%)',
-      unit:        'bps',
-      transition:  'set_slash_reward_bps',
-      inputType:   'u16',
-      maxValue:    5000,
-    },
-    {
-      label:       'Max Referral Commission',
-      description: 'Maximum commission_bps a single referral code may claim from the pool.',
-      currentRaw:  String(pc.maxReferralBps),
-      hardCap:     '5000 bps (50% of pool)',
-      unit:        'bps',
-      transition:  'set_max_referral_bps',
-      inputType:   'u16',
-      maxValue:    5000,
-    },
-    {
-      label:       'Referral Pool',
-      description: 'Share of protocol fee allocated as the referral budget at close_auction.',
-      currentRaw:  String(pc.referralPoolBps),
-      hardCap:     '2000 bps (20%)',
-      unit:        'bps',
-      transition:  'set_referral_pool_bps',
-      inputType:   'u16',
-      maxValue:    2000,
-    },
-    {
-      label:       'Min Auction Duration',
-      description: 'Minimum (end_block − start_block) at create_auction. Set to 0 to disable.',
-      currentRaw:  String(pc.minAuctionDuration),
-      hardCap:     'none',
-      unit:        'blocks',
-      transition:  'set_min_auction_duration',
-      inputType:   'u32',
-      maxValue:    4_294_967_295,
-    },
-  ];
 }

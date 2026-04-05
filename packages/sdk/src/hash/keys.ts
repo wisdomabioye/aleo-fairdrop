@@ -148,3 +148,17 @@ export function generateTokenId(): string {
   for (const b of bytes) v = (v << 8n) | BigInt(b);
   return `${v}field`;
 }
+
+/**
+ * Generate a cryptographically random u64 nonce.
+ * Used as the replay-protection nonce in governance op structs:
+ * ConfigOp.nonce, AllowedCallerOp.nonce, WithdrawalOp.nonce,
+ * and as the request_id in ApproveOpMsg / ApproveUpgradeOp / UpdateAdminOp.
+ */
+export function generateNonce(): bigint {
+  const bytes = new Uint8Array(8);
+  crypto.getRandomValues(bytes);
+  let v = 0n;
+  for (const b of bytes) v = (v << 8n) | BigInt(b);
+  return v;
+}

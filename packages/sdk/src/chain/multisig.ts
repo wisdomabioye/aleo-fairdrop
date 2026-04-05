@@ -35,6 +35,15 @@ export async function fetchIsOpExecuted(requestId: bigint): Promise<boolean> {
 }
 
 /**
+ * Check whether the multisig has been bootstrapped via initialize().
+ * Reads initialized[0field]. Returns false if not yet called.
+ */
+export async function fetchIsMultisigInitialized(): Promise<boolean> {
+  const raw = await getMappingValue(MULTISIG_PROGRAM, 'initialized', '0field');
+  return raw?.trim() === 'true';
+}
+
+/**
  * Fetch the stored checksum for an approved contract upgrade.
  * Reads approved_upgrades[contractKey].
  * Returns the checksum as a number[] (32 bytes), or null if not approved.

@@ -103,6 +103,9 @@ program fairdrop_multisig_v1.aleo {
     // The live admin set. Populated by initialize(); updated by update_admin().
     mapping admins:            address => bool;
 
+    // One-time bootstrap flag. Set to true by initialize(); guards against re-runs.
+    mapping initialized:       field   => bool;
+
     // =========================================================================
     // Operation structs — hashed by signers and verified in transitions
     // =========================================================================
@@ -131,17 +134,18 @@ program fairdrop_multisig_v1.aleo {
     // =========================================================================
     // Populates the admins mapping from ADMIN_0..4 constants.
     // Must be called once immediately after deployment.
-    // Subsequent calls revert (guarded by admins.get_or_use(ADMIN_0, false)).
+    // Subsequent calls revert (guarded by initialized[0field]).
 
     fn initialize() -> Final {
         return final {
-            let already: bool = admins.get_or_use(ADMIN_0, false);
+            let already: bool = initialized.get_or_use(0field, false);
             assert(!already);
             admins.set(ADMIN_0, true);
             admins.set(ADMIN_1, true);
             admins.set(ADMIN_2, true);
             admins.set(ADMIN_3, true);
             admins.set(ADMIN_4, true);
+            initialized.set(0field, true);
         };
     }
 

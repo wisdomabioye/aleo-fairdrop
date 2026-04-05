@@ -67,3 +67,12 @@ export async function fetchIsReserveFunded(auctionId: string): Promise<boolean> 
   const raw = await getMappingValue(REF_PROGRAM, 'reserve_funded', auctionId);
   return raw?.trim() === 'true';
 }
+
+/**
+ * Check whether an address is authorised to call record_referral.
+ * Reads allowed_callers[address]. Returns false on miss.
+ */
+export async function fetchIsAllowedRefCaller(address: string): Promise<boolean> {
+  const raw = await getMappingValue(REF_PROGRAM, 'allowed_callers', address);
+  return raw?.trim() === 'true';
+}

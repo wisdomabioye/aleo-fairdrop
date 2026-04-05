@@ -10,4 +10,5 @@ export {
   computeUpgradeOpHash,
   computeUpdateAdminOpHash,
   generateTokenId,
+  generateNonce,
 } from './keys';

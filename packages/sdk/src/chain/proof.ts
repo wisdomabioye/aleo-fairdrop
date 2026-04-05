@@ -28,3 +28,12 @@ export async function fetchHasParticipated(bidderKey: string): Promise<boolean> 
   const raw = await getMappingValue(PROOF_PROGRAM, 'participated', bidderKey);
   return raw?.trim() === 'true';
 }
+
+/**
+ * Check whether an address is authorised to call issue_receipt.
+ * Reads allowed_callers[address]. Returns false on miss.
+ */
+export async function fetchIsAllowedProofCaller(address: string): Promise<boolean> {
+  const raw = await getMappingValue(PROOF_PROGRAM, 'allowed_callers', address);
+  return raw?.trim() === 'true';
+}

@@ -21,7 +21,7 @@ export {
 
 export { fetchProtocolConfig, fetchPaused } from './config';
 
-export { fetchGateConfig, fetchIsVerified, fetchIsGateRegistered } from './gate';
+export { fetchGateConfig, fetchIsVerified, fetchIsGateRegistered, fetchIsAllowedGateCaller } from './gate';
 
 export {
   fetchReferralConfig,
@@ -30,14 +30,16 @@ export {
   fetchReferralReserve,
   fetchReferralCount,
   fetchIsReserveFunded,
+  fetchIsAllowedRefCaller,
 } from './ref';
 
-export { fetchCreatorReputation, fetchHasParticipated } from './proof';
+export { fetchCreatorReputation, fetchHasParticipated, fetchIsAllowedProofCaller } from './proof';
 
 export {
   fetchIsOpApproved,
   fetchIsAdmin,
   fetchIsOpExecuted,
+  fetchIsMultisigInitialized,
   fetchApprovedUpgradeChecksum,
 } from './multisig';
 
