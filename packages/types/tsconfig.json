@@ -8,8 +8,7 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
-    "noEmit": true,
-    "baseUrl": "."
+    "noEmit": true
   },
   "include": ["src"]
 }

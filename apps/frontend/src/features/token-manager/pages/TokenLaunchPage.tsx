@@ -20,7 +20,7 @@ import {
 import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
 import { SYSTEM_PROGRAMS } from '@fairdrop/sdk/constants';
 import { asciiToU128 }     from '@fairdrop/sdk/parse';
-import { generateTokenId } from '@fairdrop/sdk/registry';
+import { generateTokenId } from '@fairdrop/sdk/hash';
 import { parseTokenAmount } from '@fairdrop/sdk/format';
 import { TX_DEFAULT_FEE }  from '@/env';
 

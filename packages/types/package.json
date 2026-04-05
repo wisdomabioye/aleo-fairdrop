@@ -1,22 +1,56 @@
 {
   "name": "@fairdrop/types",
   "version": "0.1.0",
-  "private": true,
+  "private": false,
   "type": "module",
-  "packageManager": "pnpm@10.22.0",
+  "files": ["dist"],
   "exports": {
-    "./primitives":           "./src/primitives/index.ts",
-    "./contracts":            "./src/contracts/index.ts",
-    "./contracts/auctions":   "./src/contracts/auctions/index.ts",
-    "./contracts/utilities":  "./src/contracts/utilities/index.ts",
-    "./domain":               "./src/domain/index.ts",
-    "./api":                  "./src/api/index.ts",
-    "./indexer":              "./src/indexer/index.ts"
+    "./primitives":          "./src/primitives/index.ts",
+    "./contracts":           "./src/contracts/index.ts",
+    "./contracts/auctions":  "./src/contracts/auctions/index.ts",
+    "./contracts/utilities": "./src/contracts/utilities/index.ts",
+    "./domain":              "./src/domain/index.ts",
+    "./api":                 "./src/api/index.ts",
+    "./indexer":             "./src/indexer/index.ts"
+  },
+  "publishConfig": {
+    "exports": {
+      "./primitives": {
+        "import": "./dist/primitives.mjs",
+        "types":  "./dist/primitives.d.mts"
+      },
+      "./contracts": {
+        "import": "./dist/contracts.mjs",
+        "types":  "./dist/contracts.d.mts"
+      },
+      "./contracts/auctions": {
+        "import": "./dist/contracts/auctions.mjs",
+        "types":  "./dist/contracts/auctions.d.mts"
+      },
+      "./contracts/utilities": {
+        "import": "./dist/contracts/utilities.mjs",
+        "types":  "./dist/contracts/utilities.d.mts"
+      },
+      "./domain": {
+        "import": "./dist/domain.mjs",
+        "types":  "./dist/domain.d.mts"
+      },
+      "./api": {
+        "import": "./dist/api.mjs",
+        "types":  "./dist/api.d.mts"
+      },
+      "./indexer": {
+        "import": "./dist/indexer.mjs",
+        "types":  "./dist/indexer.d.mts"
+      }
+    }
   },
   "scripts": {
+    "build":      "tsdown",
     "type-check": "tsc --noEmit"
   },
   "devDependencies": {
+    "tsdown":     "^0.21.7",
     "typescript": "~5.9.3"
   }
 }

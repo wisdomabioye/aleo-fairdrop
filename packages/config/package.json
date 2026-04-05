@@ -1,15 +1,26 @@
 {
   "name": "@fairdrop/config",
   "version": "0.1.0",
-  "private": true,
+  "private": false,
   "type": "module",
+  "files": ["dist"],
   "exports": {
     ".": "./src/index.ts"
   },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "import": "./dist/index.mjs",
+        "types":  "./dist/index.d.mts"
+      }
+    }
+  },
   "scripts": {
+    "build":      "tsdown",
     "type-check": "tsc --noEmit"
   },
   "devDependencies": {
+    "tsdown":     "^0.21.7",
     "typescript": "~5.9.3"
   }
 }

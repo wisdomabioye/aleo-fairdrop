@@ -1,30 +1,84 @@
 {
   "name": "@fairdrop/sdk",
   "version": "0.1.0",
-  "private": true,
+  "private": false,
   "type": "module",
+  "files": ["dist"],
   "exports": {
-    "./parse": "./src/parse/index.ts",
-    "./credits": "./src/credits/index.ts",
-    "./format": "./src/format/index.ts",
-    "./cache": "./src/cache/index.ts",
-    "./client": "./src/client.ts",
-    "./registry": "./src/registry/index.ts",
-    "./constants": "./src/constants.ts",
-    "./hash": "./src/hash/index.ts",
-    "./chain": "./src/chain/index.ts",
+    "./parse":        "./src/parse/index.ts",
+    "./credits":      "./src/credits/index.ts",
+    "./format":       "./src/format/index.ts",
+    "./cache":        "./src/cache/index.ts",
+    "./client":       "./src/client.ts",
+    "./registry":     "./src/registry/index.ts",
+    "./constants":    "./src/constants.ts",
+    "./hash":         "./src/hash/index.ts",
+    "./chain":        "./src/chain/index.ts",
     "./transactions": "./src/transactions/index.ts",
-    "./multisig": "./src/multisig/index.ts",
-    "./records": "./src/records/index.ts"
+    "./multisig":     "./src/multisig/index.ts",
+    "./records":      "./src/records/index.ts"
+  },
+  "publishConfig": {
+    "exports": {
+      "./parse": {
+        "import": "./dist/parse.mjs",
+        "types":  "./dist/parse.d.mts"
+      },
+      "./credits": {
+        "import": "./dist/credits.mjs",
+        "types":  "./dist/credits.d.mts"
+      },
+      "./format": {
+        "import": "./dist/format.mjs",
+        "types":  "./dist/format.d.mts"
+      },
+      "./cache": {
+        "import": "./dist/cache.mjs",
+        "types":  "./dist/cache.d.mts"
+      },
+      "./client": {
+        "import": "./dist/client.mjs",
+        "types":  "./dist/client.d.mts"
+      },
+      "./registry": {
+        "import": "./dist/registry.mjs",
+        "types":  "./dist/registry.d.mts"
+      },
+      "./constants": {
+        "import": "./dist/constants.mjs",
+        "types":  "./dist/constants.d.mts"
+      },
+      "./hash": {
+        "import": "./dist/hash.mjs",
+        "types":  "./dist/hash.d.mts"
+      },
+      "./chain": {
+        "import": "./dist/chain.mjs",
+        "types":  "./dist/chain.d.mts"
+      },
+      "./transactions": {
+        "import": "./dist/transactions.mjs",
+        "types":  "./dist/transactions.d.mts"
+      },
+      "./multisig": {
+        "import": "./dist/multisig.mjs",
+        "types":  "./dist/multisig.d.mts"
+      },
+      "./records": {
+        "import": "./dist/records.mjs",
+        "types":  "./dist/records.d.mts"
+      }
+    }
   },
   "scripts": {
+    "build":      "tsdown",
     "type-check": "tsc --noEmit",
-    "test": "vitest run",
+    "test":       "vitest run",
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@fairdrop/types":  "workspace:*",
-    "@fairdrop/config": "workspace:*"
+    "@fairdrop/config": "workspace:*",
+    "@fairdrop/types":  "workspace:*"
   },
   "peerDependencies": {
     "@provablehq/sdk": "*"
@@ -35,7 +89,8 @@
     }
   },
   "devDependencies": {
+    "tsdown":     "^0.21.7",
     "typescript": "~5.9.3",
-    "vitest": "^4.1.2"
+    "vitest":     "^4.1.2"
   }
 }
