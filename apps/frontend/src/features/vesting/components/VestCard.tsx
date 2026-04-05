@@ -6,7 +6,7 @@ import { AUCTION_REGISTRY }  from '@/features/auctions/registry';
 import { auctionDetailUrl }  from '@/config';
 import { parseExecutionError } from '@/shared/utils/errors';
 import { useTransactionTracker } from '@/providers/transaction-tracker';
-import { releaseVested }     from '@/lib/auctionTx';
+import { releaseVested }     from '@fairdrop/sdk/transactions';
 import { computeReleasable, getVestStatus } from '../hooks/useVestRecords';
 import type { VestRecord, VestStatus } from '../hooks/useVestRecords';
 import type { AuctionView } from '@fairdrop/types/domain';
@@ -69,7 +69,7 @@ export function VestCard({ vest, auction, blockHeight }: VestCardProps) {
     setBusy(true);
     try {
       const spec   = releaseVested(vest.raw.recordPlaintext, releasable);
-      const result = await executeTransaction({ ...spec, inputs: spec.inputs });
+      const result = await executeTransaction({ ...spec, inputs: spec.inputs as string[] });
       if (result?.transactionId) track(result.transactionId, 'Release vested tokens');
     } catch (err) {
       setError(parseExecutionError(err));

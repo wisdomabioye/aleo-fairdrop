@@ -14,11 +14,11 @@ import { formatMicrocredits } from '@fairdrop/sdk/credits';
 import { AuctionStatus, AuctionType } from '@fairdrop/types/domain';
 import type { AuctionView } from '@fairdrop/types/domain';
 import { AppRoutes } from '@/config';
-import * as auctionTx from '@/lib/auctionTx';
+import { closeAuction, pushReferralBudget } from '@fairdrop/sdk/transactions';
 import { useConfirmedSequentialTx, type SequentialStep } from '@/shared/hooks/useConfirmedSequentialTx';
 import { parseExecutionError } from '@/shared/utils/errors';
 import { cn } from '@/lib/utils';
-import type { TransactionOptions } from '@provablehq/aleo-types';
+import type { TxSpec } from '@fairdrop/sdk/transactions';
 
 interface ActionsPanelProps {
   auction: AuctionView;
@@ -113,7 +113,7 @@ export function ActionsPanel({ auction, blockHeight }: ActionsPanelProps) {
 
   if (!canClose && !canSlash && !canPushReferral) return null;
 
-  function runAction(key: string, label: string, spec: TransactionOptions) {
+  function runAction(key: string, label: string, spec: TxSpec) {
     if (tx.busy || tx.isWaiting) return;
     tx.reset();
     setActiveKey(key);
@@ -143,7 +143,7 @@ export function ActionsPanel({ auction, blockHeight }: ActionsPanelProps) {
         ? 'Finalize this auction and progress settlement.'
         : 'Close the auction and receive the closer reward.',
       icon:    Gavel,
-      onClick: () => runAction('close', label, auctionTx.closeAuction(auction)),
+      onClick: () => runAction('close', label, closeAuction(auction)),
     });
   }
 
@@ -154,7 +154,7 @@ export function ActionsPanel({ auction, blockHeight }: ActionsPanelProps) {
       pendingLabel: 'Submitting…',
       description:  'Move referral budget into the distribution flow.',
       icon:    Send,
-      onClick: () => runAction('push-referral', 'Push referral budget', auctionTx.pushReferralBudget(auction)),
+      onClick: () => runAction('push-referral', 'Push referral budget', pushReferralBudget(auction)),
     });
   }
 

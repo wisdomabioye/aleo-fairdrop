@@ -9,7 +9,7 @@ import type { AuctionView } from '@fairdrop/types/domain';
 import { useBlockHeight } from '@/shared/hooks/useBlockHeight';
 import { useProtocolConfig } from '@/shared/hooks/useProtocolConfig';
 import { AppRoutes } from '@/config';
-import { closeAuction } from '@/lib/auctionTx';
+import { closeAuction } from '@fairdrop/sdk/transactions';
 import { cn } from '@/lib/utils';
 import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
 

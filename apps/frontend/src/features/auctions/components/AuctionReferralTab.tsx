@@ -8,7 +8,7 @@ import { formatMicrocredits } from '@fairdrop/sdk/credits';
 import { AuctionStatus } from '@fairdrop/types/domain';
 import type { AuctionView } from '@fairdrop/types/domain';
 import { AppRoutes } from '@/config';
-import { createReferralCode } from '@/lib/auctionTx';
+import { createReferralCode } from '@fairdrop/sdk/transactions';
 import { useMyReferralCode } from '@/shared/hooks/useMyReferralCode';
 import { useProtocolConfig } from '@/shared/hooks/useProtocolConfig';
 import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';

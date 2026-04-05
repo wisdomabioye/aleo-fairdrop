@@ -17,8 +17,8 @@ import { AuctionStatus } from '@fairdrop/types/domain';
 import type { AuctionView } from '@fairdrop/types/domain';
 import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
 import { parseExecutionError } from '@/shared/utils/errors';
-import type { TransactionOptions } from '@provablehq/aleo-types';
-import * as auctionTx from '@/lib/auctionTx';
+import type { TxSpec } from '@fairdrop/sdk/transactions';
+import { closeAuction, cancelAuction, pushReferralBudget, withdrawPayments, withdrawUnsold } from '@fairdrop/sdk/transactions';
 
 interface Props {
   auction:           AuctionView;
@@ -79,7 +79,7 @@ export function CreatorActionsCard({
   const [step, setStep] = useState<{ label: string; execute: () => Promise<string | undefined> } | null>(null);
   const tx = useConfirmedSequentialTx(step ? [step] : []);
 
-  function runAction(key: string, label: string, spec: TransactionOptions) {
+  function runAction(key: string, label: string, spec: TxSpec) {
     if (tx.busy || tx.isWaiting) return;
     tx.reset();
     setActiveKey(key);
@@ -134,7 +134,7 @@ export function CreatorActionsCard({
             </p>
             <Button size="sm" variant="outline" className="w-full border-sky-500/10 bg-background/60 hover:bg-background/80"
               disabled={!connected || anyBusy}
-              onClick={() => runAction('close', 'Close auction', auctionTx.closeAuction(auction))}>
+              onClick={() => runAction('close', 'Close auction', closeAuction(auction))}>
               {isBusy('close') ? <><Spinner className="mr-2 size-3" />Submitting…</> : <><Gavel className="mr-2 size-3.5" />Close Auction</>}
             </Button>
           </section>
@@ -164,7 +164,7 @@ export function CreatorActionsCard({
                 hint={`Available: ${formatMicrocredits(revenueLeft)}`} />
               <Button size="sm" variant="outline" className="w-full border-sky-500/10 bg-background/60 hover:bg-background/80"
                 disabled={!connected || anyBusy || payAmount <= 0n || !!payError}
-                onClick={() => runAction('withdraw-payments', 'Withdraw revenue', auctionTx.withdrawPayments(auction, payAmount))}>
+                onClick={() => runAction('withdraw-payments', 'Withdraw revenue', withdrawPayments(auction, payAmount))}>
                 {isBusy('withdraw-payments') ? <><Spinner className="mr-2 size-3" />Submitting…</> : <><HandCoins className="mr-2 size-3.5" />Withdraw Revenue</>}
               </Button>
             </section>
@@ -189,7 +189,7 @@ export function CreatorActionsCard({
                 hint={`Available: ${formatAmount(unsoldLeft, decimals)}${symbol ? ` ${symbol}` : ''}`} />
               <Button size="sm" variant="outline" className="w-full border-sky-500/10 bg-background/60 hover:bg-background/80"
                 disabled={!connected || anyBusy || unsoldAmount <= 0n || !!unsoldError}
-                onClick={() => runAction('withdraw-unsold', 'Withdraw unsold', auctionTx.withdrawUnsold(auction, unsoldAmount))}>
+                onClick={() => runAction('withdraw-unsold', 'Withdraw unsold', withdrawUnsold(auction, unsoldAmount))}>
                 {isBusy('withdraw-unsold') ? <><Spinner className="mr-2 size-3" />Submitting…</> : <><Coins className="mr-2 size-3.5" />Withdraw Unsold</>}
               </Button>
             </section>
@@ -214,7 +214,7 @@ export function CreatorActionsCard({
             </p>
             <Button size="sm" variant="outline" className="w-full border-sky-500/10 bg-background/60 hover:bg-background/80"
               disabled={!connected || anyBusy}
-              onClick={() => runAction('push-referral', 'Push referral budget', auctionTx.pushReferralBudget(auction))}>
+              onClick={() => runAction('push-referral', 'Push referral budget', pushReferralBudget(auction))}>
               {isBusy('push-referral') ? <><Spinner className="mr-2 size-3" />Submitting…</> : <><Send className="mr-2 size-3.5" />Push Referral Budget</>}
             </Button>
           </section>
@@ -230,7 +230,7 @@ export function CreatorActionsCard({
                 Cancels the auction and returns unsold supply to you. Existing bidders can claim refunds. Cannot be undone.
               </p>
               <Button size="sm" variant="destructive" className="w-full" disabled={anyBusy}
-                onClick={() => runAction('cancel', 'Cancel auction', auctionTx.cancelAuction(auction))}>
+                onClick={() => runAction('cancel', 'Cancel auction', cancelAuction(auction))}>
                 {isBusy('cancel') ? <><Spinner className="mr-2 size-3" />Submitting…</> : <><Ban className="mr-2 size-3.5" />Cancel Auction</>}
               </Button>
             </section>

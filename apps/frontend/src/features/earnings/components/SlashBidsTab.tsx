@@ -7,7 +7,7 @@ import { computeBidderKey }    from '@fairdrop/sdk/hash';
 import { AuctionType }         from '@fairdrop/types/domain';
 import type { AuctionView }    from '@fairdrop/types/domain';
 import { config }                 from '@/env';
-import { slashUnrevealed }        from '@/lib/auctionTx';
+import { slashUnrevealed }        from '@fairdrop/sdk/transactions';
 import { parseExecutionError } from '@/shared/utils/errors';
 import { 
   ConnectWalletPrompt

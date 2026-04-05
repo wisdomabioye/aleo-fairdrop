@@ -10,7 +10,7 @@ import { useAuctions }         from '../../auctions/hooks/useAuctions';
 import { useProtocolConfig }   from '../../../shared/hooks/useProtocolConfig';
 import { auctionsService }     from '@/services/auctions.service';
 import { AUCTION_REGISTRY }    from '../../auctions/registry';
-import { closeAuction }        from '@/lib/auctionTx';
+import { closeAuction }        from '@fairdrop/sdk/transactions';
 
 export function CloseAuctionsTab() {
   const { connected, executeTransaction } = useWallet();

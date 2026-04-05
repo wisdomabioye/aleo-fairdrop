@@ -9,7 +9,7 @@ import { fetchEarned, fetchReferralCount, fetchReferralListEntry, fetchReferralR
 import { computeRefListKey }    from '@fairdrop/sdk/hash';
 import { config }               from '@/env';
 import { auctionDetailUrl }     from '@/config';
-import { creditCommission, claimCommission } from '@/lib/auctionTx';
+import { creditCommission, claimCommission } from '@fairdrop/sdk/transactions';
 import { ConnectWalletPrompt }  from '@/shared/components/wallet/ConnectWalletPrompt';
 import { parseExecutionError }  from '@/shared/utils/errors';
 import { useTransactionTracker } from '@/providers/transaction-tracker';
