@@ -2,13 +2,10 @@ import { useState } from 'react';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { Button, Input, Label, Spinner } from '@/components';
 import { ShieldCheck } from 'lucide-react';
-import { SYSTEM_PROGRAMS } from '@fairdrop/sdk/constants';
+import { setRole, removeRole } from '@fairdrop/sdk/token-registry';
 import { WizardTxStatus } from '@/shared/components/WizardTxStatus';
 import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
 import { parseExecutionError } from '@/shared/utils/errors';
-import { TX_DEFAULT_FEE } from '@/env';
-
-const TOKEN_REGISTRY = SYSTEM_PROGRAMS.tokenRegistry;
 
 const ROLE_OPTIONS = [
   { value: 1, label: 'MINTER_ROLE (1)' },
@@ -21,7 +18,7 @@ export function RoleManagementForm() {
 
   const [tokenId, setTokenId] = useState('');
   const [account, setAccount] = useState('');
-  const [role,    setRole]    = useState(1);
+  const [role,    setRoleValue] = useState(1);
   const [action,  setAction]  = useState<'set' | 'remove'>('set');
 
   const tokenOk = tokenId.trim().endsWith('field');
@@ -32,17 +29,10 @@ export function RoleManagementForm() {
   const steps = [{
     label: action === 'set' ? 'Set Role' : 'Remove Role',
     execute: async () => {
-      const fn     = action === 'set' ? 'set_role' : 'remove_role';
-      const inputs = action === 'set'
-        ? [tokenId.trim(), account.trim(), `${role}u8`]
-        : [tokenId.trim(), account.trim()];
-      const result = await executeTransaction({
-        program:    TOKEN_REGISTRY,
-        function:   fn,
-        inputs,
-        fee:        TX_DEFAULT_FEE,
-        privateFee: false,
-      });
+      const spec   = action === 'set'
+        ? setRole(tokenId.trim(), account.trim(), role)
+        : removeRole(tokenId.trim(), account.trim());
+      const result = await executeTransaction({ ...spec, inputs: spec.inputs as string[] });
       return result?.transactionId;
     },
   }];
@@ -130,7 +120,7 @@ export function RoleManagementForm() {
                       ${role === opt.value
                         ? 'border-primary bg-primary/10 text-primary'
                         : 'border-border text-muted-foreground hover:border-primary/40'}`}
-                    onClick={() => setRole(opt.value)}
+                    onClick={() => setRoleValue(opt.value)}
                     disabled={blocked}
                   >
                     {opt.label}

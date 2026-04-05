@@ -18,16 +18,10 @@ import {
   TokenLaunchSuccess,
 } from '@/features/token-manager/components';
 import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
-import { SYSTEM_PROGRAMS } from '@fairdrop/sdk/constants';
+import { registerToken, mintPrivate } from '@fairdrop/sdk/token-registry';
 import { asciiToU128 }     from '@fairdrop/sdk/parse';
 import { generateTokenId } from '@fairdrop/sdk/hash';
 import { parseTokenAmount } from '@fairdrop/sdk/format';
-import { TX_DEFAULT_FEE }  from '@/env';
-
-// ── Constants ─────────────────────────────────────────────────────────────────
-
-const TOKEN_REGISTRY = SYSTEM_PROGRAMS.tokenRegistry;
-const NO_EXPIRY      = 4294967295; // u32::MAX
 
 // ── TokenLaunchPage ───────────────────────────────────────────────────────────
 
@@ -76,26 +70,16 @@ export function TokenLaunchPage() {
     {
       label:   'Register Token',
       execute: async () => {
-        const result = await executeTransaction({
-          program:    TOKEN_REGISTRY,
-          function:   'register_token',
-          inputs:     [tokenId, `${nameU128}u128`, `${symbolU128}u128`, `${dec}u8`, `${maxRaw}u128`, 'false', address!],
-          fee:        TX_DEFAULT_FEE,
-          privateFee: false,
-        });
+        const spec   = registerToken(tokenId, nameU128!, symbolU128!, dec, maxRaw, address!);
+        const result = await executeTransaction({ ...spec, inputs: spec.inputs as string[] });
         return result?.transactionId;
       },
     },
     {
       label:   'Mint Tokens',
       execute: async () => {
-        const result = await executeTransaction({
-          program:    TOKEN_REGISTRY,
-          function:   'mint_private',
-          inputs:     [tokenId, address!, `${mintRaw}u128`, 'false', `${NO_EXPIRY}u32`],
-          fee:        TX_DEFAULT_FEE,
-          privateFee: false,
-        });
+        const spec   = mintPrivate(tokenId, address!, mintRaw);
+        const result = await executeTransaction({ ...spec, inputs: spec.inputs as string[] });
         return result?.transactionId;
       },
     },

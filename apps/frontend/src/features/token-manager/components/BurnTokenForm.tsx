@@ -2,17 +2,14 @@ import { useState } from 'react';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { Button, Input, Label, Spinner, TokenAmountInput } from '@/components';
 import { Info } from 'lucide-react';
-import { SYSTEM_PROGRAMS } from '@fairdrop/sdk/constants';
 import { parseTokenAmount } from '@fairdrop/sdk/format';
+import { burnPrivate }      from '@fairdrop/sdk/token-registry';
 import { WizardTxStatus } from '@/shared/components/WizardTxStatus';
 import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
 import { useTokenInfo }    from '@/shared/hooks/useTokenInfo';
 import { useTokenRecords } from '@/shared/hooks/useTokenRecords';
 import { parseExecutionError } from '@/shared/utils/errors';
 import type { WalletTokenRecord } from '@fairdrop/types/primitives';
-import { TX_DEFAULT_FEE } from '@/env';
-
-const TOKEN_REGISTRY = SYSTEM_PROGRAMS.tokenRegistry;
 
 export function BurnTokenForm() {
   const { executeTransaction } = useWallet();
@@ -45,13 +42,8 @@ export function BurnTokenForm() {
   const steps = [{
     label: 'Burn Tokens',
     execute: async () => {
-      const result = await executeTransaction({
-        program:    TOKEN_REGISTRY,
-        function:   'burn_private',
-        inputs:     [selectedRec!._record, `${rawAmount}u128`],
-        fee:        TX_DEFAULT_FEE,
-        privateFee: false,
-      });
+      const spec   = burnPrivate(selectedRec!._record, rawAmount);
+      const result = await executeTransaction({ ...spec, inputs: spec.inputs as string[] });
       return result?.transactionId;
     },
   }];

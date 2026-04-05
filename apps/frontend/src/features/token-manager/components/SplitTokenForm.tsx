@@ -2,18 +2,15 @@ import { useState, useMemo } from 'react';
 import { useWallet }         from '@provablehq/aleo-wallet-adaptor-react';
 import { Button, Spinner, TokenAmountInput } from '@/components';
 import { RefreshCw }         from 'lucide-react';
-import { SYSTEM_PROGRAMS }  from '@fairdrop/sdk/constants';
+import { splitToken }        from '@fairdrop/sdk/token-registry';
 import { formatAmount, parseTokenAmount } from '@fairdrop/sdk/format';
 import { WizardTxStatus }          from '@/shared/components/WizardTxStatus';
 import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
 import { useTokenRecords }          from '@/shared/hooks/useTokenRecords';
 import { useTokenMetadata }         from '@/shared/hooks/useTokenMetadata';
 import { parseExecutionError }      from '@/shared/utils/errors';
-import { TX_DEFAULT_FEE }           from '@/env';
 import { RecordPicker }             from './RecordPicker';
 import type { WalletTokenRecord }   from '@fairdrop/types/primitives';
-
-const TOKEN_REGISTRY = SYSTEM_PROGRAMS.tokenRegistry;
 
 export function SplitTokenForm() {
   const { executeTransaction } = useWallet();
@@ -43,13 +40,8 @@ export function SplitTokenForm() {
   const steps = [{
     label: 'Split Record',
     execute: async () => {
-      const result = await executeTransaction({
-        program:    TOKEN_REGISTRY,
-        function:   'split',
-        inputs:     [selected!._record, `${rawAmount}u128`],
-        fee:        TX_DEFAULT_FEE,
-        privateFee: false,
-      });
+      const spec   = splitToken(selected!._record, rawAmount);
+      const result = await executeTransaction({ ...spec, inputs: spec.inputs as string[] });
       if (!result?.transactionId) throw new Error('Wallet did not return a transaction ID.');
       return result.transactionId;
     },

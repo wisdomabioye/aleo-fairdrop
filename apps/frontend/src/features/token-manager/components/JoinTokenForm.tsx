@@ -2,18 +2,15 @@ import { useState, useMemo } from 'react';
 import { useWallet }         from '@provablehq/aleo-wallet-adaptor-react';
 import { Button, Spinner }   from '@/components';
 import { RefreshCw }         from 'lucide-react';
-import { SYSTEM_PROGRAMS }  from '@fairdrop/sdk/constants';
+import { joinTokens }        from '@fairdrop/sdk/token-registry';
 import { formatAmount }      from '@fairdrop/sdk/format';
 import { WizardTxStatus }          from '@/shared/components/WizardTxStatus';
 import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
 import { useTokenRecords }          from '@/shared/hooks/useTokenRecords';
 import { useTokenMetadata }         from '@/shared/hooks/useTokenMetadata';
 import { parseExecutionError }      from '@/shared/utils/errors';
-import { TX_DEFAULT_FEE }           from '@/env';
 import { RecordPicker }             from './RecordPicker';
 import type { WalletTokenRecord }   from '@fairdrop/types/primitives';
-
-const TOKEN_REGISTRY = SYSTEM_PROGRAMS.tokenRegistry;
 
 export function JoinTokenForm() {
   const { executeTransaction } = useWallet();
@@ -50,13 +47,8 @@ export function JoinTokenForm() {
   const steps = [{
     label: 'Join Records',
     execute: async () => {
-      const result = await executeTransaction({
-        program:    TOKEN_REGISTRY,
-        function:   'join',
-        inputs:     [rec1!._record, rec2!._record],
-        fee:        TX_DEFAULT_FEE,
-        privateFee: false,
-      });
+      const spec   = joinTokens(rec1!._record, rec2!._record);
+      const result = await executeTransaction({ ...spec, inputs: spec.inputs as string[] });
       if (!result?.transactionId) throw new Error('Wallet did not return a transaction ID.');
       return result.transactionId;
     },

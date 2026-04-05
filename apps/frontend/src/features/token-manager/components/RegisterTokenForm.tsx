@@ -2,11 +2,8 @@ import {
   Button, Card, CardContent, CardHeader, CardTitle, CardDescription,
   Input, Label, TokenAmountInput, Spinner,
 } from '@/components';
-import { SYSTEM_PROGRAMS } from '@fairdrop/sdk/constants';
 import { formatAmount } from '@fairdrop/sdk/format';
 import { parseExecutionError } from '@/shared/utils/errors';
-
-const TOKEN_REGISTRY = SYSTEM_PROGRAMS.tokenRegistry;
 
 export interface RegisterTokenFormProps {
   tokenId: string;
@@ -49,7 +46,7 @@ export function RegisterTokenForm({
       <CardHeader>
         <CardTitle>1 · Register Token</CardTitle>
         <CardDescription>
-          Create a new token entry on <code>{TOKEN_REGISTRY}</code>. Your address becomes the token admin.
+          Create a new token entry on <code>token_registry.aleo</code>. Your address becomes the token admin.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

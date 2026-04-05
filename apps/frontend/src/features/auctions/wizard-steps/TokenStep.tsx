@@ -2,10 +2,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link }                          from 'react-router-dom';
 import { useWallet }                     from '@provablehq/aleo-wallet-adaptor-react';
 import { Button, Spinner }               from '@/components';
-import { fetchTokenRole }                from '@fairdrop/sdk/token-registry';
-import { formatAmount }                  from '@fairdrop/sdk/format';
-import { SYSTEM_PROGRAMS }              from '@fairdrop/sdk/constants';
-import { config, TX_DEFAULT_FEE }        from '@/env';
+import { fetchTokenRole, authorizeSupplyManager } from '@fairdrop/sdk/token-registry';
+import { formatAmount }                          from '@fairdrop/sdk/format';
+import { config }                               from '@/env';
 import { AppRoutes }                     from '@/config/app.routes';
 import { useTokenRecords }               from '@/shared/hooks/useTokenRecords';
 import { useTokenMetadata }              from '@/shared/hooks/useTokenMetadata';
@@ -85,13 +84,8 @@ export function TokenStep({ form, onChange }: StepProps) {
   const authSteps = [{
     label: 'Authorize Auction Program',
     execute: async () => {
-      const result = await executeTransaction({
-        program:    SYSTEM_PROGRAMS.tokenRegistry,
-        function:   'set_role',
-        inputs:     [form.saleTokenId, auctionProgramAddress, '3u8'],
-        fee:        TX_DEFAULT_FEE,
-        privateFee: false,
-      });
+      const spec   = authorizeSupplyManager(form.saleTokenId, auctionProgramAddress);
+      const result = await executeTransaction({ ...spec, inputs: spec.inputs as string[] });
       return result?.transactionId;
     },
   }];

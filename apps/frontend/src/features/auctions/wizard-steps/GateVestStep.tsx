@@ -12,9 +12,8 @@ import {
   SelectItem,
 } from '@/components';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
-import { SYSTEM_PROGRAMS } from '@fairdrop/sdk/constants';
-import { fetchTokenRole }  from '@fairdrop/sdk/token-registry';
-import { config, TX_DEFAULT_FEE } from '@/env';
+import { fetchTokenRole, authorizeSupplyManager } from '@fairdrop/sdk/token-registry';
+import { config } from '@/env';
 import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
 import { GATE_LABEL } from './types';
 import type { StepProps } from './types';
@@ -30,13 +29,8 @@ export function GateVestStep({ form, onChange }: StepProps) {
   const vestAuthSteps = [{
     label: 'Authorize Vest Program',
     execute: async () => {
-      const result = await executeTransaction({
-        program:  SYSTEM_PROGRAMS.tokenRegistry,
-        function: 'set_role',
-        inputs:   [form.saleTokenId, vestProgramAddress, '3u8'],
-        fee:      TX_DEFAULT_FEE,
-        privateFee: false
-      });
+      const spec   = authorizeSupplyManager(form.saleTokenId, vestProgramAddress);
+      const result = await executeTransaction({ ...spec, inputs: spec.inputs as string[] });
       return result?.transactionId;
     },
   }];

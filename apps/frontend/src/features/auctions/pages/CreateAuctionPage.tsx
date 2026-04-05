@@ -156,13 +156,9 @@ export function CreateAuctionPage() {
 
       const tx = buildCreateAuctionInputs(
         { ...form, metadataHash: hash, metadataIpfsCid: ipfsCid },
-        nonce, protocolConfig, config,
+        nonce, protocolConfig,
       );
-      const result = await executeTransaction({
-        ...tx,
-        inputs:     tx.inputs as string[],
-        privateFee: false,
-      });
+      const result = await executeTransaction({ ...tx, inputs: tx.inputs as string[] });
 
       if (!result?.transactionId) throw new Error('Transaction was rejected by the wallet.');
       return result.transactionId;

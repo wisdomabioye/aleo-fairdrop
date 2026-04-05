@@ -1,2 +1,12 @@
 export { fetchTokenInfo, fetchTokenBalance, fetchTokenRole, fetchCreditsBalance } from './token';
-export { authorizeSupplyManager, TOKEN_ROLE } from './authorize';
+export {
+  TOKEN_ROLE,
+  registerToken,
+  mintPrivate,
+  burnPrivate,
+  splitToken,
+  joinTokens,
+  setRole,
+  removeRole,
+  authorizeSupplyManager,
+} from './transactions';
