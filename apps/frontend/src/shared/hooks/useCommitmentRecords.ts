@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
-import { parsePlaintext, parseU128, u128ToBigInt } from '@fairdrop/sdk/parse';
-import { stripVisibility } from '@fairdrop/sdk/parse';
+import { scanCommitmentRecords } from '@fairdrop/sdk/records';
 import type { WalletSealedCommitment } from '@fairdrop/types/primitives';
 import { useWalletRecords } from './useWalletRecords';
 
@@ -21,28 +20,10 @@ export function useCommitmentRecords(programId: string, opts: Options = {}) {
   const { auctionId, ...walletOpts } = opts;
   const { entries, loading, fetchRecords } = useWalletRecords(programId, walletOpts);
 
-  const commitmentRecords = useMemo<WalletSealedCommitment[]>(() => {
-    const result: WalletSealedCommitment[] = [];
-    for (const entry of entries) {
-      if (entry.recordName !== 'Commitment') continue;
-      try {
-        const fields = parsePlaintext(entry.recordPlaintext);
-        if (auctionId && stripVisibility(fields['auction_id'] ?? '') !== auctionId) continue;
-        result.push({
-          id:             entry.commitment,
-          programId,
-          auction_id:     stripVisibility(fields['auction_id']  ?? ''),
-          quantity:       u128ToBigInt(parseU128(fields['quantity']       ?? '0u128')),
-          payment_amount: u128ToBigInt(parseU128(fields['payment_amount'] ?? '0u128')),
-          commitment:     stripVisibility(fields['commitment']  ?? ''),
-          nonce:          stripVisibility(fields['nonce']       ?? ''),
-          spent:          entry.spent,
-          _record:        entry.recordPlaintext,
-        });
-      } catch { /* skip malformed */ }
-    }
-    return result;
-  }, [entries, programId, auctionId]);
+  const commitmentRecords = useMemo<WalletSealedCommitment[]>(
+    () => scanCommitmentRecords(entries, programId, auctionId),
+    [entries, programId, auctionId],
+  );
 
   return { commitmentRecords, loading, fetchRecords };
 }
