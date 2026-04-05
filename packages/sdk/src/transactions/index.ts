@@ -101,15 +101,6 @@ export {
   setPaused,
 } from './config';
 
-// ── Multisig governance ───────────────────────────────────────────────────────
-
-export {
-  initializeMultisig,
-  approveUpgrade,
-  approveOp,
-  updateAdmin,
-} from './multisig';
-
 // ── Token registry (supply manager authorization) ─────────────────────────────
 
 export { authorizeSupplyManager, TOKEN_ROLE } from './registry';
