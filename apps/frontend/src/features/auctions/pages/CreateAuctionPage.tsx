@@ -4,7 +4,7 @@ import { X }                          from 'lucide-react';
 import { useBlockHeight }            from '@/shared/hooks/useBlockHeight';
 import { useWallet }                  from '@provablehq/aleo-wallet-adaptor-react';
 import { Button, Spinner }            from '@/components';
-import { fetchMappingBigInt }         from '@/lib/mapping';
+import { fetchCreatorNonce }           from '@fairdrop/sdk/chain';
 import { config }                     from '@/env';
 import { AppRoutes }                  from '@/config/app.routes';
 import { useProtocolConfig }          from '@/shared/hooks/useProtocolConfig';
@@ -142,7 +142,7 @@ export function CreateAuctionPage() {
       if (!programEntry) throw new Error('No program for selected auction type.');
 
       // Fetch current creator nonce (0 if no prior auctions)
-      const nonce = await fetchMappingBigInt(programEntry.programId, 'creator_nonces', address);
+      const nonce = await fetchCreatorNonce(address, programEntry.programId);
 
       // Upload metadata to IPFS right before submitting — no junk uploads on navigation
       const { hash, ipfsCid } = await metadataService.upload({

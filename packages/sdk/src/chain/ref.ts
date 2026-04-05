@@ -60,6 +60,16 @@ export async function fetchReferralCount(codeId: string): Promise<bigint> {
 }
 
 /**
+ * Fetch the bidder key stored at a referral list position.
+ * Reads referral_list[listKey] where listKey = computeRefListKey(codeId, index).
+ * Returns the raw field string (bidder key) or null if not found.
+ */
+export async function fetchReferralListEntry(listKey: string): Promise<string | null> {
+  const raw = await getMappingValue(REF_PROGRAM, 'referral_list', listKey);
+  return raw?.trim() ?? null;
+}
+
+/**
  * Check whether the referral reserve has been funded for an auction.
  * Reads reserve_funded[auctionId]. Returns false on miss.
  */

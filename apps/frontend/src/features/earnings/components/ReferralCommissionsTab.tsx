@@ -5,7 +5,7 @@ import { Button, Spinner, Badge, Card, CardContent, CardHeader, CopyField } from
 import { formatMicrocredits }   from '@fairdrop/sdk/credits';
 import { parsePlaintext, stripVisibility, stripSuffix } from '@fairdrop/sdk/parse';
 import type { WalletRecord }    from '@fairdrop/types/primitives';
-import { fetchMapping, fetchMappingBigInt } from '@/lib/mapping';
+import { fetchEarned, fetchReferralCount, fetchReferralListEntry, fetchReferralRecord } from '@fairdrop/sdk/chain';
 import { computeRefListKey }    from '@fairdrop/sdk/hash';
 import { config }               from '@/env';
 import { auctionDetailUrl }     from '@/config';
@@ -20,23 +20,15 @@ const REF_PROGRAM = config.programs.ref.programId;
 
 // ── on-chain helpers ───────────────────────────────────────────────────────────
 
-async function fetchEarned(codeId: string): Promise<bigint> {
-  return fetchMappingBigInt(REF_PROGRAM, 'earned', codeId);
-}
-
-async function fetchRefCount(codeId: string): Promise<bigint> {
-  return fetchMappingBigInt(REF_PROGRAM, 'referral_count', codeId);
-}
-
 async function fetchUncreditedKeys(codeId: string, count: bigint): Promise<string[]> {
   const keys: string[] = [];
   for (let i = 0n; i < count; i++) {
     const listKey   = computeRefListKey(codeId, i);
-    const bidderKey = await fetchMapping(REF_PROGRAM, 'referral_list', listKey);
+    const bidderKey = await fetchReferralListEntry(listKey);
     if (!bidderKey) continue;
-    const rec = await fetchMapping(REF_PROGRAM, 'referral_records', bidderKey);
-    if (!rec) continue;
-    if (!/credited:\s*true/.test(rec)) keys.push(bidderKey);
+    const rec = await fetchReferralRecord(bidderKey);
+    if (!rec || rec.credited) continue;
+    keys.push(bidderKey);
   }
   return keys;
 }
@@ -103,7 +95,7 @@ export function ReferralCommissionsTab() {
       await Promise.all(parsed.map(async (code, idx) => {
         const [earned, count] = await Promise.all([
           fetchEarned(code.codeId),
-          fetchRefCount(code.codeId),
+          fetchReferralCount(code.codeId),
         ]);
         const uncredited = await fetchUncreditedKeys(code.codeId, count);
         setCodes((prev) => {

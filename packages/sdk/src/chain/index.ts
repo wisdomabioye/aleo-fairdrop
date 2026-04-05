@@ -13,6 +13,7 @@ export {
   fetchEscrowSales,
   fetchProtocolTreasury,
   fetchCreatorWithdrawn,
+  fetchUnsoldWithdrawn,
   fetchCreatorNonce,
   fetchAuctionStats,
   fetchCreatorAuctions,
@@ -26,6 +27,7 @@ export { fetchGateConfig, fetchIsVerified, fetchIsGateRegistered, fetchIsAllowed
 export {
   fetchReferralConfig,
   fetchReferralRecord,
+  fetchReferralListEntry,
   fetchEarned,
   fetchReferralReserve,
   fetchReferralCount,

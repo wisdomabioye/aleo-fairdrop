@@ -77,6 +77,15 @@ export async function fetchCreatorWithdrawn(auctionId: string, programId: string
   return raw ? u128ToBigInt(parseU128(raw)) : 0n;
 }
 
+/**
+ * Fetch how much unsold token the creator has already withdrawn from an auction.
+ * Reads unsold_withdrawn[auctionId]. Returns 0n on miss.
+ */
+export async function fetchUnsoldWithdrawn(auctionId: string, programId: string): Promise<bigint> {
+  const raw = await getMappingValue(programId, 'unsold_withdrawn', auctionId);
+  return raw ? u128ToBigInt(parseU128(raw)) : 0n;
+}
+
 // ── Auction index ─────────────────────────────────────────────────────────────
 
 /**

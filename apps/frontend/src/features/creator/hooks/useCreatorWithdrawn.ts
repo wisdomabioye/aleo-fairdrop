@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchMappingBigInt } from '@/lib/mapping';
+import { fetchCreatorWithdrawn, fetchUnsoldWithdrawn } from '@fairdrop/sdk/chain';
 
 export interface CreatorWithdrawn {
   paymentsWithdrawn: bigint;
@@ -19,8 +19,8 @@ export function useCreatorWithdrawn(
     queryKey: ['creator-withdrawn', auctionId],
     queryFn:  async () => {
       const [paymentsWithdrawn, unsoldWithdrawn] = await Promise.all([
-        fetchMappingBigInt(programId, 'creator_withdrawn', auctionId),
-        fetchMappingBigInt(programId, 'unsold_withdrawn',  auctionId),
+        fetchCreatorWithdrawn(auctionId, programId),
+        fetchUnsoldWithdrawn(auctionId, programId),
       ]);
       return { paymentsWithdrawn, unsoldWithdrawn };
     },
