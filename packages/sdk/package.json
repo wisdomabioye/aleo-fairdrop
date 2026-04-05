@@ -14,7 +14,8 @@
     "./hash": "./src/hash/index.ts",
     "./chain": "./src/chain/index.ts",
     "./transactions": "./src/transactions/index.ts",
-    "./multisig": "./src/multisig/index.ts"
+    "./multisig": "./src/multisig/index.ts",
+    "./records": "./src/records/index.ts"
   },
   "scripts": {
     "type-check": "tsc --noEmit",
