@@ -87,6 +87,33 @@ export function withdrawPayments(
 }
 
 /**
+ * withdraw_treasury_fees — multisig-protected; withdraw accumulated protocol fees.
+ *
+ * Validates a pre-approved WithdrawalOp (BHP256 of amount + recipient + nonce)
+ * against fairdrop_multisig. Use computeWithdrawalOpHash() to derive the op_hash
+ * and approveOp() to get multisig approval before calling this.
+ *
+ * @param amount     Microcredits to withdraw from protocol_treasury.
+ * @param recipient  Address to receive the credits.
+ * @param opNonce    Nonce matching the pre-approved WithdrawalOp in multisig.
+ */
+export function withdrawTreasuryFees(
+  auction:   AuctionView,
+  amount:    bigint,
+  recipient: string,
+  opNonce:   bigint,
+  fee = DEFAULT_TX_FEE,
+): TxSpec {
+  return {
+    program:  auction.programId,
+    function: 'withdraw_treasury_fees',
+    inputs:   [`${amount}u128`, recipient, `${opNonce}u64`],
+    fee,
+    privateFee: false,
+  };
+}
+
+/**
  * withdraw_unsold — creator only; call after close_auction.
  *
  * Mints up to `amount` unsold tokens back to the creator.

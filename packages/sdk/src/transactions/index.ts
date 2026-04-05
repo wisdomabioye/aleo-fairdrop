@@ -34,6 +34,7 @@ export {
   pushReferralBudget,
   withdrawPayments,
   withdrawUnsold,
+  withdrawTreasuryFees,
 } from './auction';
 
 // ── Claims ────────────────────────────────────────────────────────────────────
@@ -45,9 +46,26 @@ export {
   claimCommitVoided,
 } from './claim';
 
-// ── Sealed-specific ───────────────────────────────────────────────────────────
+// ── Bids ──────────────────────────────────────────────────────────────────────
 
-export { slashUnrevealed } from './sealed';
+export {
+  placeBidPublic,
+  placeBidPublicRef,
+  placeBidPrivate,
+  placeBidPrivateRef,
+  type BidParams,
+} from './bid';
+
+// ── Sealed commit / reveal ────────────────────────────────────────────────────
+
+export {
+  commitBidPublic,
+  commitBidPublicRef,
+  commitBidPrivate,
+  commitBidPrivateRef,
+  revealBid,
+  slashUnrevealed,
+} from './sealed';
 
 // ── Gate verification (user pre-steps for gated auctions) ─────────────────────
 
