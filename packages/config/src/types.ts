@@ -7,6 +7,7 @@ export interface ProgramEntry {
 }
 
 export interface Programs {
+  multisig:  ProgramEntry;
   dutch:     ProgramEntry;
   sealed:    ProgramEntry;
   raise:     ProgramEntry;

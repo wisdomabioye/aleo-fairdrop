@@ -7,7 +7,26 @@
  * and referrers claim commissions proportional to attributed volume.
  */
 
-import type { Field, Address, U128, Bool } from '../../primitives/scalars';
+import type { Field, Address, U128, U16, Bool } from '../../primitives/scalars';
+
+/**
+ * On-chain registration stored in registrations[codeId].
+ * Leo struct: ReferralConfig { auction_id: field, bps: u16 }
+ */
+export interface ReferralConfig {
+  auction_id: Field;
+  bps:        U16;
+}
+
+/**
+ * Per-bidder referral record stored in referral_records[key].
+ * Leo struct: ReferralRecord { code_id: field, payment_amount: u128, credited: bool }
+ */
+export interface ReferralRecord {
+  code_id:        Field;
+  payment_amount: U128;
+  credited:       Bool;
+}
 
 /** On-chain referral code record, created by a referrer. */
 export interface ReferralCode {

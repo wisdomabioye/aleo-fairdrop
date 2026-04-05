@@ -12,6 +12,8 @@ export type {
 } from './proof';
 
 export type {
+  ReferralConfig,
+  ReferralRecord,
   ReferralCode,
   ReferralAttribution,
   RecordReferralInput,

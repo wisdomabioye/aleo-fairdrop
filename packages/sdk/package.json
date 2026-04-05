@@ -11,7 +11,8 @@
     "./client": "./src/client.ts",
     "./registry": "./src/registry/index.ts",
     "./constants": "./src/constants.ts",
-    "./hash": "./src/hash/index.ts"
+    "./hash": "./src/hash/index.ts",
+    "./chain": "./src/chain/index.ts"
   },
   "scripts": {
     "type-check": "tsc --noEmit",
@@ -19,7 +20,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@fairdrop/types": "workspace:*"
+    "@fairdrop/types":  "workspace:*",
+    "@fairdrop/config": "workspace:*"
   },
   "peerDependencies": {
     "@provablehq/sdk": "*"
