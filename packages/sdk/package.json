@@ -12,7 +12,8 @@
     "./registry": "./src/registry/index.ts",
     "./constants": "./src/constants.ts",
     "./hash": "./src/hash/index.ts",
-    "./chain": "./src/chain/index.ts"
+    "./chain": "./src/chain/index.ts",
+    "./transactions": "./src/transactions/index.ts"
   },
   "scripts": {
     "type-check": "tsc --noEmit",

@@ -16,6 +16,7 @@ export {
   fetchCreatorNonce,
   fetchAuctionStats,
   fetchCreatorAuctions,
+  fetchSqrtWeights,
 } from './auction';
 
 export { fetchProtocolConfig, fetchPaused } from './config';
