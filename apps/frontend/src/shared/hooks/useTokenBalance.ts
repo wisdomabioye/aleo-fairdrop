@@ -13,7 +13,7 @@ import {
   fetchCreditsBalance,
   fetchTokenBalance,
   fetchTokenInfo,
-} from '@fairdrop/sdk/registry';
+} from '@fairdrop/sdk/token-registry';
 import { CREDITS_RESERVED_TOKEN_ID } from '@fairdrop/sdk/credits';
 
 export function useTokenBalance(tokenId: string | null | undefined) {

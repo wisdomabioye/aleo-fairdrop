@@ -7,7 +7,7 @@
  */
 
 import { SYSTEM_PROGRAMS } from '../constants';
-import { DEFAULT_TX_FEE, type TxSpec } from './_types';
+import { DEFAULT_TX_FEE, type TxSpec } from '../transactions/_types';
 
 /** token_registry role values. */
 export const TOKEN_ROLE = {

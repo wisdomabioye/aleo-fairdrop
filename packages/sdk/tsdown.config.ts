@@ -7,7 +7,7 @@ export default defineConfig({
     format:       'src/format/index.ts',
     cache:        'src/cache/index.ts',
     client:       'src/client.ts',
-    registry:     'src/registry/index.ts',
+    'token-registry': 'src/token-registry/index.ts',
     constants:    'src/constants.ts',
     hash:         'src/hash/index.ts',
     chain:        'src/chain/index.ts',

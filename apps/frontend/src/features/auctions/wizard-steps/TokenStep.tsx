@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link }                          from 'react-router-dom';
 import { useWallet }                     from '@provablehq/aleo-wallet-adaptor-react';
 import { Button, Spinner }               from '@/components';
-import { fetchTokenRole }                from '@fairdrop/sdk/registry';
+import { fetchTokenRole }                from '@fairdrop/sdk/token-registry';
 import { formatAmount }                  from '@fairdrop/sdk/format';
 import { SYSTEM_PROGRAMS }              from '@fairdrop/sdk/constants';
 import { config, TX_DEFAULT_FEE }        from '@/env';

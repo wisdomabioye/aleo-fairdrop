@@ -100,7 +100,3 @@ export {
   setMinAuctionDuration,
   setPaused,
 } from './config';
-
-// ── Token registry (supply manager authorization) ─────────────────────────────
-
-export { authorizeSupplyManager, TOKEN_ROLE } from './registry';

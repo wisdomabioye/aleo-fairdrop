@@ -13,7 +13,7 @@ import {
 } from '@/components';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { SYSTEM_PROGRAMS } from '@fairdrop/sdk/constants';
-import { fetchTokenRole }  from '@fairdrop/sdk/registry';
+import { fetchTokenRole }  from '@fairdrop/sdk/token-registry';
 import { config, TX_DEFAULT_FEE } from '@/env';
 import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
 import { GATE_LABEL } from './types';
