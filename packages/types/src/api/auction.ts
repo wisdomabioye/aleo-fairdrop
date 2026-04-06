@@ -53,13 +53,29 @@ export interface AuctionFilterOptions {
  * relationship is established on-chain via create_auction's metadata_hash param
  * and off-chain via auctions.metadata_hash = auction_metadata.hash.
  */
+/**
+ * Camelcase shape used throughout the frontend and as the canonical shared type.
+ * The frontend service maps this to MetadataCreateRequest before sending over HTTP.
+ */
+export interface MetadataInput {
+  name:           string;
+  description:    string;
+  website?:       string;
+  logoIpfs?:      string;   // CID returned by POST /metadata/logo
+  twitter?:       string;
+  discord?:       string;
+  /** URL of the credential-signer service. Required for credential-gated auctions. */
+  credentialUrl?: string;
+}
+
 export interface MetadataCreateRequest {
-  name:        string;
-  description: string;
-  website?:    string;
-  logo_ipfs?:  string;        // CID returned by POST /metadata/logo
-  twitter?:    string;
-  discord?:    string;
+  name:            string;
+  description:     string;
+  website?:        string;
+  logo_ipfs?:      string;    // CID returned by POST /metadata/logo
+  twitter?:        string;
+  discord?:        string;
+  credential_url?: string;    // credential-signer service URL; required for credential-gated auctions
 }
 
 export interface MetadataCreateResponse {

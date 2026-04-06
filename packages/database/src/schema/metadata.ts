@@ -16,8 +16,9 @@ export const auctionMetadata = pgTable('auction_metadata', {
   description: text('description').notNull(),
   website:     text('website'),
   logoIpfs:    text('logo_ipfs'),
-  twitter:     text('twitter'),
-  discord:     text('discord'),
+  twitter:       text('twitter'),
+  discord:       text('discord'),
+  credentialUrl: text('credential_url'),
   // Full canonical JSON blob — authoritative source for re-verification
   rawJson:     jsonb('raw_json').notNull(),
   pinnedAt:    timestamp('pinned_at').notNull(),

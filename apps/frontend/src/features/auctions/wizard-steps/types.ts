@@ -34,9 +34,10 @@ export interface WizardForm {
   maxBidAmount: string; // ALEO human units (0 = no cap)
 
   // Step 5 — gate & vesting
-  gateMode:        0 | 1 | 2; // 0=open 1=merkle 2=credential
-  merkleRoot:      string;    // field hex — used when gateMode=1
-  issuerAddress:   string;    // aleo1... — used when gateMode=2
+  gateMode:             0 | 1 | 2; // 0=open 1=merkle 2=credential
+  merkleRoot:           string;    // field hex — used when gateMode=1
+  issuerAddress:        string;    // aleo1... — used when gateMode=2
+  credentialServiceUrl: string;    // credential-signer URL — stored in IPFS metadata when gateMode=2
   vestEnabled:     boolean;
   vestCliffBlocks: string;    // integer
   vestEndBlocks:   string;
@@ -77,9 +78,10 @@ export const DEFAULT_FORM: WizardForm = {
   endBlock:            '',
   minBidAmount:        '1',
   maxBidAmount:        '0',
-  gateMode:            0,
-  merkleRoot:          '0field',
-  issuerAddress:       '',
+  gateMode:             0,
+  merkleRoot:           '0field',
+  issuerAddress:        '',
+  credentialServiceUrl: '',
   vestEnabled:         false,
   vestCliffBlocks:     '0',
   vestEndBlocks:       '0',

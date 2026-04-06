@@ -8,7 +8,7 @@ interface Props {
 }
 
 export function MerkleTreeBuilder({ onRootComputed }: Props) {
-  const { build, building, error } = useMerkleBuilder();
+  const { build, building, error, clearError } = useMerkleBuilder();
   const [addressText,  setAddressText]  = useState('');
   const [proofBundle,  setProofBundle]  = useState<MerkleWorkerResponse | null>(null);
 
@@ -75,9 +75,19 @@ export function MerkleTreeBuilder({ onRootComputed }: Props) {
             <p className="text-emerald-400 font-medium">Tree built</p>
             <p className="font-mono text-muted-foreground break-all mt-0.5">{proofBundle.root}</p>
           </div>
-          <Button type="button" variant="outline" size="sm" onClick={downloadProofs}>
-            Download proofs.json
-          </Button>
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={downloadProofs}>
+              Download proofs.json
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => { setProofBundle(null); setAddressText(''); clearError(); }}
+            >
+              Clear & rebuild
+            </Button>
+          </div>
           <p className="text-xs text-muted-foreground">
             Distribute each address's entry from proofs.json to your allowlisted bidders.
           </p>

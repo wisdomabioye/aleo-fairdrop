@@ -72,12 +72,13 @@ metadataRouter.post('/', async (c) => {
     throw new HTTPException(400, { message: 'Invalid JSON body' });
   }
 
-  const name        = assertStr(body.name,        'name',        100);
-  const description = assertStr(body.description, 'description', 1000);
-  const website     = assertUrl(assertOptStr(body.website,   'website',   200), 'website');
-  const logo_ipfs   = assertIpfsCid(assertOptStr(body.logo_ipfs, 'logo_ipfs', 100), 'logo_ipfs');
-  const twitter     = assertOptStr(body.twitter, 'twitter', 50);
-  const discord     = assertOptStr(body.discord, 'discord', 50);
+  const name           = assertStr(body.name,        'name',        100);
+  const description    = assertStr(body.description, 'description', 1000);
+  const website        = assertUrl(assertOptStr(body.website,        'website',        200), 'website');
+  const logo_ipfs      = assertIpfsCid(assertOptStr(body.logo_ipfs,  'logo_ipfs',      100), 'logo_ipfs');
+  const twitter        = assertOptStr(body.twitter,        'twitter',        50);
+  const discord        = assertOptStr(body.discord,        'discord',        50);
+  const credential_url = assertUrl(assertOptStr(body.credential_url, 'credential_url', 300), 'credential_url');
 
   // Canonical object — sorted keys, trimmed values — this exact shape is hashed and pinned.
   // No auction_id: metadata is content-addressed; the auction→metadata join is done
@@ -85,10 +86,11 @@ metadataRouter.post('/', async (c) => {
   const canonical: Record<string, unknown> = {
     name,
     description,
-    ...(website   ? { website }   : {}),
-    ...(logo_ipfs ? { logo_ipfs } : {}),
-    ...(twitter   ? { twitter }   : {}),
-    ...(discord   ? { discord }   : {}),
+    ...(website        ? { website }        : {}),
+    ...(logo_ipfs      ? { logo_ipfs }      : {}),
+    ...(twitter        ? { twitter }        : {}),
+    ...(discord        ? { discord }        : {}),
+    ...(credential_url ? { credential_url } : {}),
   };
 
   const [hash, ipfsCid] = await Promise.all([
@@ -102,12 +104,13 @@ metadataRouter.post('/', async (c) => {
     ipfsCid,
     name,
     description,
-    website:  website  ?? null,
-    logoIpfs: logo_ipfs ?? null,
-    twitter:  twitter  ?? null,
-    discord:  discord  ?? null,
-    rawJson:  canonical,
-    pinnedAt: new Date(),
+    website:       website        ?? null,
+    logoIpfs:      logo_ipfs      ?? null,
+    twitter:       twitter        ?? null,
+    discord:       discord        ?? null,
+    credentialUrl: credential_url ?? null,
+    rawJson:       canonical,
+    pinnedAt:      new Date(),
   });
 
   const response: MetadataCreateResponse = {
@@ -158,14 +161,15 @@ metadataRouter.get('/:hash', async (c) => {
   if (!row) throw new HTTPException(404, { message: `Metadata hash ${hash} not found` });
 
   const response: MetadataResponse = {
-    hash:        row.hash,
-    ipfsCid:     row.ipfsCid,
-    name:        row.name,
-    description: row.description,
-    website:     row.website  ?? null,
-    logoIpfs:    row.logoIpfs ?? null,
-    twitter:     row.twitter  ?? null,
-    discord:     row.discord  ?? null,
+    hash:          row.hash,
+    ipfsCid:       row.ipfsCid,
+    name:          row.name,
+    description:   row.description,
+    website:       row.website       ?? null,
+    logoIpfs:      row.logoIpfs      ?? null,
+    twitter:       row.twitter       ?? null,
+    discord:       row.discord       ?? null,
+    credentialUrl: row.credentialUrl ?? null,
   };
 
   return json(c, response);

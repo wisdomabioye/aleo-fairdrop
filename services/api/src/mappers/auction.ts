@@ -97,14 +97,15 @@ function computeCurrentPrice(row: AuctionRow, currentBlock: number): bigint | nu
 function toMetadata(row: AuctionMetadataRow | null): AuctionMetadata | null {
   if (!row) return null;
   return {
-    hash:        row.hash,
-    ipfsCid:     row.ipfsCid,
-    name:        row.name,
-    description: row.description,
-    website:     row.website   ?? null,
-    logoIpfs:    row.logoIpfs  ?? null,
-    twitter:     row.twitter   ?? null,
-    discord:     row.discord   ?? null,
+    hash:          row.hash,
+    ipfsCid:       row.ipfsCid,
+    name:          row.name,
+    description:   row.description,
+    website:       row.website       ?? null,
+    logoIpfs:      row.logoIpfs      ?? null,
+    twitter:       row.twitter       ?? null,
+    discord:       row.discord       ?? null,
+    credentialUrl: row.credentialUrl ?? null,
   };
 }
 

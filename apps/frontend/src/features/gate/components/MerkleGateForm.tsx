@@ -1,4 +1,4 @@
-import { useState, useRef }           from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useWallet }                   from '@provablehq/aleo-wallet-adaptor-react';
 import { Button, Label, Spinner, Textarea } from '@/components';
 import { verifyMerkle }                from '@fairdrop/sdk/transactions';
@@ -29,12 +29,15 @@ export function MerkleGateForm({ auctionId, onVerified }: Props) {
     },
   }]);
 
+  useEffect(() => {
+    if (tx.done) onVerified?.();
+  }, [tx.done]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!connected) {
     return <ConnectWalletPrompt message="Connect your wallet to submit your Merkle proof." />;
   }
 
   if (tx.done) {
-    onVerified?.();
     return (
       <p className="text-sm text-emerald-600 dark:text-emerald-400">
         Proof submitted. Waiting for confirmation…
@@ -42,7 +45,7 @@ export function MerkleGateForm({ auctionId, onVerified }: Props) {
     );
   }
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     setParseError('');
 

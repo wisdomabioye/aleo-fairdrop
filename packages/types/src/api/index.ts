@@ -7,6 +7,7 @@ export type {
   BidRequest,
   BidResponse,
   AuctionFilterOptions,
+  MetadataInput,
   MetadataCreateRequest,
   MetadataCreateResponse,
   LogoUploadResponse,

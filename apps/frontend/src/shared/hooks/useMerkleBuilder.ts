@@ -41,5 +41,7 @@ export function useMerkleBuilder() {
     worker.postMessage({ addresses });
   }, []);
 
-  return { build, building, error };
+  const clearError = useCallback(() => setError(null), []);
+
+  return { build, building, error, clearError };
 }

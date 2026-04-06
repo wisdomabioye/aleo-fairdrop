@@ -9,6 +9,7 @@ export {
   computeApproveOpMsgHash,
   computeUpgradeOpHash,
   computeUpdateAdminOpHash,
+  buildCredentialChallenge,
   computeCredentialMsgHash,
   generateTokenId,
   generateNonce,

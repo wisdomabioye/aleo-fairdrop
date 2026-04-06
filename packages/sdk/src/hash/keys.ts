@@ -138,6 +138,17 @@ export function computeUpdateAdminOpHash(
 // ── fairdrop_gate_v2.aleo ─────────────────────────────────────────────────────
 
 /**
+ * Build the challenge string a bidder must sign with their Aleo wallet to prove
+ * they control holderAddress before the credential-signer issues a credential.
+ *
+ * The wallet signs this string as raw UTF-8 bytes. The credential-signer verifies
+ * the signature before running the access check.
+ */
+export function buildCredentialChallenge(auctionId: string, holderAddress: string): string {
+  return `fairdrop-credential-request:${auctionId}:${holderAddress}`;
+}
+
+/**
  * Compute the message hash a credential issuer must sign.
  * Mirrors: BHP256::hash_to_field(CredentialMessage { holder, auction_id, expiry })
  *

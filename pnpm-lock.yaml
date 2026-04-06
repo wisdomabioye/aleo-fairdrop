@@ -317,6 +317,37 @@ importers:
         specifier: ~5.9.3
         version: 5.9.3
 
+  services/credential-signer:
+    dependencies:
+      '@fairdrop/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@fairdrop/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
+      '@hono/node-server':
+        specifier: ^1.13.8
+        version: 1.19.11(hono@4.12.8)
+      '@provablehq/sdk':
+        specifier: '*'
+        version: 0.9.18
+      dotenv:
+        specifier: ^17.3.1
+        version: 17.3.1
+      hono:
+        specifier: ^4.7.10
+        version: 4.12.8
+    devDependencies:
+      '@types/node':
+        specifier: ^25.5.0
+        version: 25.5.0
+      tsx:
+        specifier: ^4.19.3
+        version: 4.21.0
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+
   services/indexer:
     dependencies:
       '@fairdrop/config':

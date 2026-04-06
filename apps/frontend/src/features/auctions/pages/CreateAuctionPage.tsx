@@ -57,7 +57,7 @@ function canAdvance(
     }
     case 4: {
       if (form.gateMode === 1 && (!form.merkleRoot || form.merkleRoot === '0field')) return false;
-      if (form.gateMode === 2 && !form.issuerAddress) return false;
+      if (form.gateMode === 2 && (!form.issuerAddress || !form.credentialServiceUrl)) return false;
       if (form.vestEnabled) {
         const cliff = parseInt(form.vestCliffBlocks) || 0;
         const end   = parseInt(form.vestEndBlocks)   || 0;
@@ -146,12 +146,13 @@ export function CreateAuctionPage() {
 
       // Upload metadata to IPFS right before submitting — no junk uploads on navigation
       const { hash, ipfsCid } = await metadataService.upload({
-        name:        form.metadataName.trim(),
-        description: form.metadataDescription.trim(),
-        website:     form.metadataWebsite.trim()  || undefined,
-        twitter:     form.metadataTwitter.trim()  || undefined,
-        discord:     form.metadataDiscord.trim()  || undefined,
-        logoIpfs:    form.metadataLogoIpfs        || undefined,
+        name:           form.metadataName.trim(),
+        description:    form.metadataDescription.trim(),
+        website:        form.metadataWebsite.trim()       || undefined,
+        twitter:        form.metadataTwitter.trim()       || undefined,
+        discord:        form.metadataDiscord.trim()       || undefined,
+        logoIpfs:       form.metadataLogoIpfs             || undefined,
+        credentialUrl:  form.credentialServiceUrl.trim()  || undefined,
       });
 
       const tx = buildCreateAuctionInputs(

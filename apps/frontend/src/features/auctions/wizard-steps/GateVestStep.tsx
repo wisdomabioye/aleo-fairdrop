@@ -15,7 +15,8 @@ import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { fetchTokenRole, authorizeSupplyManager } from '@fairdrop/sdk/token-registry';
 import { config } from '@/env';
 import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
-import { MerkleTreeBuilder } from './MerkleTreeBuilder';
+import { MerkleTreeBuilder }      from './MerkleTreeBuilder';
+import { CredentialIssuerSetup }  from './CredentialIssuerSetup';
 import { GATE_LABEL } from './types';
 import type { StepProps } from './types';
 
@@ -86,17 +87,10 @@ export function GateVestStep({ form, onChange }: StepProps) {
       )}
 
       {form.gateMode === 2 && (
-        <div className="space-y-1.5">
-          <Label>Credential issuer address</Label>
-          <Input
-            value={form.issuerAddress}
-            onChange={(e) => onChange({ issuerAddress: e.target.value })}
-            placeholder="aleo1…"
-          />
-          <p className="text-xs text-muted-foreground">
-            The address whose signature is required. Bidders present a credential + expiry block.
-          </p>
-        </div>
+        <CredentialIssuerSetup
+          onAddressResolved={(address) => onChange({ issuerAddress: address })}
+          onUrlChanged={(url) => onChange({ credentialServiceUrl: url })}
+        />
       )}
 
       {/* Vesting */}

@@ -48,16 +48,18 @@ export enum GateMode {
 /** Off-chain metadata pinned to IPFS and hashed on-chain via BHP256. */
 export interface AuctionMetadata {
   /** Field hex — matches on-chain metadata_hash in AuctionConfig. */
-  hash:        string;
+  hash:          string;
   /** IPFS CID for fetching / verification. */
-  ipfsCid:     string;
-  name:        string;
-  description: string;
-  website:     string | null;
+  ipfsCid:       string;
+  name:          string;
+  description:   string;
+  website:       string | null;
   /** IPFS CID of logo image. */
-  logoIpfs:    string | null;
-  twitter:     string | null;
-  discord:     string | null;
+  logoIpfs:      string | null;
+  twitter:       string | null;
+  discord:       string | null;
+  /** URL of the credential-signer service. Present only for credential-gated auctions. */
+  credentialUrl: string | null;
 }
 
 /**

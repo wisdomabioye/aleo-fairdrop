@@ -1,17 +1,8 @@
 import { API_URL } from '@/env';
 import { apiFetch } from './api.client';
-import type { MetadataCreateResponse, LogoUploadResponse } from '@fairdrop/types/api';
+import type { MetadataInput, MetadataCreateResponse, LogoUploadResponse } from '@fairdrop/types/api';
 
-// ── Frontend-facing types (camelCase) ─────────────────────────────────────────
-
-export interface MetadataInput {
-  name:        string;
-  description: string;
-  website?:    string;
-  twitter?:    string;
-  discord?:    string;
-  logoIpfs?:   string;  // CID from uploadLogo()
-}
+export type { MetadataInput };
 
 export interface MetadataUploadResult {
   hash:    string;  // Nfield literal — pass directly to create_auction
@@ -48,10 +39,11 @@ export const metadataService = {
       body:   JSON.stringify({
         name:        data.name,
         description: data.description,
-        ...(data.website  ? { website:   data.website  } : {}),
-        ...(data.logoIpfs ? { logo_ipfs: data.logoIpfs } : {}),
-        ...(data.twitter  ? { twitter:   data.twitter  } : {}),
-        ...(data.discord  ? { discord:   data.discord  } : {}),
+        ...(data.website       ? { website:        data.website       } : {}),
+        ...(data.logoIpfs      ? { logo_ipfs:       data.logoIpfs      } : {}),
+        ...(data.twitter       ? { twitter:         data.twitter       } : {}),
+        ...(data.discord       ? { discord:         data.discord       } : {}),
+        ...(data.credentialUrl ? { credential_url:  data.credentialUrl } : {}),
       }),
     });
     return { hash: raw.metadata_hash, ipfsCid: raw.ipfs_cid };

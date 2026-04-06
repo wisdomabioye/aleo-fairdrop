@@ -28,9 +28,10 @@ export function GateGuard({ auction, children }: Props) {
   const isOpen = auction.gateMode === GateMode.Open;
 
   useEffect(() => {
-    if (isOpen) { setVerified(true); return; }
+    if (isOpen) return;
     if (!address) { setVerified(false); return; }
 
+    setVerified(null);
     const bidderKey = computeBidderKey(address, auction.id);
     fetchIsVerified(bidderKey)
       .then(setVerified)
@@ -73,12 +74,13 @@ export function GateGuard({ auction, children }: Props) {
       {auction.gateMode === GateMode.Merkle ? (
         <MerkleGateForm
           auctionId={auction.id}
-          onVerified={() => setCheckKey((k) => k + 1)}
+          onVerified={() => setTimeout(() => setCheckKey((k) => k + 1), 6000)}
         />
       ) : (
         <CredentialGateForm
           auctionId={auction.id}
-          onVerified={() => setCheckKey((k) => k + 1)}
+          credentialUrl={auction.metadata?.credentialUrl ?? null}
+          onVerified={() => setTimeout(() => setCheckKey((k) => k + 1), 6000)}
         />
       )}
     </div>
