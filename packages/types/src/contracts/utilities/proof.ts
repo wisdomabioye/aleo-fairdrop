@@ -23,8 +23,11 @@ export interface ParticipationReceipt {
  * Stored in `reputation` mapping keyed by creator address.
  */
 export interface CreatorReputation {
+  /** total auctions closed (filled or not) */
   total_auctions:  U64;
+  /** auctions where total_committed >= supply */
   filled_auctions: U64;
+  /** cumulative total_payments in microcredits */
   total_volume:    U128;
 }
 
