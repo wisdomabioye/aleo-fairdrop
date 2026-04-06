@@ -73,6 +73,9 @@ Creator pre-deposits credits to cover transaction fees for bidders below a thres
 ### Batch / Portfolio Token Launches
 Launch multiple related tokens in a single coordinated auction. Bidders allocate budget across all tokens. Private cross-token allocation. Useful for game studios, DeFi protocols with multiple assets, etc.
 
+### Plugin architecture
+Allow third‑party developers to create “auction modules” that can be registered on‑chain and used by creators, similar to a marketplace of auction types.
+
 ---
 
 ## 6. Reputation & Trust
@@ -89,6 +92,12 @@ Bidders above a proof reputation threshold get a 24-hour priority window before 
 
 ### Privacy-preserving Aggregate Statistics
 ZK proofs that attest to aggregate auction facts without revealing individual bids: number of unique bidders, Gini coefficient of token distribution, median bid size. A trust signal no other launchpad can offer — requires Aleo's ZK model.
+
+### Real‑time auction dashboard
+Show live bidding curves, price discovery, and participant count. For sealed auctions, provide “what‑if” simulations to help bidders estimate optimal bids.
+
+### Predictive analytics
+Use machine learning models (trained on historical auction data) to recommend the most suitable auction type, starting price, and duration for a given project.
 
 ---
 
