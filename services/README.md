@@ -6,7 +6,7 @@ Backend processes.
 |---|---|
 | `indexer/` | Polls the Aleo node, processes blocks, writes auction state to DB. |
 | `api/` | Hono HTTP API consumed by the frontend. Serves auction listings, bid history, token metadata. Read-only from DB; no chain writes. |
-| `credential-signer/` | Isolated process holding the gate credential private key. Issues `GateCredential` records to verified users. Separated by process boundary to limit key exposure. Not yet implemented. |
+| `credential-signer/` | Isolated process holding the gate credential private key. Issues `GateCredential` records to verified users. Separated by process boundary to limit key exposure. |
 
 ## What is NOT a separate service
 
