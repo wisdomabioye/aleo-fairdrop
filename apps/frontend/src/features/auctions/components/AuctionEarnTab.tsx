@@ -97,6 +97,11 @@ export function AuctionEarnTab({ auction }: AuctionEarnTabProps) {
 
   // ── close auction ──────────────────────────────────────────────────────────
 
+  // For ascending auctions use the live (potentially extended) end block.
+  const liveEndBlock = auction.type === AuctionType.Ascending
+    ? (auction.effectiveEndBlock ?? auction.endBlock)
+    : auction.endBlock;
+
   const isCloseable =
     auction.status === AuctionStatus.Active   ||
     auction.status === AuctionStatus.Ended    ||
@@ -105,11 +110,11 @@ export function AuctionEarnTab({ auction }: AuctionEarnTabProps) {
   const canCloseNow =
     auction.status === AuctionStatus.Ended    ||
     auction.status === AuctionStatus.Clearing ||
-    (auction.status === AuctionStatus.Active && blockHeight > 0 && blockHeight >= auction.endBlock);
+    (auction.status === AuctionStatus.Active && blockHeight > 0 && blockHeight >= liveEndBlock);
 
   const blocksLeft =
     auction.status === AuctionStatus.Active && blockHeight > 0
-      ? Math.max(0, auction.endBlock - blockHeight)
+      ? Math.max(0, liveEndBlock - blockHeight)
       : null;
 
   const closeDescription =
@@ -120,8 +125,8 @@ export function AuctionEarnTab({ auction }: AuctionEarnTabProps) {
         ? 'Supply target met — finalize this auction to claim the closer reward.'
         : 'Auction period has ended — finalize it to claim the closer reward.'
       : blocksLeft !== null
-      ? `Closes at block #${auction.endBlock} · ${blocksLeft} blocks remaining`
-      : `Available once the auction period ends (block #${auction.endBlock}).`;
+      ? `Closes at block #${liveEndBlock} · ${blocksLeft} blocks remaining`
+      : `Available once the auction period ends (block #${liveEndBlock}).`;
 
   // ── slash unrevealed ───────────────────────────────────────────────────────
 

@@ -100,7 +100,7 @@ export const DEFAULT_PRICING: Record<AuctionType, AnyPricingValues> = {
   dutch:     { startPrice: '', floorPrice: '', priceDecayBlocks: '100', priceDecayAmount: '' },
   sealed:    { startPrice: '', floorPrice: '', priceDecayBlocks: '100', priceDecayAmount: '', commitEndBlockOffset: '' },
   raise:     { raiseTarget: '' },
-  ascending: { floorPrice: '', ceilingPrice: '', priceRiseBlocks: '100', priceRiseAmount: '' },
+  ascending: { floorPrice: '', ceilingPrice: '', priceRiseBlocks: '100', priceRiseAmount: '', extensionWindow: '60', extensionBlocks: '120', maxEndBlock: '' },
   lbp:       { startPrice: '', floorPrice: '' },
   quadratic: { raiseTarget: '' },
 } as Record<AuctionType, AnyPricingValues>;

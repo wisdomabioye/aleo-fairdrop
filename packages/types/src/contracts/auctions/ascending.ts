@@ -24,6 +24,9 @@ export interface AscendingParams {
   ceiling_price:     U128;   // maximum price cap
   price_rise_blocks: U32;    // blocks per price step
   price_rise_amount: U128;   // microcredits increase per step
+  extension_window:  U32;    // blocks before end that trigger extension (0 = disabled)
+  extension_blocks:  U32;    // blocks added per qualifying bid
+  max_end_block:     U32;    // hard cap on effective_end_block
 }
 
 /**
@@ -35,6 +38,9 @@ export interface AscendingAuctionConfig extends BaseAuctionConfig {
   ceiling_price:     U128;
   price_rise_blocks: U32;
   price_rise_amount: U128;
+  extension_window:  U32;
+  extension_blocks:  U32;
+  max_end_block:     U32;
 }
 
 /**

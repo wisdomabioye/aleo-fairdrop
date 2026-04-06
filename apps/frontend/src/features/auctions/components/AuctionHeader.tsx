@@ -227,8 +227,8 @@ export function AuctionHeader({ auction, currentPrice }: AuctionHeaderProps) {
 
               <MetaChip
                 icon={Hash}
-                label="End"
-                value={formatBlock(auction.endBlock)}
+                label={auction.effectiveEndBlock != null && auction.effectiveEndBlock > auction.endBlock ? 'End (extended)' : 'End'}
+                value={formatBlock(auction.effectiveEndBlock ?? auction.endBlock)}
               />
 
 

@@ -17,10 +17,13 @@ export interface RaisePricingValues {
 }
 
 export interface AscendingPricingValues {
-  floorPrice:      string; // ALEO — starting (lowest) price
-  ceilingPrice:    string; // ALEO — maximum price cap
-  priceRiseBlocks: string; // integer — blocks per rise step
-  priceRiseAmount: string; // ALEO — price increase per step
+  floorPrice:       string; // ALEO — starting (lowest) price
+  ceilingPrice:     string; // ALEO — maximum price cap
+  priceRiseBlocks:  string; // integer — blocks per rise step
+  priceRiseAmount:  string; // ALEO — price increase per step
+  extensionWindow:  string; // integer — blocks before end that trigger extension ('' or '0' = disabled)
+  extensionBlocks:  string; // integer — blocks added per qualifying bid
+  maxEndBlock:      string; // integer — absolute block height hard cap
 }
 
 export interface LbpPricingValues {

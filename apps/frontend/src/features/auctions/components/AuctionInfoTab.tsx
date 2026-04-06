@@ -138,8 +138,8 @@ export function AuctionInfoTab({ auction, protocolConfig }: AuctionInfoTabProps)
               />
               
 
-              { 
-                isSealed ? 
+              {
+                isSealed ?
                 <>
                   <Row
                     label="Commit End block"
@@ -152,10 +152,23 @@ export function AuctionInfoTab({ auction, protocolConfig }: AuctionInfoTabProps)
                     valueClassName="font-mono text-[12px] text-foreground/80"
                   />
                 </>
+                : auction.effectiveEndBlock != null && auction.effectiveEndBlock > auction.endBlock ?
+                <>
+                  <Row
+                    label="End block (original)"
+                    value={auction.endBlock.toLocaleString()}
+                    valueClassName="font-mono text-[12px] text-muted-foreground line-through"
+                  />
+                  <Row
+                    label="End block (extended)"
+                    value={auction.effectiveEndBlock.toLocaleString()}
+                    valueClassName="font-mono text-[12px] text-amber-500"
+                  />
+                </>
                 :
                 <Row
                   label="End block"
-                  value={auction.endBlock.toLocaleString()}
+                  value={(auction.effectiveEndBlock ?? auction.endBlock).toLocaleString()}
                   valueClassName="font-mono text-[12px] text-foreground/80"
                 />
               }

@@ -109,19 +109,23 @@ struct AuctionConfig {
     closer_reward:     u128,
     referral_pool_bps: u16,
     metadata_hash:     field,
+    extension_window:  u32,   // 0 = anti-sniping disabled
+    extension_blocks:  u32,   // blocks added per qualifying bid
+    max_end_block:     u32,   // hard cap; ignored when extension_window = 0
 }
 
 struct AuctionState {
-    total_committed: u128,
-    total_payments:  u128,
-    supply_met:      bool,
-    ended_at_block:  u32,
-    cleared:         bool,
-    clearing_price:  u128,  // always 0u128 for ascending (pay-what-you-bid)
-    creator_revenue: u128,
-    protocol_fee:    u128,
-    voided:          bool,
-    referral_budget: u128,
+    total_committed:    u128,
+    total_payments:     u128,
+    supply_met:         bool,
+    ended_at_block:     u32,
+    cleared:            bool,
+    clearing_price:     u128,  // always 0u128 for ascending (pay-what-you-bid)
+    creator_revenue:    u128,
+    protocol_fee:       u128,
+    voided:             bool,
+    referral_budget:    u128,
+    effective_end_block: u32,  // mutable end block; updated by anti-sniping extension
 }
 
 struct Stats {
@@ -136,6 +140,9 @@ struct AscendingParams {
     ceiling_price:     u128,
     price_rise_blocks: u32,
     price_rise_amount: u128,
+    extension_window:  u32,   // blocks before end that trigger extension (0 = disabled)
+    extension_blocks:  u32,   // blocks added per qualifying bid
+    max_end_block:     u32,   // hard cap on how far effective_end_block can extend
 }
 
 struct GateParams {
@@ -245,7 +252,7 @@ final fn record_bid(
     assert(!state.cleared);
     assert(!state.voided);
     assert(block.height >= config.start_block);
-    assert(block.height <  config.end_block);
+    assert(block.height <  state.effective_end_block);
 
     // Ascending price: rise from floor toward ceiling in discrete steps.
     let blocks_elapsed: u32 = block.height - config.start_block;
@@ -273,17 +280,32 @@ final fn record_bid(
 
     // Update auction state.
     let is_supply_met: bool = new_committed >= config.supply;
+
+    // Anti-sniping: extend effective_end_block when bid lands in the final window.
+    // Guard against underflow: if effective_end_block < extension_window, window_start = 0.
+    // Skip extension when this bid fills supply — supply_met takes over as the close trigger
+    // and effective_end_block is no longer read by close_auction or place_bid_*.
+    let window_start: u32 = state.effective_end_block > config.extension_window
+        ? state.effective_end_block - config.extension_window : 0u32;
+    let in_window: bool   = config.extension_window > 0u32
+        && block.height >= window_start
+        && !is_supply_met;
+    let new_eff_end: u32  = in_window
+        ? min(state.effective_end_block + config.extension_blocks, config.max_end_block)
+        : state.effective_end_block;
+
     auction_states.set(auction_id, AuctionState {
-        total_committed: new_committed,
-        total_payments:  state.total_payments + payment_amount,
-        supply_met:      is_supply_met,
-        ended_at_block:  is_supply_met ? block.height : state.ended_at_block,
-        cleared:         false,
-        clearing_price:  0u128,
-        creator_revenue: 0u128,
-        protocol_fee:    0u128,
-        voided:          false,
-        referral_budget: 0u128,
+        total_committed:    new_committed,
+        total_payments:     state.total_payments + payment_amount,
+        supply_met:         is_supply_met,
+        ended_at_block:     is_supply_met ? block.height : state.ended_at_block,
+        cleared:            false,
+        clearing_price:     0u128,
+        creator_revenue:    0u128,
+        protocol_fee:       0u128,
+        voided:             false,
+        referral_budget:    0u128,
+        effective_end_block: new_eff_end,
     });
 
     // Escrow: credits locked in this program's public balance.
@@ -462,6 +484,9 @@ program fairdrop_ascending_v2.aleo {
             closer_reward:     snapshot.closer_reward,
             referral_pool_bps: snapshot.referral_pool_bps,
             metadata_hash:     metadata_hash,
+            extension_window:  ascending.extension_window,
+            extension_blocks:  ascending.extension_blocks,
+            max_end_block:     ascending.max_end_block,
         };
 
         // Capture self.signer and creation_fee before entering final block —
@@ -485,6 +510,15 @@ program fairdrop_ascending_v2.aleo {
             assert(config.price_rise_amount > 0u128);
             assert(config.min_bid_amount > 0u128);
             assert(config.max_bid_amount == 0u128 || config.max_bid_amount >= config.min_bid_amount);
+
+            // Anti-sniping param validation (only when extension_window > 0).
+            // extension_blocks must be > 0 (otherwise the extension is a no-op).
+            // max_end_block must be >= end_block (otherwise the cap would immediately
+            // prevent any extension from firing, making the config misleading).
+            assert(
+                config.extension_window == 0u32
+                || (config.extension_blocks > 0u32 && config.max_end_block >= end_block)
+            );
 
             // D11 nonce: creator_nonces[creator] must match the nonce used to
             // derive auction_id in the proof context.
@@ -526,16 +560,17 @@ program fairdrop_ascending_v2.aleo {
             // Write immutable config and zero-value initial state.
             auction_configs.set(auction_id, config);
             auction_states.set(auction_id, AuctionState {
-                total_committed: 0u128,
-                total_payments:  0u128,
-                supply_met:      false,
-                ended_at_block:  0u32,
-                cleared:         false,
-                clearing_price:  0u128,
-                creator_revenue: 0u128,
-                protocol_fee:    0u128,
-                voided:          false,
-                referral_budget: 0u128,
+                total_committed:    0u128,
+                total_payments:     0u128,
+                supply_met:         false,
+                ended_at_block:     0u32,
+                cleared:            false,
+                clearing_price:     0u128,
+                creator_revenue:    0u128,
+                protocol_fee:       0u128,
+                voided:             false,
+                referral_budget:    0u128,
+                effective_end_block: end_block,
             });
 
             // Set burn-backed mint budget.
@@ -805,7 +840,7 @@ program fairdrop_ascending_v2.aleo {
 
             assert(!state.cleared);
             assert(!state.voided);
-            assert(state.supply_met || block.height >= config.end_block);
+            assert(state.supply_met || block.height >= state.effective_end_block);
 
             // D11: validate caller-supplied public params against on-chain state.
             assert_eq(creator,       config.creator);
@@ -816,7 +851,7 @@ program fairdrop_ascending_v2.aleo {
             let treasury: u128 = protocol_treasury.get_or_use(0field, 0u128);
             assert(treasury >= closer_reward);
 
-            let ended_block: u32 = state.supply_met ? state.ended_at_block : config.end_block;
+            let ended_block: u32 = state.supply_met ? state.ended_at_block : state.effective_end_block;
 
             // Revenue accounting on total_payments (pay-what-you-bid).
             let total_cost: u128      = state.total_payments;
@@ -830,16 +865,17 @@ program fairdrop_ascending_v2.aleo {
             protocol_treasury.set(0field, new_treasury);
 
             auction_states.set(auction_id, AuctionState {
-                total_committed: state.total_committed,
-                total_payments:  state.total_payments,
-                supply_met:      state.supply_met,
-                ended_at_block:  ended_block,
-                cleared:         true,
-                clearing_price:  0u128,         // always 0 — pay-what-you-bid
-                creator_revenue: creator_revenue,
-                protocol_fee:    protocol_fee,
-                voided:          false,
-                referral_budget: referral_budget,
+                total_committed:    state.total_committed,
+                total_payments:     state.total_payments,
+                supply_met:         state.supply_met,
+                ended_at_block:     ended_block,
+                cleared:            true,
+                clearing_price:     0u128,         // always 0 — pay-what-you-bid
+                creator_revenue:    creator_revenue,
+                protocol_fee:       protocol_fee,
+                voided:             false,
+                referral_budget:    referral_budget,
+                effective_end_block: state.effective_end_block,
             });
         };
     }
@@ -873,16 +909,17 @@ program fairdrop_ascending_v2.aleo {
 
             // Zero out referral_budget to prevent double-push.
             auction_states.set(auction_id, AuctionState {
-                total_committed: state.total_committed,
-                total_payments:  state.total_payments,
-                supply_met:      state.supply_met,
-                ended_at_block:  state.ended_at_block,
-                cleared:         state.cleared,
-                clearing_price:  state.clearing_price,
-                creator_revenue: state.creator_revenue,
-                protocol_fee:    state.protocol_fee,
-                voided:          state.voided,
-                referral_budget: 0u128,
+                total_committed:    state.total_committed,
+                total_payments:     state.total_payments,
+                supply_met:         state.supply_met,
+                ended_at_block:     state.ended_at_block,
+                cleared:            state.cleared,
+                clearing_price:     state.clearing_price,
+                creator_revenue:    state.creator_revenue,
+                protocol_fee:       state.protocol_fee,
+                voided:             state.voided,
+                referral_budget:    0u128,
+                effective_end_block: state.effective_end_block,
             });
         };
     }
@@ -1114,16 +1151,17 @@ program fairdrop_ascending_v2.aleo {
             escrow_sales.set(auction_id, remaining - supply);
 
             auction_states.set(auction_id, AuctionState {
-                total_committed: state.total_committed,
-                total_payments:  state.total_payments,
-                supply_met:      state.supply_met,
-                ended_at_block:  state.ended_at_block,
-                cleared:         false,
-                clearing_price:  0u128,
-                creator_revenue: 0u128,
-                protocol_fee:    0u128,
-                voided:          true,
-                referral_budget: 0u128,
+                total_committed:    state.total_committed,
+                total_payments:     state.total_payments,
+                supply_met:         state.supply_met,
+                ended_at_block:     state.ended_at_block,
+                cleared:            false,
+                clearing_price:     0u128,
+                creator_revenue:    0u128,
+                protocol_fee:       0u128,
+                voided:             true,
+                referral_budget:    0u128,
+                effective_end_block: state.effective_end_block,
             });
         });
     }

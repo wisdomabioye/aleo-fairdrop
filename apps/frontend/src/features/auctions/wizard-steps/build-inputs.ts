@@ -89,10 +89,13 @@ export function buildCreateAuctionInputs(
       const p = pricing as AscendingPricingValues;
       return buildCreateAuction({
         ...base, type: AuctionType.Ascending,
-        floorPrice:      mic(p.floorPrice),
-        ceilingPrice:    mic(p.ceilingPrice),
-        priceRiseBlocks: blk(p.priceRiseBlocks),
-        priceRiseAmount: mic(p.priceRiseAmount),
+        floorPrice:       mic(p.floorPrice),
+        ceilingPrice:     mic(p.ceilingPrice),
+        priceRiseBlocks:  blk(p.priceRiseBlocks),
+        priceRiseAmount:  mic(p.priceRiseAmount),
+        extensionWindow:  blk(p.extensionWindow),
+        extensionBlocks:  blk(p.extensionBlocks),
+        maxEndBlock:      blk(p.maxEndBlock) || base.endBlock,
       });
     }
     case AuctionType.Raise: {

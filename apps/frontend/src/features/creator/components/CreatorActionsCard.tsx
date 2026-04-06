@@ -13,7 +13,7 @@ import {
 } from '@/components';
 import { formatMicrocredits } from '@fairdrop/sdk/credits';
 import { formatAmount, parseTokenAmount } from '@fairdrop/sdk/format';
-import { AuctionStatus } from '@fairdrop/types/domain';
+import { AuctionStatus, AuctionType } from '@fairdrop/types/domain';
 import type { AuctionView } from '@fairdrop/types/domain';
 import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
 import { parseExecutionError } from '@/shared/utils/errors';
@@ -46,6 +46,10 @@ export function CreatorActionsCard({
   const unsold     = BigInt(auction.supply) - BigInt(auction.totalCommitted);
   const revenueLeft = revenue - BigInt(paymentsWithdrawn);
   const unsoldLeft  = unsold  - BigInt(unsoldWithdrawn);
+
+  const liveEndBlock = auction.type === AuctionType.Ascending
+    ? (auction.effectiveEndBlock ?? auction.endBlock)
+    : auction.endBlock;
 
   const isEnded    = auction.status === AuctionStatus.Ended;
   const isClearing = auction.status === AuctionStatus.Clearing;
@@ -144,8 +148,8 @@ export function CreatorActionsCard({
             <p className="text-[11px] text-muted-foreground">
               {isCleared ? 'Already finalized.'
                 : isVoided ? 'Auction was cancelled.'
-                : block < auction.endBlock
-                  ? `Available after block ${auction.endBlock.toLocaleString()} (current: ${block.toLocaleString()}).`
+                : block < liveEndBlock
+                  ? `Available after block ${liveEndBlock.toLocaleString()} (current: ${block.toLocaleString()}).`
                   : 'Not yet available.'}
             </p>
           </section>

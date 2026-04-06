@@ -7,6 +7,8 @@ export function AscendingPricingStep({ value, onChange }: PricingStepProps<Ascen
   const set = (k: keyof AscendingPricingValues) =>
     (v: string) => onChange({ ...value, [k]: v });
 
+  const extensionEnabled = parseInt(value.extensionWindow) > 0;
+
   const floorMicro   = parseTokenAmount(value.floorPrice, 6);
   const ceilingMicro = parseTokenAmount(value.ceilingPrice, 6);
   const riseAmt      = parseTokenAmount(value.priceRiseAmount, 6);
@@ -78,6 +80,56 @@ export function AscendingPricingStep({ value, onChange }: PricingStepProps<Ascen
           Price range: {formatMicrocredits(floorMicro)} – {formatMicrocredits(ceilingMicro)}.
         </div>
       )}
+
+      {/* Anti-sniping extension */}
+      <div className="border-t border-border pt-4 space-y-3">
+        <div>
+          <p className="text-sm font-medium">Anti-sniping</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            If a bid lands within the final N blocks, extend the deadline by M blocks.
+            Set window to 0 to disable.
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="space-y-1.5">
+            <Label>Window (blocks)</Label>
+            <Input
+              inputMode="numeric" value={value.extensionWindow}
+              onChange={(e) => set('extensionWindow')(e.target.value.replace(/\D/g, ''))}
+              placeholder="60"
+            />
+            <p className="text-xs text-muted-foreground">
+              {parseInt(value.extensionWindow) > 0
+                ? `~${Math.round(parseInt(value.extensionWindow) * 10 / 60)} min before end`
+                : 'Disabled'}
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Extension (blocks)</Label>
+            <Input
+              inputMode="numeric" value={value.extensionBlocks}
+              onChange={(e) => set('extensionBlocks')(e.target.value.replace(/\D/g, ''))}
+              placeholder="120"
+              disabled={!extensionEnabled}
+            />
+            <p className="text-xs text-muted-foreground">
+              {extensionEnabled && parseInt(value.extensionBlocks) > 0
+                ? `+~${Math.round(parseInt(value.extensionBlocks) * 10 / 60)} min per bid`
+                : '—'}
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Hard cap (block)</Label>
+            <Input
+              inputMode="numeric" value={value.maxEndBlock}
+              onChange={(e) => set('maxEndBlock')(e.target.value.replace(/\D/g, ''))}
+              placeholder="auto"
+              disabled={!extensionEnabled}
+            />
+            <p className="text-xs text-muted-foreground">Absolute end block ceiling.</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

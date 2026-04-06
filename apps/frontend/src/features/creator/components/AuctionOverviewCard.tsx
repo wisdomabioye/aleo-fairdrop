@@ -6,7 +6,7 @@ import {
   InfoRow,
   AuctionStatusBadge,
 } from '@/components';
-import { AuctionStatus } from '@fairdrop/types/domain';
+import { AuctionStatus, AuctionType } from '@fairdrop/types/domain';
 import type { AuctionView } from '@fairdrop/types/domain';
 import { AUCTION_REGISTRY } from '@/features/auctions/registry';
 
@@ -15,23 +15,30 @@ interface Props {
   blockHeight: number | undefined;
 }
 
+function liveEnd(auction: AuctionView): number {
+  return auction.type === AuctionType.Ascending
+    ? (auction.effectiveEndBlock ?? auction.endBlock)
+    : auction.endBlock;
+}
+
 function buildTimingLabel(auction: AuctionView, block: number): string {
+  const end = liveEnd(auction);
   switch (auction.status) {
     case AuctionStatus.Upcoming: {
       const left = auction.startBlock - block;
       return `Starts in ~${left.toLocaleString()} blocks (block ${auction.startBlock.toLocaleString()})`;
     }
     case AuctionStatus.Active: {
-      const left = auction.endBlock - block;
-      return `Ends in ~${left.toLocaleString()} blocks (block ${auction.endBlock.toLocaleString()})`;
+      const left = end - block;
+      return `Ends in ~${left.toLocaleString()} blocks (block ${end.toLocaleString()})`;
     }
     case AuctionStatus.Ended:
     case AuctionStatus.Clearing:
-      return `Ended at block ~${auction.endBlock.toLocaleString()} — awaiting finalization`;
+      return `Ended at block ~${end.toLocaleString()} — awaiting finalization`;
     default:
       return auction.endedAtBlock != null
         ? `Finalized at block ${auction.endedAtBlock.toLocaleString()}`
-        : `End block: ${auction.endBlock.toLocaleString()}`;
+        : `End block: ${end.toLocaleString()}`;
   }
 }
 

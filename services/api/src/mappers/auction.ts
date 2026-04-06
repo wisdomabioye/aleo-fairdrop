@@ -30,7 +30,11 @@ function computeStatus(row: AuctionRow, currentBlock: number): AuctionStatus {
   if (row.status === 'cleared')      return AuctionStatus.Cleared;
   if (row.startBlock > currentBlock) return AuctionStatus.Upcoming;
   if (row.supplyMet)                 return AuctionStatus.Clearing;
-  if (row.endBlock < currentBlock)   return AuctionStatus.Ended;
+  // For ascending auctions use effectiveEndBlock (may be extended beyond endBlock).
+  const liveEndBlock = row.type === AuctionType.Ascending
+    ? (row.effectiveEndBlock ?? row.endBlock)
+    : row.endBlock;
+  if (liveEndBlock < currentBlock)   return AuctionStatus.Ended;
   return AuctionStatus.Active;
 }
 
@@ -77,7 +81,7 @@ function computeAscendingPrice(row: AuctionRow, currentBlock: number): bigint | 
     row.priceRiseBlocks == null || row.priceRiseAmount == null
   ) return null;
 
-  const effectiveBlock = Math.min(currentBlock, row.endBlock);
+  const effectiveBlock = Math.min(currentBlock, row.effectiveEndBlock ?? row.endBlock);
   if (effectiveBlock < row.startBlock) return BigInt(row.floorPrice);
 
   const elapsed  = BigInt(effectiveBlock - row.startBlock);
@@ -159,6 +163,9 @@ function buildParams(row: AuctionRow): AuctionParams {
         ceiling_price:     asU128(row.ceilingPrice!),
         price_rise_blocks: row.priceRiseBlocks!,
         price_rise_amount: asU128(row.priceRiseAmount!),
+        extension_window:  row.extensionWindow  ?? 0,
+        extension_blocks:  row.extensionBlocks  ?? 0,
+        max_end_block:     row.maxEndBlock       ?? 0,
       };
 
     case AuctionType.Lbp:
@@ -222,9 +229,10 @@ export function toAuctionView(
     clearingPrice:      bigOrNull(row.clearingPrice),
     startBlock:         row.startBlock,
     endBlock:           row.endBlock,
-    endedAtBlock:       row.endedAtBlock    ?? null,
+    endedAtBlock:       row.endedAtBlock       ?? null,
+    effectiveEndBlock:  row.effectiveEndBlock  ?? null,
     estimatedStart:     estimateTime(row.startBlock, ctx),
-    estimatedEnd:       estimateTime(row.endBlock,   ctx),
+    estimatedEnd:       estimateTime(row.effectiveEndBlock ?? row.endBlock, ctx),
     gateMode:           gateMode(row.gateMode),
     vestEnabled:        row.vestEnabled,
     vestCliffBlocks:    row.vestCliffBlocks,
@@ -266,11 +274,12 @@ export function toAuctionListItem(
     currentPrice:    computeCurrentPrice(row, ctx.currentBlock),
     clearingPrice:   bigOrNull(row.clearingPrice),
     raiseTarget:     bigOrNull(row.raiseTarget),
-    startBlock:      row.startBlock,
-    endBlock:        row.endBlock,
-    commitEndBlock:  row.commitEndBlock,
-    estimatedEnd:    estimateTime(row.endBlock, ctx),
-    vestEnabled:     row.vestEnabled,
-    gateMode:        gateMode(row.gateMode),
+    startBlock:        row.startBlock,
+    endBlock:          row.endBlock,
+    commitEndBlock:    row.commitEndBlock    ?? null,
+    effectiveEndBlock: row.effectiveEndBlock ?? null,
+    estimatedEnd:      estimateTime(row.effectiveEndBlock ?? row.endBlock, ctx),
+    vestEnabled:       row.vestEnabled,
+    gateMode:          gateMode(row.gateMode),
   };
 }

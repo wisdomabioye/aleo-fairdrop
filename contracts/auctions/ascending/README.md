@@ -131,6 +131,44 @@ auction_id = BHP256(AuctionKey { creator, nonce, program_salt: 2field })
 
 ---
 
+## Anti-sniping extension
+
+When `extension_window > 0`, any bid that lands within the final `extension_window` blocks of
+the current deadline extends it:
+
+```
+window_start    = effective_end_block - extension_window
+in_window       = extension_window > 0 && block.height >= window_start
+new_eff_end     = in_window ? min(effective_end_block + extension_blocks, max_end_block)
+                            : effective_end_block
+```
+
+`effective_end_block` is mutable state (in `AuctionState`) and is the authoritative deadline
+for all bid guards and `close_auction`. `config.end_block` is the original immutable deadline.
+
+Setting `extension_window = 0` disables the feature entirely — the auction behaves identically
+to the original design and `effective_end_block` stays equal to `end_block`.
+
+**Supply-met interaction**: if the bid that fills supply also lands in the extension window, the
+extension does **not** fire. Once `supply_met = true`, `close_auction` uses `ended_at_block`
+(the block when supply was met) rather than `effective_end_block`, so extending the deadline on
+a fully-filled auction would be meaningless. The guard `&& !is_supply_met` enforces this.
+
+### Constraints validated at `create_auction`
+
+- `extension_window > 0 → extension_blocks > 0` (a zero-block extension is a no-op).
+- `extension_window > 0 → max_end_block >= end_block` (cap must be at or beyond the original end).
+
+### Underflow guard
+
+`window_start` could underflow if `effective_end_block < extension_window`. The contract uses:
+```
+window_start = effective_end_block > extension_window
+    ? effective_end_block - extension_window : 0u32;
+```
+
+---
+
 ## Parameters
 
 | Parameter | Description |
@@ -139,8 +177,11 @@ auction_id = BHP256(AuctionKey { creator, nonce, program_salt: 2field })
 | `ceiling_price` | Maximum price cap |
 | `price_rise_blocks` | Blocks per price step |
 | `price_rise_amount` | Microcredits increase per step |
+| `extension_window` | Blocks before deadline that trigger an extension. `0` = disabled. |
+| `extension_blocks` | Blocks added to `effective_end_block` per qualifying bid. |
+| `max_end_block` | Hard cap on `effective_end_block`. Must be `>= end_block` when enabled. |
 | `supply` | Total token units available |
-| `start_block` / `end_block` | Auction window |
+| `start_block` / `end_block` | Auction window (`end_block` is the original, immutable deadline) |
 | `min_bid_amount` | Minimum quantity per bid |
 | `max_bid_amount` | Maximum cumulative quantity per bidder (0 = no cap) |
 | `sale_scale` | `10^sale_token_decimals` — fixed-point denominator |

@@ -98,7 +98,10 @@ export function ActionsPanel({ auction, blockHeight }: ActionsPanelProps) {
   }, [tx.done, tx.error]);
 
   const isCreator = connected && address === auction.creator;
-  const pastEnd   = blockHeight != null && blockHeight > auction.endBlock;
+  const liveEndBlock = auction.type === AuctionType.Ascending
+    ? (auction.effectiveEndBlock ?? auction.endBlock)
+    : auction.endBlock;
+  const pastEnd   = blockHeight != null && blockHeight > liveEndBlock;
 
   const canClose =
     auction.status === AuctionStatus.Ended || auction.status === AuctionStatus.Clearing;

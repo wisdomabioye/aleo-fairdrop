@@ -62,20 +62,14 @@ export async function fetchConfig(
     ceiling_price:      optU128('ceiling_price'),
     price_rise_blocks:  optU32('price_rise_blocks'),
     price_rise_amount:  optU128('price_rise_amount'),
+    extension_window:   optU32('extension_window'),
+    extension_blocks:   optU32('extension_blocks'),
+    max_end_block:      optU32('max_end_block'),
     // Sealed-specific
     commit_end_block:   optU32('commit_end_block'),
     slash_reward_bps:   f['slash_reward_bps'] ? parseU16(f['slash_reward_bps']) : null,
     // Raise-Quadratic-specific
-    raise_target:       optU128('raise_target'),
-    // LBP-specific
-    // start_weight:       f['start_weight']  ? parseU16(f['start_weight'])  : null,
-    // end_weight:         f['end_weight']    ? parseU16(f['end_weight'])    : null,
-    // swap_fee_bps:       f['swap_fee_bps']  ? parseU16(f['swap_fee_bps'])  : null,
-    // initial_price:      optU128('initial_price'),
-    // Quadratic-specific
-    // matching_pool:      optU128('matching_pool'),
-    // contribution_cap:   optU128('contribution_cap'),
-    // matching_deadline:  optU32('matching_deadline'),
+    raise_target:       optU128('raise_target')
   };
 }
 
@@ -90,15 +84,17 @@ export async function fetchState(
   const f = parseStruct(raw);
 
   return {
-    total_committed: parseU128(f['total_committed']),
-    total_payments:  parseU128(f['total_payments']),
-    supply_met:      parseBool(f['supply_met']),
-    ended_at_block:  parseU32(f['ended_at_block']),
-    cleared:         parseBool(f['cleared']),
-    clearing_price:  parseU128(f['clearing_price']),
-    creator_revenue: parseU128(f['creator_revenue']),
-    protocol_fee:    parseU128(f['protocol_fee']),
-    voided:          parseBool(f['voided']),
-    referral_budget: parseU128(f['referral_budget']),
+    total_committed:    parseU128(f['total_committed']),
+    total_payments:     parseU128(f['total_payments']),
+    supply_met:         parseBool(f['supply_met']),
+    ended_at_block:     parseU32(f['ended_at_block']),
+    cleared:            parseBool(f['cleared']),
+    clearing_price:     parseU128(f['clearing_price']),
+    creator_revenue:    parseU128(f['creator_revenue']),
+    protocol_fee:       parseU128(f['protocol_fee']),
+    voided:             parseBool(f['voided']),
+    referral_budget:    parseU128(f['referral_budget']),
+    // Ascending-only: null for all other auction types (field absent from their AuctionState).
+    effective_end_block: f['effective_end_block'] ? parseU32(f['effective_end_block']) : null,
   };
 }

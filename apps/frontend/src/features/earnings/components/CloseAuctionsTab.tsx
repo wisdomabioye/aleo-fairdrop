@@ -2,7 +2,7 @@ import { useState }           from 'react';
 import { useWallet }           from '@provablehq/aleo-wallet-adaptor-react';
 import { Button, Spinner }     from '@/components';
 import { formatMicrocredits }  from '@fairdrop/sdk/credits';
-import { AuctionStatus }       from '@fairdrop/types/domain';
+import { AuctionStatus, AuctionType } from '@fairdrop/types/domain';
 import type { AuctionListItem, AuctionView } from '@fairdrop/types/domain';
 import { parseExecutionError } from '@/shared/utils/errors';
 import { useTransactionTracker } from '@/providers/transaction-tracker';
@@ -76,7 +76,19 @@ export function CloseAuctionsTab() {
                 {slot?.label ?? a.type}
               </span>
               <span className="truncate font-medium">{a.name ?? `${a.id.slice(0, 12)}…`}</span>
-              <span className="text-muted-foreground text-xs shrink-0">ends #{a.endBlock}</span>
+              {(() => {
+                const end = a.type === AuctionType.Ascending
+                  ? (a.effectiveEndBlock ?? a.endBlock)
+                  : a.endBlock;
+                const extended = a.type === AuctionType.Ascending
+                  && a.effectiveEndBlock != null && a.effectiveEndBlock > a.endBlock;
+                return (
+                  <span className={`text-xs shrink-0 ${extended ? 'text-amber-500' : 'text-muted-foreground'}`}>
+                    ends #{end.toLocaleString()}
+                    {extended && <span className="ml-1 font-semibold">↑</span>}
+                  </span>
+                );
+              })()}
             </div>
             <div className="flex flex-col items-end gap-1 shrink-0">
               <Button

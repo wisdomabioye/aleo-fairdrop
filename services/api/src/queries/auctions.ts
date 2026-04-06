@@ -28,15 +28,16 @@ function statusCondition(status: AuctionStatus, currentBlock: number) {
       return and(
         live,
         lte(auctions.startBlock, currentBlock),
-        gte(auctions.endBlock,   currentBlock),
-        eq(auctions.supplyMet,   false),
+        // Use COALESCE so ascending auctions extended beyond end_block stay Active.
+        gte(sql`COALESCE(${auctions.effectiveEndBlock}, ${auctions.endBlock})`, currentBlock),
+        eq(auctions.supplyMet, false),
       );
     case AuctionStatus.Clearing:
       return and(live, eq(auctions.supplyMet, true));
     case AuctionStatus.Ended:
       return and(
         live,
-        lt(auctions.endBlock,  currentBlock),
+        lt(sql`COALESCE(${auctions.effectiveEndBlock}, ${auctions.endBlock})`, currentBlock),
         eq(auctions.supplyMet, false),
       );
     case AuctionStatus.Cleared:

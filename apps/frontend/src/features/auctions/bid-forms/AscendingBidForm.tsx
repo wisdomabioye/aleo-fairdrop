@@ -26,10 +26,15 @@ import {
 } from './_parts';
 import type { BidFormProps } from './types';
 
-export function AscendingBidForm({ auction, protocolConfig, onBidSuccess }: BidFormProps) {
+export function AscendingBidForm({ auction, blockHeight, protocolConfig, onBidSuccess }: BidFormProps) {
   const { connected, executeTransaction } = useWallet();
   const [searchParams] = useSearchParams();
   const { creditRecords, loading: creditsLoading } = useCreditRecords();
+
+  const params           = auction.params.type === AuctionType.Ascending ? auction.params : null;
+  const liveEndBlock     = auction.effectiveEndBlock ?? auction.endBlock;
+  const extWindow        = params?.extension_window ?? 0;
+  const inExtWindow      = extWindow > 0 && blockHeight >= liveEndBlock - extWindow && blockHeight < liveEndBlock;
 
   const totalCommitted   = BigInt(auction.totalCommitted);
   const supply           = BigInt(auction.supply);
@@ -192,6 +197,12 @@ export function AscendingBidForm({ auction, protocolConfig, onBidSuccess }: BidF
           selectedRecord     && ['Record balance', formatMicrocredits(selectedRecord.microcredits)],
           referralCut > 0n   && ['Referral',       formatMicrocredits(referralCut)],
         ]} />
+      )}
+
+      {inExtWindow && (
+        <p className="rounded-md border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 text-[11px] text-amber-600 dark:text-amber-400">
+          You are bidding in the final {extWindow} blocks — this bid will extend the deadline by ~{params!.extension_blocks} blocks.
+        </p>
       )}
 
       {showWalletNotice && <FormBlockerNotice message={formBlocker} />}

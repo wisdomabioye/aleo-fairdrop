@@ -84,11 +84,17 @@ export type CreateAuctionInput =
       commitEndBlock:   number;
     })
   | (CreateBase & {
-      type:             AuctionType.Ascending;
-      floorPrice:       bigint;
-      ceilingPrice:     bigint;
-      priceRiseBlocks:  number;
-      priceRiseAmount:  bigint;
+      type:              AuctionType.Ascending;
+      floorPrice:        bigint;
+      ceilingPrice:      bigint;
+      priceRiseBlocks:   number;
+      priceRiseAmount:   bigint;
+      /** Blocks before end that trigger an extension. 0 = disabled. */
+      extensionWindow:   number;
+      /** Blocks added to effective_end_block per qualifying bid. */
+      extensionBlocks:   number;
+      /** Hard cap on how far effective_end_block can extend. Must be >= endBlock when enabled. */
+      maxEndBlock:       number;
     })
   | (CreateBase & {
       type:        AuctionType.Raise;
@@ -207,6 +213,9 @@ export function buildCreateAuction(p: CreateAuctionInput): TxSpec {
             ceiling_price:     u128(p.ceilingPrice),
             price_rise_blocks: u32(p.priceRiseBlocks),
             price_rise_amount: u128(p.priceRiseAmount),
+            extension_window:  u32(p.extensionWindow),
+            extension_blocks:  u32(p.extensionBlocks),
+            max_end_block:     u32(p.maxEndBlock),
           }),
           ...tail,
         ],

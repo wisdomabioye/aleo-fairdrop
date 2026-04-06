@@ -36,10 +36,13 @@ export const auctions = pgTable('auctions', {
   priceDecayBlocks: integer('price_decay_blocks'),
   priceDecayAmount: text('price_decay_amount'),   // u128
 
-  // Ascending price schedule — null for non-Ascending types
+  // Ascending price schedule + anti-sniping config — null for non-Ascending types
   ceilingPrice:     text('ceiling_price'),         // u128
   priceRiseBlocks:  integer('price_rise_blocks'),
   priceRiseAmount:  text('price_rise_amount'),     // u128
+  extensionWindow:  integer('extension_window'),   // 0 = disabled
+  extensionBlocks:  integer('extension_blocks'),
+  maxEndBlock:      integer('max_end_block'),
 
   // Raise-specific — null for all other auction types
   raiseTarget:     text('raise_target'),
@@ -54,9 +57,11 @@ export const auctions = pgTable('auctions', {
   saleScale:       text('sale_scale'),             // u128
 
   // Timing
-  startBlock:      integer('start_block').notNull(),
-  endBlock:        integer('end_block').notNull(),
-  endedAtBlock:    integer('ended_at_block'),
+  startBlock:         integer('start_block').notNull(),
+  endBlock:           integer('end_block').notNull(),
+  endedAtBlock:       integer('ended_at_block'),
+  // Ascending-only: mutable end block updated by anti-sniping extension. Null for all other types.
+  effectiveEndBlock:  integer('effective_end_block'),
 
   // Revenue — null before close_auction
   creatorRevenue:  text('creator_revenue'),

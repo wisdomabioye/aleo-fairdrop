@@ -18,9 +18,10 @@ import { AscendingPricePanel } from './price-panels/AscendingPricePanel';
 import { LbpPricePanel }       from './price-panels/LbpPricePanel';
 import { QuadraticPricePanel } from './price-panels/QuadraticPricePanel';
 
-import { DefaultProgressPanel }  from './progress-panels/DefaultProgressPanel';
-import { RaiseProgressPanel }    from './progress-panels/RaiseProgressPanel';
-import { SealedProgressPanel }   from './progress-panels/SealedProgressPanel';
+import { DefaultProgressPanel }   from './progress-panels/DefaultProgressPanel';
+import { RaiseProgressPanel }     from './progress-panels/RaiseProgressPanel';
+import { SealedProgressPanel }    from './progress-panels/SealedProgressPanel';
+import { AscendingProgressPanel } from './progress-panels/AscendingProgressPanel';
 
 export interface AuctionTypeSlot {
   type:          AuctionType;
@@ -69,7 +70,7 @@ export const AUCTION_REGISTRY: Record<AuctionType, AuctionTypeSlot> = {
     description:   'Price rises over time — early bidders pay less.',
     BidForm:       AscendingBidForm,
     PricePanel:    AscendingPricePanel,
-    ProgressPanel: DefaultProgressPanel,
+    ProgressPanel: AscendingProgressPanel,
   },
   [AuctionType.Lbp]: {
     type:          AuctionType.Lbp,

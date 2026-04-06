@@ -37,12 +37,22 @@ function PricingRows({ form }: { form: StepProps['form'] }) {
     }
     case AuctionType.Ascending: {
       const p = pricing as AscendingPricingValues;
+      const extWindow = parseInt(p.extensionWindow) || 0;
       return (
         <>
           <ReviewRow label="Floor price"   value={`${p.floorPrice || '0'} ALEO`} />
           <ReviewRow label="Ceiling price" value={`${p.ceilingPrice || '0'} ALEO`} />
           <ReviewRow label="Rise blocks"   value={p.priceRiseBlocks || '0'} />
           <ReviewRow label="Rise amount"   value={`${p.priceRiseAmount || '0'} ALEO`} />
+          <ReviewRow
+            label="Anti-sniping"
+            value={extWindow > 0
+              ? `${p.extensionWindow} block window · +${p.extensionBlocks || '0'} blocks per bid`
+              : 'Disabled'}
+          />
+          {extWindow > 0 && p.maxEndBlock && (
+            <ReviewRow label="Hard cap block" value={p.maxEndBlock} />
+          )}
         </>
       );
     }

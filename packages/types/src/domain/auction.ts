@@ -114,11 +114,13 @@ export interface AuctionView {
   clearingPrice:   bigint | null;  // set at close_auction
 
   // Timing
-  startBlock:      number;
-  endBlock:        number;
-  endedAtBlock:    number | null;
-  estimatedStart:  Date | null;    // block → wall-clock approximation
-  estimatedEnd:    Date | null;
+  startBlock:         number;
+  endBlock:           number;
+  endedAtBlock:       number | null;
+  /** Ascending auctions only — mutable end block updated by anti-sniping extension. Null for all other types. */
+  effectiveEndBlock:  number | null;
+  estimatedStart:     Date | null;    // block → wall-clock approximation
+  estimatedEnd:       Date | null;
 
   // Gate
   gateMode:        GateMode;
@@ -160,10 +162,12 @@ export interface AuctionListItem {
   currentPrice:   bigint | null;
   clearingPrice:  bigint | null;
   raiseTarget:    bigint | null;
-  startBlock:     number;
-  endBlock:       number;
-  commitEndBlock: number | null;
-  estimatedEnd:   Date | null;
-  vestEnabled:    boolean;
-  gateMode:       GateMode;
+  startBlock:        number;
+  endBlock:          number;
+  commitEndBlock:    number | null;
+  /** Ascending auctions only — mutable end block updated by anti-sniping extension. Null for all other types. */
+  effectiveEndBlock: number | null;
+  estimatedEnd:      Date | null;
+  vestEnabled:       boolean;
+  gateMode:          GateMode;
 }
