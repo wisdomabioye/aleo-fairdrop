@@ -1,0 +1,1 @@
+ALTER TABLE "auction_metadata" ADD COLUMN "credential_url" text;
