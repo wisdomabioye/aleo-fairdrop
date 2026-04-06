@@ -1,69 +1,25 @@
-import { Input, Label, TokenAmountInput } from '@/components';
-import { parseTokenAmount } from '@fairdrop/sdk/format';
-import { formatMicrocredits } from '@fairdrop/sdk/credits';
+import { TokenAmountInput } from '@/components';
 import type { PricingStepProps, QuadraticPricingValues } from './types';
 
 export function QuadraticPricingStep({ value, onChange }: PricingStepProps<QuadraticPricingValues>) {
-  const set = (k: keyof QuadraticPricingValues) =>
-    (v: string) => onChange({ ...value, [k]: v });
-
-  const matchingMicro = parseTokenAmount(value.matchingPool, 6);
-  const capMicro      = parseTokenAmount(value.contributionCap, 6);
-  const offset        = parseInt(value.matchingDeadlineOffset) || 0;
-
-  const deadlineErr = value.matchingDeadlineOffset && offset <= 0 ? 'Required, must be > 0.' : null;
-
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground py-4">
-        Quadratic funding: contribution weight = √(amount). Smaller contributors
-        receive proportionally more influence. An optional matching pool amplifies
-        community support.
+        Allocation is proportional to √(payment). A bidder with 100× your budget receives
+        only 10× your tokens — anti-whale by design. The auction clears only if total
+        payments reach the raise target.
       </p>
+      <p className="text-xs text-muted-foreground font-mono bg-muted/40 rounded px-3 py-2">
+        your_tokens = supply × √(your_payment) / Σ√(all_payments)
+      </p>
+
       <TokenAmountInput
-        label="Matching pool" value={value.matchingPool}
-        onChange={set('matchingPool')} decimals={6} symbol="ALEO"
-        placeholder="1000"
-        hint="Credits you contribute to match community bids. 0 = no matching."
+        label="Raise target" value={value.raiseTarget}
+        onChange={(v) => onChange({ ...value, raiseTarget: v })}
+        decimals={6} symbol="ALEO"
+        placeholder="10000"
+        hint="Minimum total credits for the auction to clear. If not reached, all bidders are refunded."
       />
-      <TokenAmountInput
-        label="Contribution cap" value={value.contributionCap}
-        onChange={set('contributionCap')} decimals={6} symbol="ALEO"
-        placeholder="0"
-        hint="Max credits any single bidder can contribute. 0 = unlimited."
-      />
-      <div className="space-y-1.5">
-        <Label>Matching deadline (blocks from start)</Label>
-        <Input
-          inputMode="numeric" value={value.matchingDeadlineOffset}
-          onChange={(e) => set('matchingDeadlineOffset')(e.target.value.replace(/\D/g, ''))}
-          placeholder="5000"
-          aria-invalid={!!deadlineErr}
-          className={deadlineErr ? 'border-destructive focus-visible:ring-destructive/30' : ''}
-        />
-        {deadlineErr
-          ? <p className="text-xs text-destructive">{deadlineErr}</p>
-          : <p className="text-xs text-muted-foreground">
-              Block offset after start_block when the matching pool is locked.
-              {offset > 0 && ` (~${Math.round(offset * 10 / 60)} min from start)`}
-            </p>
-        }
-      </div>
-      {matchingMicro > 0n && (
-        <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground space-y-0.5">
-          <div>
-            You will deposit{' '}
-            <strong className="text-foreground">{formatMicrocredits(matchingMicro)}</strong>
-            {' '}as matching funds at auction creation.
-          </div>
-          {capMicro > 0n && (
-            <div>
-              Max per contributor:{' '}
-              <strong className="text-foreground">{formatMicrocredits(capMicro)}</strong>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }

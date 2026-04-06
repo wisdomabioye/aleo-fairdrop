@@ -95,17 +95,16 @@ export type CreateAuctionInput =
       raiseTarget: bigint;
     })
   | (CreateBase & {
-      type:         AuctionType.Lbp;
-      startWeight:  number;
-      endWeight:    number;
-      swapFeeBps:   number;
-      initialPrice: bigint;
+      type:       AuctionType.Lbp;
+      /** Maximum price per token (supply full, t=0). In base units. */
+      startPrice: bigint;
+      /** Minimum price per token (floor regardless of supply/time). In base units. */
+      floorPrice: bigint;
     })
   | (CreateBase & {
-      type:            AuctionType.Quadratic;
-      matchingPool:    bigint;
-      contributionCap: bigint;
-      matchingDeadline: number;
+      type:        AuctionType.Quadratic;
+      /** Minimum total credits for the auction to clear. In base units. */
+      raiseTarget: bigint;
     });
 
 // ── Shared serializers ────────────────────────────────────────────────────────
@@ -223,32 +222,23 @@ export function buildCreateAuction(p: CreateAuctionInput): TxSpec {
     }
 
     case AuctionType.Lbp:
+      // lbp: LbpParams { start_price, floor_price } is a positional struct after common inputs.
       return {
         program: PROGRAMS.lbp.programId, function: 'create_auction', fee, privateFee: false,
         inputs: [
           p.tokenRecord, ...common,
-          leoStruct({
-            start_weight:  u16(p.startWeight),
-            end_weight:    u16(p.endWeight),
-            swap_fee_bps:  u16(p.swapFeeBps),
-            initial_price: u128(p.initialPrice),
-          }),
+          leoStruct({ start_price: u128(p.startPrice), floor_price: u128(p.floorPrice) }),
           ...tail,
         ],
       };
 
-    case AuctionType.Quadratic:
+    case AuctionType.Quadratic: {
+      // raise_target is a flat positional input between supply and start_block — same layout as Raise.
+      const [tokenId, supply, ...rest] = common;
       return {
         program: PROGRAMS.quadratic.programId, function: 'create_auction', fee, privateFee: false,
-        inputs: [
-          p.tokenRecord, ...common,
-          leoStruct({
-            matching_pool:     u128(p.matchingPool),
-            contribution_cap:  u128(p.contributionCap),
-            matching_deadline: u32(p.matchingDeadline),
-          }),
-          ...tail,
-        ],
+        inputs: [p.tokenRecord, tokenId, supply, u128(p.raiseTarget), ...rest, ...tail],
       };
+    }
   }
 }

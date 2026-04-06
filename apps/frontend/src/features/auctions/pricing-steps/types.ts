@@ -24,16 +24,15 @@ export interface AscendingPricingValues {
 }
 
 export interface LbpPricingValues {
-  startWeight:  string; // integer bps (0–10000)
-  endWeight:    string; // integer bps
-  swapFeeBps:   string; // integer bps
-  initialPrice: string; // ALEO
+  /** Maximum price per token at auction start (supply full, t=0). ALEO units. */
+  startPrice: string;
+  /** Minimum price per token regardless of supply or time. ALEO units. Must be < startPrice. */
+  floorPrice: string;
 }
 
 export interface QuadraticPricingValues {
-  matchingPool:           string; // ALEO — creator's matching fund (0 = none)
-  contributionCap:        string; // ALEO — max per bidder (0 = unlimited)
-  matchingDeadlineOffset: string; // integer — blocks from startBlock
+  /** Minimum total credits required for the auction to clear. ALEO units. */
+  raiseTarget: string;
 }
 
 export interface PricingStepProps<T> {

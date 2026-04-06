@@ -63,11 +63,11 @@ program fairdrop_multisig_v1.aleo {
     // Admin set — replace with prod keys before mainnet deployment
     // =========================================================================
 
-    const ADMIN_0: address = aleo12shtwnmf49t5atmad2jnk3e58ahtp749d9trctt9z3wryxyzt5pspp0nd0;
-    const ADMIN_1: address = aleo1z9y9afh0h6dnyj3f0hvjc4mhayjy06fj42ppcq0rvpmmyky6fuzs449sjr;
-    const ADMIN_2: address = aleo19x0ctad8llm9y0qssw7eup045c5wxxp6k4al3n0d5r8maulkzu8sh3jwew;
-    const ADMIN_3: address = aleo16ycrg9g4208lp5y4g5s3gn43xknc5gdsr7wjrpqq9htznj5qk5yqd6px5a;
-    const ADMIN_4: address = aleo1q59hxe2zmexlu4vgtmtmvyxm4ew047zlf50h5l5zsrdvljusdvrqn78u7s;
+    const ADMIN_0: address = aleo1sn8ns4htf8ryj0dergclrg82fuuztzr67fqc3sakrktcxzc3dqxqm6utkv;
+    const ADMIN_1: address = aleo1gnd8yy9fd28dt5hmpdt23wfuye3vrvf8c906k00lyjc4kqgl2cqssf6vte;
+    const ADMIN_2: address = aleo1gaj4v8scfhv4r2nnym0vcdnvsljzlfh524emn2r4gdqvszcq4vxq93cm72;
+    const ADMIN_3: address = aleo1u3xdxtc9t6rzjnwszxrq3c6ypepcdcgcwu6kwthv3q6fme29ggpsv4nt7q;
+    const ADMIN_4: address = aleo14nsjwjqdv902ayqe2zyld0y3xjz554j06cvj6yy4u5475g4cjs9q9s6nmm;
 
     // =========================================================================
     // Contract keys for approved_upgrades (must match @checksum key= in each contract)

@@ -54,22 +54,14 @@ function PricingRows({ form }: { form: StepProps['form'] }) {
       const p = pricing as LbpPricingValues;
       return (
         <>
-          <ReviewRow label="Start weight"  value={`${p.startWeight || '0'} bps`} />
-          <ReviewRow label="End weight"    value={`${p.endWeight   || '0'} bps`} />
-          <ReviewRow label="Swap fee"      value={`${p.swapFeeBps  || '0'} bps`} />
-          <ReviewRow label="Initial price" value={`${p.initialPrice || '0'} ALEO`} />
+          <ReviewRow label="Start price" value={`${p.startPrice || '0'} ALEO`} />
+          <ReviewRow label="Floor price" value={`${p.floorPrice || '0'} ALEO`} />
         </>
       );
     }
     case AuctionType.Quadratic: {
       const p = pricing as QuadraticPricingValues;
-      return (
-        <>
-          <ReviewRow label="Matching pool"    value={`${p.matchingPool        || '0'} ALEO`} />
-          <ReviewRow label="Contribution cap" value={`${p.contributionCap     || '0'} ALEO`} />
-          <ReviewRow label="Matching +Δ"      value={`${p.matchingDeadlineOffset || '0'} blocks`} />
-        </>
-      );
+      return <ReviewRow label="Raise target" value={`${p.raiseTarget || '0'} ALEO`} />;
     }
     default: return null;
   }

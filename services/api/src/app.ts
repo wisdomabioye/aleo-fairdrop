@@ -4,7 +4,6 @@ import { dbMiddleware }   from './middleware/db.js';
 import { corsMiddleware } from './middleware/cors.js';
 import { errorHandler }   from './middleware/error.js';
 import { auctionsRouter } from './routes/auctions.js';
-import { bidsRouter }     from './routes/bids.js';
 import { usersRouter }    from './routes/users.js';
 import { tokensRouter }   from './routes/tokens.js';
 import { metadataRouter } from './routes/metadata.js';
@@ -26,7 +25,6 @@ export function createApp(db: Db) {
 
   // Routes
   app.route('/auctions', auctionsRouter);
-  app.route('/auctions', bidsRouter);      // /auctions/:id/bids
   app.route('/users',    usersRouter);
   app.route('/tokens',   tokensRouter);
   app.route('/metadata', metadataRouter);

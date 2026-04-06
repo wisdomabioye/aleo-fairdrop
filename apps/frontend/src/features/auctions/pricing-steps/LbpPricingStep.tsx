@@ -1,92 +1,44 @@
-import { Input, Label, TokenAmountInput } from '@/components';
+import { TokenAmountInput } from '@/components';
 import { parseTokenAmount } from '@fairdrop/sdk/format';
 import type { PricingStepProps, LbpPricingValues } from './types';
-
-function bpsToPercent(bps: string): string {
-  const n = parseInt(bps) || 0;
-  return (n / 100).toFixed(n % 100 === 0 ? 0 : 2);
-}
 
 export function LbpPricingStep({ value, onChange }: PricingStepProps<LbpPricingValues>) {
   const set = (k: keyof LbpPricingValues) =>
     (v: string) => onChange({ ...value, [k]: v });
 
-  const intField = (k: 'startWeight' | 'endWeight' | 'swapFeeBps') =>
-    (e: React.ChangeEvent<HTMLInputElement>) =>
-      set(k)(e.target.value.replace(/\D/g, ''));
+  const startMicro = parseTokenAmount(value.startPrice, 6);
+  const floorMicro = parseTokenAmount(value.floorPrice, 6);
 
-  const startWt     = parseInt(value.startWeight) || 0;
-  const endWt       = parseInt(value.endWeight)   || 0;
-  const feeBps      = parseInt(value.swapFeeBps)  || 0;
-  const initialMicro = parseTokenAmount(value.initialPrice, 6);
-
-  const weightWarning    = startWt > 0 && endWt > 0 && startWt <= endWt;
-  const startWeightErr   = value.startWeight && startWt <= 0 ? 'Required, must be > 0.' : null;
-  const endWeightErr     = value.endWeight   && endWt   <= 0 ? 'Required, must be > 0.' : null;
-  const initialPriceErr  = value.initialPrice && initialMicro <= 0n ? 'Required, must be > 0.' : null;
+  const floorErr =
+    floorMicro > 0n && startMicro > 0n && floorMicro >= startMicro
+      ? 'Floor price must be less than start price.'
+      : null;
 
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground py-4">
-        Token weight shifts from <code className="text-xs">start_weight</code> to{' '}
-        <code className="text-xs">end_weight</code> over the auction duration,
-        driving price naturally downward and discouraging front-running bots.
+        Price is driven by both remaining supply and remaining time. High demand slows
+        the price descent; low demand accelerates it. No oracle or liquidity pool required.
       </p>
+      <p className="text-xs text-muted-foreground font-mono bg-muted/40 rounded px-3 py-2">
+        price = floor + (start − floor) × (remaining / supply) × (time_left / duration)
+      </p>
+
       <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <Label>Start weight (bps)</Label>
-          <Input
-            inputMode="numeric" value={value.startWeight}
-            onChange={intField('startWeight')} placeholder="9000"
-            aria-invalid={!!startWeightErr}
-            className={startWeightErr ? 'border-destructive focus-visible:ring-destructive/30' : ''}
-          />
-          {startWeightErr
-            ? <p className="text-xs text-destructive">{startWeightErr}</p>
-            : <p className="text-xs text-muted-foreground">
-                {startWt > 0 ? `${bpsToPercent(value.startWeight)}% sale token — high initial weight → high starting price.` : 'e.g. 9000 = 90%'}
-              </p>
-          }
-        </div>
-        <div className="space-y-1.5">
-          <Label>End weight (bps)</Label>
-          <Input
-            inputMode="numeric" value={value.endWeight}
-            onChange={intField('endWeight')} placeholder="1000"
-            aria-invalid={!!endWeightErr}
-            className={endWeightErr ? 'border-destructive focus-visible:ring-destructive/30' : ''}
-          />
-          {endWeightErr
-            ? <p className="text-xs text-destructive">{endWeightErr}</p>
-            : <p className="text-xs text-muted-foreground">
-                {endWt > 0 ? `${bpsToPercent(value.endWeight)}% sale token — low final weight → lower ending price.` : 'e.g. 1000 = 10%'}
-              </p>
-          }
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <Label>Swap fee (bps)</Label>
-          <Input
-            inputMode="numeric" value={value.swapFeeBps}
-            onChange={intField('swapFeeBps')} placeholder="30"
-          />
-          <p className="text-xs text-muted-foreground">
-            {feeBps > 0 ? `${bpsToPercent(value.swapFeeBps)}% fee per swap.` : 'e.g. 30 = 0.3%'}
-          </p>
-        </div>
         <TokenAmountInput
-          label="Initial price" value={value.initialPrice}
-          onChange={set('initialPrice')} decimals={6} symbol="ALEO"
-          placeholder="1.0" hint="Starting price per token."
-          error={initialPriceErr ?? undefined}
+          label="Start price" value={value.startPrice}
+          onChange={set('startPrice')} decimals={6} symbol="ALEO"
+          placeholder="1.0"
+          hint="Maximum price per token — when supply is full and the auction just opened."
+        />
+        <TokenAmountInput
+          label="Floor price" value={value.floorPrice}
+          onChange={set('floorPrice')} decimals={6} symbol="ALEO"
+          placeholder="0.1"
+          hint="Minimum price per token — price will never drop below this."
+          error={floorErr ?? undefined}
         />
       </div>
-      {weightWarning && (
-        <p className="text-xs text-destructive">
-          Start weight should be greater than end weight for a downward price curve.
-        </p>
-      )}
     </div>
   );
 }

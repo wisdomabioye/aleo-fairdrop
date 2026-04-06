@@ -65,17 +65,17 @@ export async function fetchConfig(
     // Sealed-specific
     commit_end_block:   optU32('commit_end_block'),
     slash_reward_bps:   f['slash_reward_bps'] ? parseU16(f['slash_reward_bps']) : null,
-    // Raise-specific
+    // Raise-Quadratic-specific
     raise_target:       optU128('raise_target'),
     // LBP-specific
-    start_weight:       f['start_weight']  ? parseU16(f['start_weight'])  : null,
-    end_weight:         f['end_weight']    ? parseU16(f['end_weight'])    : null,
-    swap_fee_bps:       f['swap_fee_bps']  ? parseU16(f['swap_fee_bps'])  : null,
-    initial_price:      optU128('initial_price'),
+    // start_weight:       f['start_weight']  ? parseU16(f['start_weight'])  : null,
+    // end_weight:         f['end_weight']    ? parseU16(f['end_weight'])    : null,
+    // swap_fee_bps:       f['swap_fee_bps']  ? parseU16(f['swap_fee_bps'])  : null,
+    // initial_price:      optU128('initial_price'),
     // Quadratic-specific
-    matching_pool:      optU128('matching_pool'),
-    contribution_cap:   optU128('contribution_cap'),
-    matching_deadline:  optU32('matching_deadline'),
+    // matching_pool:      optU128('matching_pool'),
+    // contribution_cap:   optU128('contribution_cap'),
+    // matching_deadline:  optU32('matching_deadline'),
   };
 }
 

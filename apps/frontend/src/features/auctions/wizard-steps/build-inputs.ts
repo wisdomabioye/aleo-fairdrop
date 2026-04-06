@@ -103,19 +103,15 @@ export function buildCreateAuctionInputs(
       const p = pricing as LbpPricingValues;
       return buildCreateAuction({
         ...base, type: AuctionType.Lbp,
-        startWeight:  parseInt(p.startWeight  || '0'),
-        endWeight:    parseInt(p.endWeight    || '0'),
-        swapFeeBps:   parseInt(p.swapFeeBps   || '0'),
-        initialPrice: mic(p.initialPrice),
+        startPrice: mic(p.startPrice),
+        floorPrice: mic(p.floorPrice),
       });
     }
     case AuctionType.Quadratic: {
       const p = pricing as QuadraticPricingValues;
       return buildCreateAuction({
         ...base, type: AuctionType.Quadratic,
-        matchingPool:     mic(p.matchingPool),
-        contributionCap:  mic(p.contributionCap),
-        matchingDeadline: base.startBlock + blk(p.matchingDeadlineOffset),
+        raiseTarget: mic(p.raiseTarget),
       });
     }
     default:

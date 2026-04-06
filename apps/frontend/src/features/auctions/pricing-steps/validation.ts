@@ -39,11 +39,13 @@ export function isPricingComplete(type: AuctionType, pricing: AnyPricingValues):
       return floor > 0n && ceiling > floor && rise > 0n && parseInt(p.priceRiseBlocks) > 0;
     }
     case AuctionType.Lbp: {
-      const p = pricing as LbpPricingValues;
-      return parseInt(p.startWeight) > 0 && parseInt(p.endWeight) > 0 && parseTokenAmount(p.initialPrice, 6) > 0n;
+      const p     = pricing as LbpPricingValues;
+      const start = parseTokenAmount(p.startPrice, 6);
+      const floor = parseTokenAmount(p.floorPrice, 6);
+      return start > 0n && floor > 0n && floor < start;
     }
     case AuctionType.Quadratic:
-      return parseInt((pricing as QuadraticPricingValues).matchingDeadlineOffset) > 0;
+      return parseTokenAmount((pricing as QuadraticPricingValues).raiseTarget, 6) > 0n;
     default:
       return false;
   }

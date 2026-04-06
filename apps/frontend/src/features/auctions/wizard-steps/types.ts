@@ -101,8 +101,8 @@ export const DEFAULT_PRICING: Record<AuctionType, AnyPricingValues> = {
   sealed:    { startPrice: '', floorPrice: '', priceDecayBlocks: '100', priceDecayAmount: '', commitEndBlockOffset: '' },
   raise:     { raiseTarget: '' },
   ascending: { floorPrice: '', ceilingPrice: '', priceRiseBlocks: '100', priceRiseAmount: '' },
-  lbp:       { startWeight: '9000', endWeight: '1000', swapFeeBps: '30', initialPrice: '' },
-  quadratic: { matchingPool: '0', contributionCap: '0', matchingDeadlineOffset: '' },
+  lbp:       { startPrice: '', floorPrice: '' },
+  quadratic: { raiseTarget: '' },
 } as Record<AuctionType, AnyPricingValues>;
 
 export interface StepProps {
