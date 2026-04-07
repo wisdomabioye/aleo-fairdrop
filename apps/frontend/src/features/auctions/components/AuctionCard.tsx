@@ -9,6 +9,7 @@ import { auctionDetailUrl } from '@/config';
 import { getRegistrySlot } from '../registry';
 import { AuctionStatus, AuctionType, GateMode } from '@fairdrop/types/domain';
 import type { AuctionListItem } from '@fairdrop/types/domain';
+import { CreatorBadge } from './CreatorBadge';
 import { useBlockHeight } from '@/shared/hooks/useBlockHeight';
 import { LetterAvatar } from './LetterAvatar';
 
@@ -145,7 +146,10 @@ export function AuctionCard({ auction }: AuctionCardProps) {
 
           {/* ── Footer ──────────────────────────────────────────────────────── */}
           <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
-            <span className="truncate">By {truncateAddress(auction.creator)}</span>
+            <span className="inline-flex items-center gap-1 truncate">
+              By {truncateAddress(auction.creator)}
+              <CreatorBadge tier={auction.creatorTier} size="sm" />
+            </span>
             {showCountdown ? (
               <div className="shrink-0">
                 <Countdown targetTime={auction.estimatedEnd!} className="text-[11px]" />

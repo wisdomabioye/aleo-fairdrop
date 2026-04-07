@@ -1,21 +1,41 @@
 /**
- * Domain-level creator profile and reputation types.
+ * Domain-level creator reputation types.
  */
 
-/** Enriched creator profile combining on-chain reputation with display data. */
-export interface CreatorProfile {
-  address:         string;
-  /** Display name from off-chain metadata service (null if not set). */
-  displayName:     string | null;
-  avatarUrl:       string | null;
+export type CreatorTier = 'none' | 'bronze' | 'silver' | 'gold';
 
-  // On-chain reputation from fairdrop_proof_v2.aleo/reputation mapping
-  totalAuctions:   number;
-  filledAuctions:  number;
-  totalVolume:     bigint;  // microcredits
+/**
+ * Compute the creator trust tier from aggregated on-chain stats.
+ * Single source of truth — used by the API mapper and frontend hook.
+ *
+ * Thresholds:
+ *   Gold:   filled ≥ 10 AND fill rate ≥ 90%
+ *   Silver: filled ≥ 3  AND fill rate ≥ 70%
+ *   Bronze: filled ≥ 1
+ *   None:   no filled auctions
+ */
+export function computeTier(auctionsRun: number, filled: number): CreatorTier {
+  const fillRate = auctionsRun > 0 ? filled / auctionsRun : 0;
+  if (filled >= 10 && fillRate >= 0.90) return 'gold';
+  if (filled >= 3  && fillRate >= 0.70) return 'silver';
+  if (filled >= 1)                      return 'bronze';
+  return 'none';
+}
 
-  /** Derived: filledAuctions / totalAuctions, null if totalAuctions = 0. */
-  fillRate:        number | null;
+/** On-chain reputation stats for a creator — surfaced on AuctionView and creator pages. */
+export interface CreatorReputationStats {
+  auctionsRun:        number;
+  filledAuctions:     number;
+  /** Cumulative total_payments in microcredits, as a decimal string (u128). */
+  volumeMicrocredits: string;
+  /** filledAuctions / auctionsRun (0–1). */
+  fillRate:           number;
+  tier:               CreatorTier;
+}
+
+/** Full creator response from GET /creators/:address. */
+export interface CreatorReputationResponse extends CreatorReputationStats {
+  address: string;
 }
 
 /** Per-auction revenue summary for a creator (from AuctionState). */

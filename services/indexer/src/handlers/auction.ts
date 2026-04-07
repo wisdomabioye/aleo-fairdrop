@@ -1,42 +1,20 @@
 /**
- * Generic auction upsert handler — works for any auction program type
- * (dutch, sealed, raise, ascending, lbp, quadratic).
+ * Auction upsert handler — single concern: fetch config + state, write auction row.
  *
- * Every registered transition collapses to a single operation:
- *   1. Fetch current on-chain config + state from mappings.
- *   2. Upsert the auctions row (insert on create, update on subsequent transitions).
+ * Returns FlatAuctionConfig so the caller (handlers/index.ts) can pass data to
+ * other handlers (reputation, stats) without a second RPC round-trip.
  *
- * Bid / claim / vesting tracking is intentionally out of scope.
- * Users see their private Bid records via their connected wallet.
- *
- * Adding a new auction type: call createProgramHandlerMap with the new type
- * name and programId. No changes needed to the processor.
+ * Intentionally knows nothing about reputation, stats, or other side effects.
+ * That composition lives in handlers/index.ts.
  */
-import { auctions }                           from '@fairdrop/database';
-import { AuctionType }                        from '@fairdrop/types/domain';
-import { createLogger }                       from '../logger.js';
-import { fetchConfig, fetchState }            from './mapping.js';
-import { 
-  auctionIdFromCreateAuctionTransition,
-  auctionIdFromTransitionInputOne,
-  auctionIdFromTransitionInputZero,
-  auctionIdFromFinalizeRevealBid
-} from './extractors.js';
-import type {
-  HandlerEntry,
-  ProgramHandlerMap,
-  TransitionContext,
-  TransitionHandlerFn,
-} from './types.js';
 
-export type { HandlerEntry, ProgramHandlerMap, TransitionHandlerFn };
+import { auctions }                        from '@fairdrop/database';
+import { fetchFlatAuctionConfig, fetchFlatAuctionState } from '../lib/chain.js';
+import { createLogger }                    from '../logger.js';
+import type { TransitionContext }          from './types.js';
+import type { FlatAuctionConfig }          from '../types/chain.js';
 
 // ── DB status vocabulary ──────────────────────────────────────────────────────
-//
-// The DB stores the on-chain-derivable status only: 'live' | 'cleared' | 'voided'.
-// The three computed statuses in AuctionStatus ('upcoming', 'clearing', 'ended')
-// are derived by the API from block height vs start_block / end_block / supply_met
-// and never stored on disk.
 //
 //   DB 'live'    → API upcoming | active | clearing  (depends on current block)
 //   DB 'cleared' → API cleared
@@ -44,36 +22,58 @@ export type { HandlerEntry, ProgramHandlerMap, TransitionHandlerFn };
 
 type DbStatus = 'live' | 'cleared' | 'voided';
 
-// ── Core upsert ───────────────────────────────────────────────────────────────
-
 const log = createLogger('auction');
 
-async function upsertAuction(
+// ── Transitions not registered anywhere ──────────────────────────────────────
+
+/**
+ * Transitions intentionally not registered (auction_id unrecoverable from chain):
+ *   claim, claim_vested, claim_voided — consume private Bid records.
+ *
+ * Transitions not registered because they don't change auction-level state:
+ *   push_referral_budget, withdraw_payments, withdraw_unsold.
+ *
+ * If any appear in a known program's block, processor.ts emits a debug-level log.
+ */
+export const KNOWN_UNHANDLED_TRANSITIONS = new Set([
+  'claim',
+  'claim_vested',
+  'claim_voided',
+  'push_referral_budget',
+  'withdraw_payments',
+  'withdraw_unsold',
+  // fairdrop_config_v2.aleo CPI transitions called by auction programs:
+  'assert_config',
+  'assert_ref_bps',
+  'check_not_paused',
+]);
+
+// ── Core upsert ───────────────────────────────────────────────────────────────
+
+export async function upsertAuction(
   ctx:         TransitionContext,
   programId:   string,
   auctionType: string,
   auctionId:   string,
-): Promise<void> {
-  const { db, rpc, blockHeight, timestamp } = ctx;
+): Promise<FlatAuctionConfig> {
+  const { db, blockHeight, timestamp } = ctx;
 
   const [config, state] = await Promise.all([
-    fetchConfig(rpc, programId, auctionId),
-    fetchState(rpc, programId, auctionId),
+    fetchFlatAuctionConfig(auctionId, programId),
+    fetchFlatAuctionState(auctionId, programId),
   ]);
 
   if (!config || !state) {
-    // Throw so the DB transaction rolls back and the block is retried on the next tick.
-    // A null return from getMappingValue means the mapping key wasn't found — this should
-    // never happen for a transition that just wrote the key in the same block. If it does,
-    // it's a transient RPC error and retrying is correct.
     throw new Error(
       `[${auctionType}] mapping read returned null for auction ${auctionId} ` +
       `(config=${!!config}, state=${!!state}) — will retry`,
     );
   }
 
+  log.debug('upserting auction', { auctionId, auctionType, status: state.voided ? 'voided' : state.cleared ? 'cleared' : 'live' });
+
   const status: DbStatus = state.voided ? 'voided' : state.cleared ? 'cleared' : 'live';
-  const endedAtBlock = state.ended_at_block > 0 ? state.ended_at_block : null;
+  const endedAtBlock      = state.ended_at_block > 0 ? state.ended_at_block : null;
 
   await db
     .insert(auctions)
@@ -86,7 +86,7 @@ async function upsertAuction(
       saleTokenId:      config.sale_token_id,
       paymentTokenId:   config.payment_token_id,
       supply:           config.supply,
-      
+
       status,
       totalCommitted:   state.total_committed,
       totalPayments:    state.total_payments,
@@ -98,27 +98,27 @@ async function upsertAuction(
       referralBudget:   state.referral_budget,
       clearingPrice:    state.clearing_price,
 
-      startPrice:       config.start_price,
-      floorPrice:       config.floor_price,
-      priceDecayBlocks: config.price_decay_blocks,
-      priceDecayAmount: config.price_decay_amount,
-      ceilingPrice:     config.ceiling_price,
-      priceRiseBlocks:  config.price_rise_blocks,
-      priceRiseAmount:  config.price_rise_amount,
-      extensionWindow:  config.extension_window  ?? null,
-      extensionBlocks:  config.extension_blocks  ?? null,
-      maxEndBlock:      config.max_end_block      ?? null,
-      raiseTarget:      config.raise_target,
-      fillMinBps:       config.fill_min_bps   ?? null,
+      startPrice:       config.start_price       ?? null,
+      floorPrice:       config.floor_price       ?? null,
+      priceDecayBlocks: config.price_decay_blocks ?? null,
+      priceDecayAmount: config.price_decay_amount ?? null,
+      ceilingPrice:     config.ceiling_price      ?? null,
+      priceRiseBlocks:  config.price_rise_blocks  ?? null,
+      priceRiseAmount:  config.price_rise_amount  ?? null,
+      extensionWindow:  config.extension_window   ?? null,
+      extensionBlocks:  config.extension_blocks   ?? null,
+      maxEndBlock:      config.max_end_block       ?? null,
+      raiseTarget:      config.raise_target        ?? null,
+      fillMinBps:       config.fill_min_bps        ?? null,
       minBidAmount:     config.min_bid_amount,
       maxBidAmount:     config.max_bid_amount,
       saleScale:        config.sale_scale,
       startBlock:         config.start_block,
       endBlock:           config.end_block,
-      commitEndBlock:     config.commit_end_block,
+      commitEndBlock:     config.commit_end_block  ?? null,
       endedAtBlock,
       effectiveEndBlock:  state.effective_end_block ?? null,
-      effectiveSupply:    state.effective_supply    ?? null,
+      effectiveSupply:    state.effective_supply,
       configJson:       config as unknown as Record<string, unknown>,
       stateJson:        state  as unknown as Record<string, unknown>,
       feeBps:           config.fee_bps,
@@ -134,82 +134,24 @@ async function upsertAuction(
     .onConflictDoUpdate({
       target: auctions.id,
       set: {
-        totalCommitted:  state.total_committed,
-        totalPayments:   state.total_payments,
+        totalCommitted:    state.total_committed,
+        totalPayments:     state.total_payments,
         status,
-        supplyMet:       state.supply_met,
+        supplyMet:         state.supply_met,
         cleared:           state.cleared,
         voided:            state.voided,
         clearingPrice:     state.clearing_price,
         endedAtBlock,
         effectiveEndBlock: state.effective_end_block ?? null,
-        effectiveSupply:   state.effective_supply    ?? null,
+        effectiveSupply:   state.effective_supply,
         creatorRevenue:    state.creator_revenue,
-        protocolFee:     state.protocol_fee,
-        referralBudget:  state.referral_budget,
-        stateJson:       state  as unknown as Record<string, unknown>,
-        updatedAt:       timestamp,
-        // Config is immutable; refresh snapshot is harmless.
-        configJson:      config as unknown as Record<string, unknown>,
+        protocolFee:       state.protocol_fee,
+        referralBudget:    state.referral_budget,
+        stateJson:         state  as unknown as Record<string, unknown>,
+        configJson:        config as unknown as Record<string, unknown>,
+        updatedAt:         timestamp,
       },
     });
-}
 
-// ── Handler map factory ───────────────────────────────────────────────────────
-
-/**
- * Transitions intentionally not registered (auction_id unrecoverable from chain):
- *   claim, claim_vested, claim_voided — consume private Bid records.
- *
- * Transitions not registered because they don't change auction-level state:
- *   push_referral_budget, withdraw_payments, withdraw_unsold.
- *
- * If any of these appear in a known program's block, processor.ts will emit
- * a debug-level log rather than a warning — they are expected gaps.
- */
-export const KNOWN_UNHANDLED_TRANSITIONS = new Set([
-  'claim',
-  'claim_vested',
-  'claim_voided',
-  'push_referral_budget',
-  'withdraw_payments',
-  'withdraw_unsold',
-  // fairdrop_config_v2.aleo CPI transitions called by auction programs:
-  'assert_config',
-  'assert_ref_bps',
-  'check_not_paused',
-]);
-
-export function createProgramHandlerMap(
-  auctionType: string,
-  programId:   string,
-): ProgramHandlerMap {
-  const upsert: TransitionHandlerFn = (ctx, auctionId) =>
-    upsertAuction(ctx, programId, auctionType, auctionId);
-
-  const base: ProgramHandlerMap = {
-    create_auction:         { getAuctionId: auctionIdFromCreateAuctionTransition,   handle: upsert },
-    close_auction:          { getAuctionId: auctionIdFromTransitionInputZero,   handle: upsert },
-    cancel_auction:         { getAuctionId: auctionIdFromTransitionInputZero,   handle: upsert },
-    place_bid_private:      { getAuctionId: auctionIdFromTransitionInputOne,   handle: upsert },
-    place_bid_public:       { getAuctionId: auctionIdFromTransitionInputZero,   handle: upsert },
-    place_bid_private_ref:  { getAuctionId: auctionIdFromTransitionInputOne,   handle: upsert },
-    place_bid_public_ref:   { getAuctionId: auctionIdFromTransitionInputZero,   handle: upsert },
-  };
-
-  // Sealed auctions replace place_bid_* with commit/reveal transitions.
-  // slash_unrevealed does not modify auction_states — not registered.
-  if (auctionType === AuctionType.Sealed) {
-    return {
-      ...base,
-      commit_bid_private:     { getAuctionId: auctionIdFromTransitionInputOne, handle: upsert },
-      commit_bid_public:      { getAuctionId: auctionIdFromTransitionInputZero, handle: upsert },
-      commit_bid_private_ref: { getAuctionId: auctionIdFromTransitionInputOne, handle: upsert },
-      commit_bid_public_ref:  { getAuctionId: auctionIdFromTransitionInputZero, handle: upsert },
-      // reveal_bid: auction_id only in private Commitment record; extract from finalize key.
-      reveal_bid:             { getAuctionId: auctionIdFromFinalizeRevealBid, handle: upsert },
-    };
-  }
-
-  return base;
+  return config;
 }

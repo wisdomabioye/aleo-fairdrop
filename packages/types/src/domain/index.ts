@@ -7,7 +7,8 @@ export { ClaimStatus } from './bid';
 export type { TokenInfo, TokenMetadata, TokenBalance, TokenRole, TokenRoleValue } from './token';
 export { TOKEN_ROLE } from './token';
 
-export type { CreatorProfile, CreatorAuctionRevenue } from './creator';
+export type { CreatorTier, CreatorReputationStats, CreatorReputationResponse, CreatorAuctionRevenue } from './creator';
+export { computeTier } from './creator';
 
 export type { ReferralView, CommissionEstimate } from './referral';
 

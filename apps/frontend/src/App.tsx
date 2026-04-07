@@ -25,6 +25,8 @@ import { TokenLaunchPage }    from '@/features/token-manager/pages/TokenLaunchPa
 import { TokenManagerPage }   from '@/features/token-manager/pages/TokenManagerPage';
 import { SplitJoinTokenPage } from '@/features/token-manager/pages/SplitJoinTokenPage';
 import { AdminPage }          from '@/features/admin/pages/AdminPage';
+import { CreatorsPage }       from '@/features/creators/pages/CreatorsPage';
+import { CreatorPage }        from '@/features/creators/pages/CreatorPage';
 
 // ── Placeholder (for routes not yet built) ────────────────────────────────────
 function Placeholder({ name }: { name: string }) {
@@ -88,6 +90,10 @@ export function App() {
           <Route path={AppRoutes.tokenLaunch}        element={<TokenLaunchPage />} />
           <Route path={AppRoutes.tokenManager}       element={<TokenManagerPage />} />
           <Route path={AppRoutes.tokenSplitJoin}     element={<SplitJoinTokenPage />} />
+
+          {/* Creators */}
+          <Route path={AppRoutes.creators}           element={<CreatorsPage />} />
+          <Route path={AppRoutes.creatorDetail}      element={<CreatorPage />} />
 
           {/* Admin & Guide */}
           <Route path={AppRoutes.admin}              element={<AdminPage />} />

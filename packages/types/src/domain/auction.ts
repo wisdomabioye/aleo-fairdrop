@@ -11,6 +11,7 @@ import type { AscendingParams }        from '../contracts/auctions/ascending';
 import type { LbpParams }              from '../contracts/auctions/lbp';
 import type { QuadraticAuctionConfig } from '../contracts/auctions/quadratic';
 import type { U16 }                    from '../primitives/scalars';
+import type { CreatorTier, CreatorReputationStats } from './creator';
 
 /** All supported auction mechanisms. Matches PROGRAM_SALT constants. */
 export enum AuctionType {
@@ -172,6 +173,12 @@ export interface AuctionView {
    * Field names and scalar types mirror the on-chain contract structs.
    */
   params:          AuctionParams;
+
+  /**
+   * Creator's on-chain reputation stats — null if the creator has no recorded activity.
+   * Populated from the `creatorReputation` DB table (updated on every `close_auction`).
+   */
+  creatorReputation: CreatorReputationStats | null;
 }
 
 /** Lightweight auction summary — used in lists and cards. */
@@ -198,4 +205,6 @@ export interface AuctionListItem {
   estimatedEnd:      Date | null;
   vestEnabled:       boolean;
   gateMode:          GateMode;
+  /** Creator's on-chain trust tier — from `creatorReputation` table, null if no record. */
+  creatorTier:       CreatorTier | null;
 }

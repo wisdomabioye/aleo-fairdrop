@@ -9,6 +9,7 @@ import { tokensRouter }   from './routes/tokens.js';
 import { metadataRouter } from './routes/metadata.js';
 import { indexerRouter }  from './routes/indexer.js';
 import { configRouter }   from './routes/config.js';
+import { creatorsRouter } from './routes/creators.js';
 
 type Variables = { db: Db };
 
@@ -26,6 +27,7 @@ export function createApp(db: Db) {
   // Routes
   app.route('/auctions', auctionsRouter);
   app.route('/users',    usersRouter);
+  app.route('/creators', creatorsRouter);
   app.route('/tokens',   tokensRouter);
   app.route('/metadata', metadataRouter);
   app.route('/indexer',  indexerRouter);

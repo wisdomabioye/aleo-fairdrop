@@ -27,6 +27,9 @@ export interface AuctionState {
   referral_budget:  U128;
   /** Actual tokens distributed at close. < supply for partial fill; == supply for full/over. 0 until cleared. Raise + Quadratic only. */
   effective_supply: U128;
+  // Ascending only — updated by anti-sniping extension on each bid.
+  effective_end_block?: U32;
+
 }
 
 /**

@@ -30,6 +30,10 @@ export const AppRoutes = {
   tokenSplitJoin: '/token-split-join',
   shield:         '/shield',
 
+  // Creator leaderboard / profiles
+  creators:      '/creators',
+  creatorDetail: '/creators/:address',
+
   // Admin
   admin: '/admin',
 
@@ -47,4 +51,9 @@ export function auctionDetailUrl(id: string): string {
 /** Build a concrete creator auction management URL from an auction ID. */
 export function creatorAuctionUrl(id: string): string {
   return `/creator/auctions/${id}`;
+}
+
+/** Build a creator profile URL from a wallet address. */
+export function creatorUrl(address: string): string {
+  return `/creators/${address}`;
 }

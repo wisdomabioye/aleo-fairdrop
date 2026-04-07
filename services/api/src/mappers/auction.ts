@@ -1,10 +1,11 @@
 import {
   AuctionType, AuctionStatus, GateMode,
+  computeTier,
   type AuctionView, type AuctionListItem, type AuctionMetadata,
-  type RaiseMechanismFields,
+  type RaiseMechanismFields, type CreatorReputationStats,
 } from '@fairdrop/types/domain';
 import { buildAuctionParams } from '@fairdrop/sdk/parse';
-import type { AuctionRow, AuctionMetadataRow } from '@fairdrop/database';
+import type { AuctionRow, AuctionMetadataRow, CreatorReputationRow } from '@fairdrop/database';
 import type { BlockContext } from '../queries/auctions.js';
 import type { TokenInfo } from '../lib/token-cache.js';
 
@@ -145,6 +146,17 @@ function toRevenueFields(
   };
 }
 
+function toCreatorStats(rep: CreatorReputationRow | null): CreatorReputationStats | null {
+  if (!rep) return null;
+  return {
+    auctionsRun:        rep.auctionsRun,
+    filledAuctions:     rep.filledAuctions,
+    volumeMicrocredits: rep.volume,
+    fillRate:           rep.auctionsRun > 0 ? rep.filledAuctions / rep.auctionsRun : 0,
+    tier:               computeTier(rep.auctionsRun, rep.filledAuctions),
+  };
+}
+
 // ── Public mappers ────────────────────────────────────────────────────────────
 
 export function toAuctionView(
@@ -152,6 +164,7 @@ export function toAuctionView(
   ctx:       BlockContext,
   metaRow:   AuctionMetadataRow | null,
   tokenInfo: TokenInfo | null,
+  creatorRep: CreatorReputationRow | null = null,
 ): AuctionView {
   const isContributionType = row.type === AuctionType.Raise || row.type === AuctionType.Quadratic;
   const raiseTargetStr     = row.raiseTarget ?? '0';
@@ -185,6 +198,7 @@ export function toAuctionView(
     vestCliffBlocks:   row.vestCliffBlocks,
     vestEndBlocks:     row.vestEndBlocks,
     params:            buildAuctionParams(row),
+    creatorReputation: toCreatorStats(creatorRep),
     ...toTimingFields(row, ctx),
     ...toRevenueFields(row),
   };
@@ -195,6 +209,7 @@ export function toAuctionListItem(
   ctx:       BlockContext,
   metaRow:   AuctionMetadataRow | null,
   tokenInfo: TokenInfo | null,
+  creatorRep: CreatorReputationRow | null = null,
 ): AuctionListItem {
   const isContributionType = row.type === AuctionType.Raise || row.type === AuctionType.Quadratic;
   const raiseTargetStr     = row.raiseTarget ?? '0';
@@ -224,5 +239,6 @@ export function toAuctionListItem(
     estimatedEnd:      estimateTime(row.effectiveEndBlock ?? row.endBlock, ctx),
     vestEnabled:       row.vestEnabled,
     gateMode:          gateMode(row.gateMode),
+    creatorTier:       creatorRep ? computeTier(creatorRep.auctionsRun, creatorRep.filledAuctions) : null,
   };
 }

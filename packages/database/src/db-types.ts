@@ -13,6 +13,7 @@ import type {
   vesting,
   userReputation,
   creatorNonces,
+  creatorReputation,
   referralCodes,
   referralAttributions,
   indexerCheckpoints,
@@ -35,10 +36,12 @@ export type VestingRow    = InferSelectModel<typeof vesting>;
 export type NewVesting    = InferInsertModel<typeof vesting>;
 
 // Users
-export type UserReputationRow = InferSelectModel<typeof userReputation>;
-export type NewUserReputation = InferInsertModel<typeof userReputation>;
-export type CreatorNonceRow   = InferSelectModel<typeof creatorNonces>;
-export type NewCreatorNonce   = InferInsertModel<typeof creatorNonces>;
+export type UserReputationRow    = InferSelectModel<typeof userReputation>;
+export type NewUserReputation    = InferInsertModel<typeof userReputation>;
+export type CreatorNonceRow      = InferSelectModel<typeof creatorNonces>;
+export type NewCreatorNonce      = InferInsertModel<typeof creatorNonces>;
+export type CreatorReputationRow = InferSelectModel<typeof creatorReputation>;
+export type NewCreatorReputation = InferInsertModel<typeof creatorReputation>;
 
 // Referrals
 export type ReferralCodeRow        = InferSelectModel<typeof referralCodes>;

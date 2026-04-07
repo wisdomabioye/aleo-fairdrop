@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import type { Db } from '@fairdrop/database';
-import type { CreatorProfile } from '@fairdrop/types/domain';
+import type { UserProfileResponse } from '@fairdrop/types/api';
 import {
   getUserReputation,
   getFilledAuctionCount,
@@ -31,13 +31,10 @@ usersRouter.get('/:address', async (c) => {
 
   const totalAuctions = rep?.auctionCount ?? 0;
 
-  const profile: CreatorProfile = {
+  const profile: UserProfileResponse = {
     address,
-    displayName:    null,
-    avatarUrl:      null,
     totalAuctions,
     filledAuctions: filled,
-    totalVolume:    BigInt(rep?.totalCommitted ?? '0'),
     fillRate:       totalAuctions > 0 ? filled / totalAuctions : null,
   };
 

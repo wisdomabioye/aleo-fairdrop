@@ -21,6 +21,7 @@ import { AppRoutes } from '@/config';
 import { cn } from '@/lib/utils';
 import { getRegistrySlot } from '../registry';
 import { LetterAvatar } from './LetterAvatar';
+import { CreatorBadge } from './CreatorBadge';
 import { formatMicrocredits } from '@fairdrop/sdk/credits';
 
 interface AuctionHeaderProps {
@@ -237,6 +238,14 @@ export function AuctionHeader({ auction, currentPrice }: AuctionHeaderProps) {
               >
                 More by creator
               </Link>
+
+              {auction.creatorReputation ? (
+                <CreatorBadge
+                  tier={auction.creatorReputation.tier}
+                  stats={auction.creatorReputation}
+                  size="md"
+                />
+              ) : null}
 
               {website ? (
                 <a
