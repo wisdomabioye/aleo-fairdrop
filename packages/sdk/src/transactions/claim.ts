@@ -4,8 +4,8 @@
  * Each auction type has a distinct claim input layout (D11 pattern):
  *   Dutch / Sealed   — (bid, clearing_price, sale_token_id, sale_scale)
  *   Ascending / LBP  — (bid, sale_token_id)
- *   Raise            — (bid, total_payments, raise_target, supply, sale_token_id, sale_scale)
- *   Quadratic        — (bid, total_sqrt_weight, supply, sale_token_id)
+ *   Raise            — (bid, total_payments, effective_supply, sale_token_id)
+ *   Quadratic        — (bid, total_sqrt_weight, effective_supply, sale_token_id)
  *
  * claim_vested appends (ended_at_block, cliff_blocks, vest_end_blocks) to each.
  *
@@ -15,10 +15,7 @@
 
 import type { AuctionView } from '@fairdrop/types/domain';
 import { AuctionType } from '@fairdrop/types/domain';
-import type { RaiseAuctionConfig } from '@fairdrop/types/contracts/auctions';
 import { DEFAULT_TX_FEE, type ClaimRecord, type TxSpec } from './_types';
-
-type RaiseParams = Pick<RaiseAuctionConfig, 'raise_target'>;
 
 // ── claim ─────────────────────────────────────────────────────────────────────
 
@@ -54,27 +51,29 @@ export function claimBid(
       inputs = [record.raw, auction.saleTokenId];
       break;
 
-    case AuctionType.Raise: {
-      const { raise_target } = auction.params as RaiseParams;
+    case AuctionType.Raise:
+      if (auction.effectiveSupply === null) {
+        throw new Error('claimBid: effectiveSupply is null — auction not yet cleared');
+      }
       inputs = [
         record.raw,
         `${auction.totalPayments}u128`,
-        `${raise_target}u128`,
-        `${auction.supply}u128`,
+        `${auction.effectiveSupply}u128`,
         auction.saleTokenId,
-        `${auction.saleScale}u128`,
       ];
       break;
-    }
 
     case AuctionType.Quadratic:
       if (totalSqrtWeight === undefined) {
         throw new Error('claimBid: totalSqrtWeight is required for Quadratic auctions');
       }
+      if (auction.effectiveSupply === null) {
+        throw new Error('claimBid: effectiveSupply is null — auction not yet cleared');
+      }
       inputs = [
         record.raw,
         `${totalSqrtWeight}u128`,
-        `${auction.supply}u128`,
+        `${auction.effectiveSupply}u128`,
         auction.saleTokenId,
       ];
       break;
@@ -122,28 +121,30 @@ export function claimVested(
       inputs = [record.raw, auction.saleTokenId, endedAt, cliff, vestEnd];
       break;
 
-    case AuctionType.Raise: {
-      const { raise_target } = auction.params as RaiseParams;
+    case AuctionType.Raise:
+      if (auction.effectiveSupply === null) {
+        throw new Error('claimVested: effectiveSupply is null — auction not yet cleared');
+      }
       inputs = [
         record.raw,
         `${auction.totalPayments}u128`,
-        `${raise_target}u128`,
-        `${auction.supply}u128`,
+        `${auction.effectiveSupply}u128`,
         auction.saleTokenId,
-        `${auction.saleScale}u128`,
         endedAt, cliff, vestEnd,
       ];
       break;
-    }
 
     case AuctionType.Quadratic:
       if (totalSqrtWeight === undefined) {
         throw new Error('claimVested: totalSqrtWeight is required for Quadratic auctions');
       }
+      if (auction.effectiveSupply === null) {
+        throw new Error('claimVested: effectiveSupply is null — auction not yet cleared');
+      }
       inputs = [
         record.raw,
         `${totalSqrtWeight}u128`,
-        `${auction.supply}u128`,
+        `${auction.effectiveSupply}u128`,
         auction.saleTokenId,
         endedAt, cliff, vestEnd,
       ];

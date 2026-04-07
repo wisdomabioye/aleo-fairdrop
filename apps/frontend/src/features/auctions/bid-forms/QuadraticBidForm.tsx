@@ -2,9 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { Input, Label } from '@/components';
-import { TX_DEFAULT_FEE } from '@/env';
-import { formatMicrocredits } from '@fairdrop/sdk/credits';
-import { parseTokenAmount } from '@fairdrop/sdk/format';
+import { formatMicrocredits, aleoToMicro } from '@fairdrop/sdk/credits';
 import {
   placeBidPublic,
   placeBidPublicRef,
@@ -15,6 +13,7 @@ import {
 import { AuctionType } from '@fairdrop/types/domain';
 import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
 import { useCreditRecords } from '@/shared/hooks/useCreditRecords';
+import { TX_DEFAULT_FEE } from '@/env';
 import {
   BidModeToggle,
   CreditRecordSelect,
@@ -26,62 +25,68 @@ import {
 } from './_parts';
 import type { BidFormProps } from './types';
 
-/** Quadratic bid: enter vote quantity; payment = qty * currentPrice. No quantity in transition. */
 export function QuadraticBidForm({ auction, protocolConfig, onBidSuccess }: BidFormProps) {
   const { connected, executeTransaction } = useWallet();
   const [searchParams] = useSearchParams();
   const { creditRecords, loading: creditsLoading } = useCreditRecords();
 
-  const decimals     = auction.saleTokenDecimals ?? 0;
-  const saleScale    = auction.saleScale;
-  const currentPrice = auction.currentPrice ?? 0n;
+  const minBidAmount = auction.minBidAmount ?? 0n;
+  const maxBidAmount = auction.maxBidAmount ?? 0n;
 
+  const [payInput,         setPayInput]         = useState('');
+  const [payTouched,       setPayTouched]       = useState(false);
   const [mode,             setMode]             = useState<'private' | 'public'>('public');
-  const [qtyInput,         setQtyInput]         = useState('');
   const [selectedRecordId, setSelectedRecordId] = useState('');
   const [recordTouched,    setRecordTouched]    = useState(false);
   const [codeId,           setCodeId]           = useState(searchParams.get('ref') ?? '');
   const [showReferral,     setShowReferral]     = useState(Boolean(searchParams.get('ref')));
 
-  const qtyRaw      = parseTokenAmount(qtyInput, decimals);
-  const qtyHuman    = saleScale > 0n ? qtyRaw / saleScale : 0n;
-  const payment     = qtyHuman * currentPrice;
-  const protocolFee = payment * BigInt(protocolConfig.feeBps) / 10_000n;
-  const referralCut = codeId.trim()
+  const parsedPayment = aleoToMicro(payInput);
+  const payment       = parsedPayment ?? 0n;
+  const protocolFee   = (payment * BigInt(protocolConfig.feeBps)) / 10_000n;
+  const referralCut   = codeId.trim()
     ? (protocolFee * BigInt(protocolConfig.referralPoolBps)) / 10_000n
     : 0n;
 
   const unspentRecords = useMemo(() => creditRecords.filter((r) => !r.spent), [creditRecords]);
   const selectedRecord = unspentRecords.find((r) => r.id === selectedRecordId) ?? null;
 
+  const amountError = useMemo(() => {
+    if (!payTouched) return null;
+    if (!payInput.trim()) return 'Enter an amount.';
+    if (parsedPayment == null || parsedPayment <= 0n) return 'Enter a valid ALEO amount.';
+    if (minBidAmount > 0n && parsedPayment < minBidAmount) return `Minimum ${formatMicrocredits(minBidAmount)}.`;
+    if (maxBidAmount > 0n && parsedPayment > maxBidAmount) return `Maximum ${formatMicrocredits(maxBidAmount)}.`;
+    return null;
+  }, [payTouched, payInput, parsedPayment, minBidAmount, maxBidAmount]);
+
   const recordError = useMemo(() => {
     if (mode !== 'private' || !recordTouched) return null;
     if (!selectedRecord) return 'Select a payment source.';
-    if (payment > 0n && selectedRecord.microcredits < payment) return 'Insufficient record balance.';
+    if (payment > 0n && selectedRecord.microcredits < payment) return 'Selected record does not have enough balance.';
     return null;
   }, [mode, recordTouched, selectedRecord, payment]);
 
   const formBlocker = useMemo(() => {
-    if (!connected) return 'Connect wallet to place a bid.';
-    if (currentPrice <= 0n) return 'Current price unavailable.';
-    if (!qtyRaw) return 'Enter a vote quantity.';
+    if (!connected) return 'Connect wallet to contribute.';
+    if (amountError) return amountError;
     if (mode === 'private') {
       if (!selectedRecord) return 'Select a payment source.';
-      if (selectedRecord.microcredits < payment) return 'Insufficient record balance.';
+      if (payment > 0n && selectedRecord.microcredits < payment) return 'Selected record does not have enough balance.';
     }
     return null;
-  }, [connected, currentPrice, qtyRaw, mode, selectedRecord, payment]);
+  }, [connected, amountError, mode, selectedRecord, payment]);
 
-  const bidSteps = [
-    {
-      label: 'Cast votes',
+  const bidSteps = useMemo(
+    () => [{
+      label: mode === 'private' ? 'Place Private Quadratic Bid' : 'Place Public Quadratic Bid',
       execute: async () => {
-        const hasRef    = codeId.trim().length > 0;
-        const isPrivate = mode === 'private';
+        const hasRef     = codeId.trim().length > 0;
+        const usePrivate = mode === 'private';
 
-        // Quadratic takes only payment_amount — no quantity in the transition.
+        // Quadratic takes only payment_amount — allocation weight is sqrt(payment), computed on-chain.
         const params: BidParams = { type: AuctionType.Quadratic, paymentAmount: payment };
-        const spec = isPrivate && selectedRecord
+        const spec = usePrivate && selectedRecord
           ? hasRef
             ? placeBidPrivateRef(auction, params, selectedRecord._record, codeId.trim(), TX_DEFAULT_FEE)
             : placeBidPrivate(auction, params, selectedRecord._record, TX_DEFAULT_FEE)
@@ -92,8 +97,9 @@ export function QuadraticBidForm({ auction, protocolConfig, onBidSuccess }: BidF
         const result = await executeTransaction({ ...spec, inputs: spec.inputs as string[] });
         return result?.transactionId;
       },
-    },
-  ];
+    }],
+    [auction, codeId, executeTransaction, mode, payment, selectedRecord],
+  );
 
   const {
     done: bidDone, busy: bidBusy, isWaiting: bidWaiting,
@@ -101,30 +107,48 @@ export function QuadraticBidForm({ auction, protocolConfig, onBidSuccess }: BidF
   } = useConfirmedSequentialTx(bidSteps);
 
   useEffect(() => {
-    if (bidDone) { setQtyInput(''); onBidSuccess?.(); resetBid(); }
+    if (!bidDone) return;
+    setPayInput(''); setPayTouched(false); setRecordTouched(false);
+    onBidSuccess?.(); resetBid();
   }, [bidDone]);
+
+  const showSummary = payment > 0n || (mode === 'private' && !!selectedRecord) || !!codeId.trim();
+  const isDisabled  = !!formBlocker || bidBusy || bidWaiting;
 
   return (
     <div className="space-y-3">
-      <p className="text-xs text-muted-foreground">
-        Each token = 1 vote. Smaller contributions receive proportionally more voting weight.
-      </p>
-
       <BidModeToggle
         mode={mode}
         onChange={(m) => { setMode(m); setRecordTouched(false); if (m === 'public') setSelectedRecordId(''); }}
       />
 
+      <p className="text-[11px] text-muted-foreground">
+        {mode === 'private' ? 'Contribution is submitted privately.' : 'Contribution is submitted publicly.'}
+        {' '}Allocation weight = √payment — larger contributions have diminishing influence.
+      </p>
+
       <div className="space-y-1.5">
-        <Label htmlFor="quad-qty">Votes (tokens)</Label>
+        <Label htmlFor="quad-pay">Amount (ALEO)</Label>
         <Input
-          id="quad-qty"
-          inputMode="numeric"
-          placeholder="0"
-          value={qtyInput}
+          id="quad-pay"
+          inputMode="decimal"
+          placeholder="0.0"
           className="h-8 text-xs"
-          onChange={(e) => setQtyInput(e.target.value)}
+          value={payInput}
+          onBlur={() => setPayTouched(true)}
+          onChange={(e) => { if (!payTouched) setPayTouched(true); setPayInput(e.target.value); }}
+          aria-invalid={!!amountError}
         />
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px]">
+          {(minBidAmount > 0n || maxBidAmount > 0n) && (
+            <span className="text-muted-foreground">
+              {minBidAmount > 0n ? `Min ${formatMicrocredits(minBidAmount)}` : null}
+              {minBidAmount > 0n && maxBidAmount > 0n ? ' • ' : null}
+              {maxBidAmount > 0n ? `Max ${formatMicrocredits(maxBidAmount)}` : null}
+            </span>
+          )}
+          {amountError && <span className="text-destructive">{amountError}</span>}
+        </div>
       </div>
 
       {mode === 'private' && (
@@ -141,24 +165,27 @@ export function QuadraticBidForm({ auction, protocolConfig, onBidSuccess }: BidF
         value={codeId}
         onChange={setCodeId}
         show={showReferral}
-        onToggle={() => { setShowReferral((p) => { if (p) setCodeId(''); return !p; }); }}
+        onToggle={() => setShowReferral((p) => !p)}
         inputId="quad-ref"
       />
 
-      <BidSummaryPanel rows={[
-        payment > 0n     && ['Payment',                                          formatMicrocredits(payment)],
-        payment > 0n     && [`Protocol fee (${protocolConfig.feeBps / 100}%)`,  `-${formatMicrocredits(protocolFee)}`],
-        referralCut > 0n && ['Referral',                                         formatMicrocredits(referralCut)],
-      ]} />
+      {showSummary && (
+        <BidSummaryPanel rows={[
+          payment > 0n      && ['Contribution',                               formatMicrocredits(payment)],
+          payment > 0n      && [`Protocol fee (${protocolConfig.feeBps / 100}%)`, formatMicrocredits(protocolFee)],
+          selectedRecord    && ['Record balance',                             formatMicrocredits(selectedRecord.microcredits)],
+          referralCut > 0n  && ['Referral portion',                          formatMicrocredits(referralCut)],
+        ]} />
+      )}
 
-      <FormBlockerNotice message={formBlocker} />
+      {!connected && <FormBlockerNotice message={formBlocker} />}
 
       <BidSubmitButton
         busy={bidBusy}
         waiting={bidWaiting}
-        disabled={!!formBlocker || bidBusy || bidWaiting}
+        disabled={isDisabled}
         onClick={() => void placeBid()}
-        label="Cast Votes"
+        label={`Contribute ${mode === 'private' ? 'Privately' : 'Publicly'}`}
       />
 
       <BidErrorBanner error={bidError} />

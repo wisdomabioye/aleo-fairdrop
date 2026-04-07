@@ -103,12 +103,18 @@ export interface AuctionView {
   saleScale:         bigint;
 
   // Supply
-  supply:          bigint;
-  totalCommitted:  bigint;
-  totalPayments:  bigint;
-  progressPct:     number;  // 0–100, capped
-  minBidAmount: bigint;
-  maxBidAmount: bigint;
+  supply:           bigint;
+  totalCommitted:   bigint;
+  totalPayments:    bigint;
+  progressPct:      number;  // 0–100, capped
+  minBidAmount:     bigint;
+  maxBidAmount:     bigint;
+  /** Actual tokens to distribute at close. Raise + Quadratic only; null for other types or before clearing. */
+  effectiveSupply:  bigint | null;
+  /** Minimum fill threshold in bps. 0 = disabled (100% required). Raise + Quadratic only; null for other types. */
+  fillMinBps:       number | null;
+  /** Raise target in microcredits. Raise + Quadratic only; null for other types. */
+  raiseTarget:      bigint | null;
   // Price (null until relevant lifecycle stage)
   currentPrice:    bigint | null;  // computed from block height; null if not active
   clearingPrice:   bigint | null;  // set at close_auction

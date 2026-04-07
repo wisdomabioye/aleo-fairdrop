@@ -14,6 +14,7 @@ import { LetterAvatar } from './LetterAvatar';
 
 function CardProgress({ auction }: { auction: AuctionListItem }) {
   const isSealed = auction.type === AuctionType.Sealed;
+  const isPaymentsType = auction.type === AuctionType.Raise || auction.type === AuctionType.Quadratic;
   const { data: blockHeight = 0 } = useBlockHeight();
 
   if (isSealed && auction.commitEndBlock != null) {
@@ -50,7 +51,7 @@ function CardProgress({ auction }: { auction: AuctionListItem }) {
     <div className="space-y-1">
       <Progress value={auction.progressPct} className="h-1.5" />
       <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-        <span>{auction.progressPct.toFixed(1)}% filled</span>
+        <span>{auction.progressPct.toFixed(1)}% {isPaymentsType ? 'raised' : 'filled'}</span>
         <span>{auction.saleTokenSymbol ?? 'Token sale'}</span>
       </div>
     </div>

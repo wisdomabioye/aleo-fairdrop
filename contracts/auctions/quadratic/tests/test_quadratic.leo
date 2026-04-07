@@ -100,6 +100,7 @@ program test_quadratic.aleo {
         let f: Final = fairdrop_quadratic_v2.aleo::withdraw_payments(
             1field,  // auction_id — dummy; assert fires before credits CPI
             0u128,   // amount — ZERO triggers assert(amount > 0)
+            aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc,
         );
         return final { f.run(); };
     }
@@ -113,6 +114,7 @@ program test_quadratic.aleo {
                 1field,   // auction_id
                 0u128,    // amount — ZERO triggers assert(amount > 0)
                 1field,   // sale_token_id — dummy; never reached
+                aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc,
             );
         return final { f.run(); };
     }
@@ -189,6 +191,7 @@ program test_quadratic.aleo {
                 1field,      // auction_id
                 1u128,       // amount = 1 — passes transition-body assert
                 12345field,  // sale_token_id
+                aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc,
             );
         return final { f.run(); };
     }
@@ -202,6 +205,7 @@ program test_quadratic.aleo {
         let f: Final = fairdrop_quadratic_v2.aleo::withdraw_payments(
             1field,  // auction_id
             1u128,   // amount = 1 — passes transition-body assert; credits fails
+            aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc,
         );
         return final { f.run(); };
     }

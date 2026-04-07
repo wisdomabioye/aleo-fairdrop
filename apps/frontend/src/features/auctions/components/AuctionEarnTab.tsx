@@ -107,10 +107,18 @@ export function AuctionEarnTab({ auction }: AuctionEarnTabProps) {
     auction.status === AuctionStatus.Ended    ||
     auction.status === AuctionStatus.Clearing;
 
+  // Raise auctions can close early once the partial fill threshold is met.
+  const fillThresholdMet =
+    auction.type === AuctionType.Raise &&
+    auction.fillMinBps != null && auction.fillMinBps > 0 &&
+    auction.raiseTarget != null &&
+    auction.totalPayments >= (auction.raiseTarget * BigInt(auction.fillMinBps)) / 10000n;
+
   const canCloseNow =
     auction.status === AuctionStatus.Ended    ||
     auction.status === AuctionStatus.Clearing ||
-    (auction.status === AuctionStatus.Active && blockHeight > 0 && blockHeight >= liveEndBlock);
+    (auction.status === AuctionStatus.Active && blockHeight > 0 && blockHeight >= liveEndBlock) ||
+    (auction.status === AuctionStatus.Active && fillThresholdMet);
 
   const blocksLeft =
     auction.status === AuctionStatus.Active && blockHeight > 0
@@ -123,6 +131,8 @@ export function AuctionEarnTab({ auction }: AuctionEarnTabProps) {
       : canCloseNow
       ? auction.status === AuctionStatus.Clearing
         ? 'Supply target met — finalize this auction to claim the closer reward.'
+        : fillThresholdMet
+        ? 'Fill threshold reached — finalize this auction to claim the closer reward.'
         : 'Auction period has ended — finalize it to claim the closer reward.'
       : blocksLeft !== null
       ? `Closes at block #${liveEndBlock} · ${blocksLeft} blocks remaining`

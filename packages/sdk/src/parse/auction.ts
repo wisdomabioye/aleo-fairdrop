@@ -61,7 +61,9 @@ export function parseAuctionState(raw: string): AuctionState {
     creator_revenue: asU128(parseU128(p['creator_revenue'] ?? '0u128')),
     protocol_fee:    asU128(parseU128(p['protocol_fee']    ?? '0u128')),
     voided:          parseBool(p['voided'] ?? 'false'),
-    referral_budget: asU128(parseU128(p['referral_budget'] ?? '0u128')),
+    referral_budget:  asU128(parseU128(p['referral_budget']   ?? '0u128')),
+    // Raise + Quadratic only — present only after cleared close; zero for other types.
+    effective_supply: asU128(parseU128(p['effective_supply']  ?? '0u128')),
   };
 }
 

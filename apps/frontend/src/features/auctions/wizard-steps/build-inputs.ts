@@ -100,7 +100,10 @@ export function buildCreateAuctionInputs(
     }
     case AuctionType.Raise: {
       const p = pricing as RaisePricingValues;
-      return buildCreateAuction({ ...base, type: AuctionType.Raise, raiseTarget: mic(p.raiseTarget) });
+      const fillMinBps = p.fillMinBpsEnabled && p.fillMinBps
+        ? Math.round(parseFloat(p.fillMinBps) * 100)
+        : 0;
+      return buildCreateAuction({ ...base, type: AuctionType.Raise, raiseTarget: mic(p.raiseTarget), fillMinBps });
     }
     case AuctionType.Lbp: {
       const p = pricing as LbpPricingValues;
@@ -112,9 +115,13 @@ export function buildCreateAuctionInputs(
     }
     case AuctionType.Quadratic: {
       const p = pricing as QuadraticPricingValues;
+      const fillMinBps = p.fillMinBpsEnabled && p.fillMinBps
+        ? Math.round(parseFloat(p.fillMinBps) * 100)
+        : 0;
       return buildCreateAuction({
         ...base, type: AuctionType.Quadratic,
         raiseTarget: mic(p.raiseTarget),
+        fillMinBps,
       });
     }
     default:

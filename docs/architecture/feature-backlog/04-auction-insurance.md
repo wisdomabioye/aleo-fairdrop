@@ -1,16 +1,31 @@
-# Plan: Auction Insurance (Partial Fill)
+# Plan: Partial Fill Insurance (`fill_min_bps`)
 
 ## Summary
 
-Creator over-commits supply (e.g. 120% of target). If total contributions land in the
-`[fill_min_bps, fill_max_bps]` band relative to `raise_target`, the auction closes successfully
-and supply is distributed proportionally rather than voided. Below `fill_min_bps`, the auction
-voids as today. Above `fill_max_bps`, it also closes — excess is proportionally capped.
+Add a `fill_min_bps` threshold to `fairdrop_raise_v1.aleo` and `fairdrop_quadratic_v1.aleo`.
+If total contributions reach `fill_min_bps` percent of `raise_target`, the auction clears
+and tokens are distributed pro-rata. Below the threshold, the auction voids as today.
 
-Eliminates the binary all-or-nothing risk that discourages participation in borderline raises.
+No refunds. No cap. Creator keeps all payments. Bidders always receive a proportional
+share of `effective_supply` — fewer tokens if undersubscribed, fewer tokens per credit
+if oversubscribed. Both cases use the same claim formula.
 
-Applies to: `fairdrop_raise_v1.aleo` and `fairdrop_quadratic_v1.aleo` (raise-style semantics).
-Dutch, Ascending, Sealed, LBP are price-discovery mechanisms — partial fill doesn't apply.
+`fill_min_bps = 0` → existing 100%-or-void behavior. Zero migration required.
+
+Applies to: `fairdrop_raise_v1.aleo` and `fairdrop_quadratic_v1.aleo` only.
+Dutch, Ascending, Sealed, LBP are price-discovery mechanisms — partial fill does not apply.
+
+---
+
+## Why it matters
+
+A raise that reaches 95% of target currently voids — creator gets nothing, bidders get
+refunds, community effort is wasted. The minimum threshold eliminates the "near miss"
+failure mode that discourages borderline participation. Creators set a floor they are
+comfortable distributing at; bidders know a partial success is still a success.
+
+Oversubscription is also handled cleanly: all tokens distribute pro-rata, creator keeps
+the full windfall. No cap needed — oversubscription is a good problem.
 
 ---
 
@@ -18,158 +33,187 @@ Dutch, Ascending, Sealed, LBP are price-discovery mechanisms — partial fill do
 
 | Layer | Touch |
 |---|---|
-| Contract | `raise` + `quadratic` — `AuctionConfig`, `close_auction`, `claim` |
-| SDK | `buildCreateAuction` Raise + Quadratic variants; `buildClaim` |
-| Frontend | `RaisePricingStep` / `QuadraticPricingStep`; `build-inputs.ts`; `ReviewStep` |
+| Contract | `raise` + `quadratic` — `AuctionConfig`, `AuctionState`, `close_auction`, `claim` |
+| SDK | `buildCreateAuction` Raise + Quadratic variants |
+| Frontend | `RaisePricingStep`, `QuadraticPricingStep`; `build-inputs.ts`; `ReviewStep`; claim UI |
 
 ---
 
 ## Contract changes
 
-### New fields on `AuctionConfig`
+### `AuctionConfig` — new field
 
 ```leo
 struct AuctionConfig {
     ...existing fields...
-    fill_min_bps: u16,   // NEW — min fill to succeed (e.g. 8000 = 80%). 0 = disabled (100% required).
-    fill_max_bps: u16,   // NEW — max fill band (e.g. 12000 = 120%). Must be >= fill_min_bps.
-                         //       Contributions above this band are refunded proportionally at claim.
+    fill_min_bps: u16,   // NEW — minimum fill to succeed (e.g. 7000 = 70%).
+                         //       0 = disabled; 100% required (existing behaviour).
 }
 ```
 
-### `close_auction` finalize changes
+### `AuctionState` — new field
 
-Current raise void condition:
 ```leo
-assert(state.total_committed >= config.supply);  // all-or-nothing
+struct AuctionState {
+    ...existing fields...
+    effective_supply: u128,  // NEW — actual tokens to distribute at close.
+                             //       = supply for oversubscribed; < supply for partial fill.
+                             //       0 until cleared.
+}
 ```
 
-New logic when `fill_min_bps > 0`:
+### `close_auction` finalize
+
 ```leo
-let target: u128 = config.raise_target;  // total credits required for full fill
-let min_fill: u128 = target * fill_min_bps as u128 / 10000u128;
-let max_fill: u128 = target * fill_max_bps as u128 / 10000u128;
+// Current void condition (raise):
+assert(state.total_payments >= config.raise_target);
 
-let total: u128 = state.total_payments;
+// New logic:
+let min_payments: u128 = config.fill_min_bps > 0u16
+    ? config.raise_target * config.fill_min_bps as u128 / 10000u128
+    : config.raise_target;   // 0 = disabled → 100% required
 
-if total < min_fill {
-    // Below minimum — void as before
+if state.total_payments < min_payments {
+    // Below threshold — void as before.
     state.voided = true;
 } else {
-    // Partial or full success
-    let effective_fill: u128 = min(total, max_fill);
-    let fill_ratio: u128 = effective_fill * PRECISION / target;  // PRECISION = 1_000_000
-    state.effective_supply: u128 = config.supply * fill_ratio / PRECISION;
-    // revenue: bidders who paid into effective_fill keep their allocation
-    // excess over max_fill is refunded proportionally at claim time
-    state.creator_revenue = effective_fill - protocol_fee;
+    // Partial or full success.
+    // effective_supply: scale down proportionally for partial fill; cap at supply.
+    let effective: u128 = state.total_payments >= config.raise_target
+        ? config.supply                                                     // oversubscribed or exact
+        : config.supply * state.total_payments / config.raise_target;      // partial fill
+
+    state.effective_supply = effective;
+    state.creator_revenue  = state.total_payments - protocol_fee;
     state.cleared = true;
 }
 ```
 
-New field on `AuctionState`:
+Protocol fee is calculated on `state.total_payments` — the full amount received,
+including oversubscription windfall. Creator revenue = `total_payments - protocol_fee`.
+
+### `claim` finalize
+
+Replace `config.supply` with `state.effective_supply` in the allocation formula:
+
 ```leo
-struct AuctionState {
-    ...existing fields...
-    effective_supply: u128,  // NEW — actual supply distributed at close. 0 until cleared.
-}
+// Raise claim (existing pro-rata):
+// Before: allocation = config.supply * bidder_payment / total_payments
+// After:
+let allocation: u128 = state.effective_supply * bidder_payment / total_payments;
 ```
 
-### `claim` finalize changes
+Same formula for both partial fill and oversubscribed cases. No new code path.
 
-When `fill_max_bps > 0` and `state.total_payments > max_fill`:
-- Bidder's proportional allocation uses `effective_supply` instead of `config.supply`.
-- Bidder receives proportional refund for contributions above the cap:
-  ```
-  excess_payments = total_payments - max_fill
-  bidder_refund = (bidder_payment / total_payments) * excess_payments
-  bidder_allocation = effective_supply * bidder_payment / total_payments
-  ```
+**Quadratic** follows the same change — replace `config.supply` with
+`state.effective_supply` in the sqrt-weighted allocation:
 
-When `fill_min_bps > 0` and raise was partial (but >= min_fill):
-- Bidder receives `effective_supply * (bidder_payment / total_payments)`.
-- No refund — all contributions within the band are counted in full.
+```leo
+// Before: allocation = config.supply * bidder_sqrt_weight / total_sqrt_weight
+// After:
+let allocation: u128 = state.effective_supply * bidder_sqrt_weight / total_sqrt_weight;
+```
 
-### Backward compatibility
+The sqrt weights are unchanged. The fill ratio is applied as a scalar to the final
+distribution via `effective_supply`.
 
-`fill_min_bps = 0` → current 100%-or-void behavior. `fill_max_bps = 0` → no cap.
+### `create_auction` validation
+
+```leo
+// When fill_min_bps is enabled:
+assert(config.fill_min_bps == 0u16 || config.fill_min_bps <= 10000u16);
+// fill_min_bps > 10000 would set a bar above 100% — nonsensical.
+```
 
 ---
 
 ## SDK changes
 
-- `CreateAuctionInput` Raise variant: add `fillMinBps?: number` (default 0), `fillMaxBps?: number` (default 0).
-- `CreateAuctionInput` Quadratic variant: same additions.
-- `buildCreateAuction` Raise + Quadratic: include new fields in `AuctionConfig` serialisation.
-- `buildClaim`: no signature change — auction_id + bid record is sufficient.
+`CreateAuctionInput` Raise and Quadratic variants — add optional field:
+
+```ts
+fillMinBps?: number   // default: 0 (disabled)
+```
+
+`buildCreateAuction` Raise + Quadratic cases — include in `AuctionConfig` serialisation:
+
+```ts
+fill_min_bps: u32(p.fillMinBps ?? 0),
+```
+
+No change to `buildClaim` — auction_id + bid record is sufficient.
 
 ---
 
 ## Frontend changes
 
-### `RaisePricingStep.tsx` additions
+### `RaisePricingStep.tsx` and `QuadraticPricingStep.tsx`
 
-New optional "Insurance band" section (collapsible):
-- "Minimum fill" input — percentage (e.g. 80%). Converts to bps internally.
-- "Maximum fill" input — percentage (e.g. 120%). Must be ≥ min fill.
-- Helper text: "If contributions land between X% and Y% of target, the auction succeeds proportionally."
+Optional "Minimum fill" input (disabled by default):
 
-### `QuadraticPricingStep.tsx` additions
+```
+[ ] Enable minimum fill threshold
+    Minimum fill  [____] %
+    "If contributions reach X% of the target, the auction succeeds and tokens
+     distribute pro-rata. Below X%, the auction voids and all bidders are refunded."
+```
 
-Same "Insurance band" section.
+Converts percentage input to bps internally (`value * 100`).
+Validates `0 < value ≤ 100`.
 
 ### `WizardForm` additions
 
 ```ts
-fillMinBps: number   // default: 0 (disabled)
-fillMaxBps: number   // default: 0 (disabled)
+fillMinBps: number   // default: 0
 ```
 
 ### `build-inputs.ts`
 
-Pass `form.fillMinBps` and `form.fillMaxBps` for Raise and Quadratic variants.
+Pass `form.fillMinBps` for Raise and Quadratic variants.
 
 ### `ReviewStep`
 
-Show insurance band only when enabled:
+Show only when enabled:
+
 ```
-Insurance band: 80% – 120% of raise target
-(Below 80%: voided. Above 120%: excess refunded)
+Minimum fill: 70% of raise target
+(Below 70%: voided and refunded. Above 70%: pro-rata distribution.)
 ```
 
-### `AuctionDetailPage` / bid history
+### Claim UI (`AuctionDetailPage` / `DefaultPostAuctionPanel`)
 
-For partial-fill auctions that closed with `effective_supply < supply`:
-- Show "Filled at X%" badge instead of "Sold out" / "Failed".
-- Show bidder's effective allocation and any refund amount in claim UI.
+For cleared auctions where `effective_supply < supply`:
+- Show "Partial fill — X% of target reached" instead of "Sold out".
+- Show bidder's effective allocation based on `effective_supply`.
+
+For oversubscribed auctions (`total_payments > raise_target`):
+- Show "Oversubscribed — tokens distributed pro-rata".
+- Show effective price per token (higher than the stated price).
 
 ---
 
 ## Open decisions
 
-1. **Separate `effective_supply` from `AuctionState`**: adds a field; alternatively compute it
-   at claim time from `fill_ratio`. Storing it avoids repeated computation and is cleaner.
-2. **Quadratic claim calculation**: quadratic uses `sqrt(payment)` for allocation weight.
-   With partial fill, the denominator changes — use `effective_fill` as the total to compute
-   `fill_ratio`, then apply as a scalar to each bidder's sqrt-weighted allocation. Simpler than
-   recomputing sqrt weights.
-3. **`fill_max_bps` > 10000**: technically valid (e.g. 120% = 12000 bps). Leo `u16` max is
-   65535, so 12000 fits. Validate in `create_auction` that `fill_max_bps >= fill_min_bps`.
-4. **Applies to Dutch/Ascending?**: these are price-discovery — every bid clears at the current
-   price. "Partial fill" doesn't apply meaningfully. Intentionally out of scope.
+1. **`effective_supply` in `AuctionState` vs computed at claim**: storing it avoids
+   repeated computation and makes the claim formula straightforward. Chosen.
+
+2. **Protocol fee on `total_payments` vs `effective_fill`**: fee is on `total_payments`
+   (the full amount received). Creator keeps the oversubscription windfall minus fee.
+   Consistent with existing behavior — fee always applies to total inflows.
 
 ---
 
 ## Steps
 
-1. Add `fill_min_bps`, `fill_max_bps` to `AuctionConfig` in `raise` and `quadratic` contracts.
+1. Add `fill_min_bps` to `AuctionConfig` in `raise` and `quadratic` contracts.
 2. Add `effective_supply` to `AuctionState` in both contracts.
-3. Update `close_auction` finalize in both contracts with band logic.
-4. Update `claim` finalize in both contracts to use `effective_supply` + proportional refund.
-5. Update `CreateAuctionInput` Raise + Quadratic variants in SDK.
-6. Update `buildCreateAuction` serialisation in SDK.
-7. Add insurance band section to `RaisePricingStep` and `QuadraticPricingStep`.
-8. Add fields to `WizardForm` + `DEFAULT_FORM`.
-9. Update `build-inputs.ts`.
-10. Update `ReviewStep` and claim UI in `AuctionDetailPage`.
-11. Run type-check.
+3. Update `close_auction` finalize in both contracts with threshold + effective_supply logic.
+4. Update `claim` finalize in both contracts: replace `config.supply` with `state.effective_supply`.
+5. Add `fill_min_bps` validation to `create_auction` finalize in both contracts.
+6. Update `CreateAuctionInput` Raise + Quadratic variants in SDK.
+7. Update `buildCreateAuction` serialisation in SDK.
+8. Add minimum fill input to `RaisePricingStep` and `QuadraticPricingStep`.
+9. Add `fillMinBps` to `WizardForm` + `DEFAULT_FORM`.
+10. Update `build-inputs.ts`.
+11. Update `ReviewStep` and claim UI.
+12. Run type-check.

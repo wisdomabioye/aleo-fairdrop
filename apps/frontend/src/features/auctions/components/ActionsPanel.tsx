@@ -103,8 +103,19 @@ export function ActionsPanel({ auction, blockHeight }: ActionsPanelProps) {
     : auction.endBlock;
   const pastEnd   = blockHeight != null && blockHeight > liveEndBlock;
 
+  // Raise auctions can close early once the partial fill threshold is met,
+  // even while status is still Active (before end_block and supply not fully met).
+  // Quadratic always runs to end_block — no early threshold close.
+  const fillThresholdMet =
+    auction.type === AuctionType.Raise &&
+    auction.fillMinBps != null && auction.fillMinBps > 0 &&
+    auction.raiseTarget != null &&
+    auction.totalPayments >= (auction.raiseTarget * BigInt(auction.fillMinBps)) / 10000n;
+
   const canClose =
-    auction.status === AuctionStatus.Ended || auction.status === AuctionStatus.Clearing;
+    auction.status === AuctionStatus.Ended ||
+    auction.status === AuctionStatus.Clearing ||
+    (auction.status === AuctionStatus.Active && fillThresholdMet);
   
   const canSlash =
     auction.type === AuctionType.Sealed && pastEnd && auction.status === AuctionStatus.Ended;

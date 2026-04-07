@@ -7,8 +7,6 @@ export function RaisePricingStep({ value, onChange, supply, saleTokenDecimals }:
   const targetMicro = parseTokenAmount(value.raiseTarget, 6);
 
   // Mirrors the contract formula: clearing_price = raise_target * sale_scale / supply
-  // Both raise_target (microcredits) and supply (raw token units) include their respective
-  // decimal factors, so dividing supply by sale_scale first yields price per whole token.
   const saleScale = 10n ** BigInt(saleTokenDecimals ?? 6);
   const humanSupply = supply != null && saleScale > 0n ? supply / saleScale : null;
   const impliedPrice = humanSupply != null && humanSupply > 0n && targetMicro > 0n
@@ -16,6 +14,11 @@ export function RaisePricingStep({ value, onChange, supply, saleTokenDecimals }:
     : null;
 
   const targetError = value.raiseTarget && targetMicro <= 0n ? 'Required, must be > 0.' : null;
+
+  const fillPct = Number(value.fillMinBps);
+  const fillError = value.fillMinBpsEnabled && value.fillMinBps
+    ? (isNaN(fillPct) || fillPct <= 0 || fillPct > 100 ? 'Must be between 1 and 100.' : null)
+    : null;
 
   return (
     <div className="space-y-4">
@@ -43,6 +46,39 @@ export function RaisePricingStep({ value, onChange, supply, saleTokenDecimals }:
           )}
         </div>
       )}
+
+      {/* Minimum fill threshold */}
+      <div className="space-y-3">
+        <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={value.fillMinBpsEnabled}
+            onChange={(e) => onChange({ ...value, fillMinBpsEnabled: e.target.checked, fillMinBps: e.target.checked ? value.fillMinBps || '70' : '' })}
+            className="rounded"
+          />
+          Enable minimum fill threshold
+        </label>
+        {value.fillMinBpsEnabled && (
+          <div className="pl-6 space-y-2">
+            <div className="flex items-center gap-2">
+              <input
+                type="number" min="1" max="100" step="1"
+                value={value.fillMinBps}
+                onChange={(e) => onChange({ ...value, fillMinBps: e.target.value })}
+                className="w-24 rounded-md border border-input bg-background px-3 py-1.5 text-sm"
+                placeholder="70"
+              />
+              <span className="text-sm text-muted-foreground">%</span>
+            </div>
+            {fillError && <p className="text-xs text-destructive">{fillError}</p>}
+            <p className="text-xs text-muted-foreground">
+              If contributions reach {value.fillMinBps || '?'}% of the target, the auction succeeds
+              and tokens distribute pro-rata. Below {value.fillMinBps || '?'}%, all bidders receive
+              a full refund.
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

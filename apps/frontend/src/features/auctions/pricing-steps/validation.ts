@@ -29,8 +29,15 @@ export function isPricingComplete(type: AuctionType, pricing: AnyPricingValues):
         parseInt(p.priceDecayBlocks) > 0 && parseInt(p.commitEndBlockOffset) > 0
       );
     }
-    case AuctionType.Raise:
-      return parseTokenAmount((pricing as RaisePricingValues).raiseTarget, 6) > 0n;
+    case AuctionType.Raise: {
+      const p = pricing as RaisePricingValues;
+      if (parseTokenAmount(p.raiseTarget, 6) <= 0n) return false;
+      if (p.fillMinBpsEnabled) {
+        const pct = parseFloat(p.fillMinBps);
+        if (isNaN(pct) || pct <= 0 || pct > 100) return false;
+      }
+      return true;
+    }
     case AuctionType.Ascending: {
       const p = pricing as AscendingPricingValues;
       const floor   = parseTokenAmount(p.floorPrice, 6);
@@ -44,8 +51,15 @@ export function isPricingComplete(type: AuctionType, pricing: AnyPricingValues):
       const floor = parseTokenAmount(p.floorPrice, 6);
       return start > 0n && floor > 0n && floor < start;
     }
-    case AuctionType.Quadratic:
-      return parseTokenAmount((pricing as QuadraticPricingValues).raiseTarget, 6) > 0n;
+    case AuctionType.Quadratic: {
+      const p = pricing as QuadraticPricingValues;
+      if (parseTokenAmount(p.raiseTarget, 6) <= 0n) return false;
+      if (p.fillMinBpsEnabled) {
+        const pct = parseFloat(p.fillMinBps);
+        if (isNaN(pct) || pct <= 0 || pct > 100) return false;
+      }
+      return true;
+    }
     default:
       return false;
   }

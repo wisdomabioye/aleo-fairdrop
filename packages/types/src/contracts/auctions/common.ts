@@ -15,16 +15,18 @@ import type { Field, Address, U128, U64, U32, U16, U8, Bool } from '../../primit
  * Written once at create_auction (zeroed); updated by bids, close, cancel.
  */
 export interface AuctionState {
-  total_committed: U128;
-  total_payments:  U128;
-  supply_met:      Bool;
-  ended_at_block:  U32;
-  cleared:         Bool;
-  clearing_price:  U128;
-  creator_revenue: U128;
-  protocol_fee:    U128;
-  voided:          Bool;
-  referral_budget: U128;
+  total_committed:  U128;
+  total_payments:   U128;
+  supply_met:       Bool;
+  ended_at_block:   U32;
+  cleared:          Bool;
+  clearing_price:   U128;
+  creator_revenue:  U128;
+  protocol_fee:     U128;
+  voided:           Bool;
+  referral_budget:  U128;
+  /** Actual tokens distributed at close. < supply for partial fill; == supply for full/over. 0 until cleared. Raise + Quadratic only. */
+  effective_supply: U128;
 }
 
 /**
@@ -50,6 +52,8 @@ export interface BaseAuctionConfig {
   closer_reward:      U128;  // D16: snapshotted from fairdrop_config at create
   referral_pool_bps:  U16;   // D16: snapshotted from fairdrop_config at create
   metadata_hash:      Field; // BHP256 of off-chain metadata JSON (IPFS). 0field = no metadata.
+  /** Minimum fill to succeed. 0 = disabled (100% required). Raise + Quadratic only. */
+  fill_min_bps?:      U16;
 }
 
 /**

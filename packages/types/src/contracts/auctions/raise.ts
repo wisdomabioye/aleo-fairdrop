@@ -12,7 +12,7 @@
  *   - Auction voids when total_payments < raise_target at close (G28).
  */
 
-import type { Field, Address, U128, U64, U32, Bool } from '../../primitives/scalars';
+import type { Field, Address, U128, U64, U32, U16, Bool } from '../../primitives/scalars';
 import type {
   BaseAuctionConfig,
   AuctionState,
@@ -62,6 +62,7 @@ export interface RaiseCreateAuctionInput {
   sale_scale:     U128;
   nonce:          U64;    // D11: creator_nonces[creator]
   metadata_hash:  Field;
+  fill_min_bps:   U16;    // minimum fill threshold; 0 = disabled (100% required)
   gate:           GateParams;
   vest:           VestParams;
   snapshot:       ConfigSnapshot;
@@ -123,22 +124,18 @@ export interface RaisePushReferralBudgetInput {
  *   (otherwise actual_quantity rounds to 0 and finalize reverts).
  */
 export interface RaiseClaimInput {
-  total_payments: U128;   // D11: state.total_payments
-  raise_target:   U128;   // D11: config.raise_target
-  supply:         U128;   // D11: config.supply
-  sale_token_id:  Field;
-  sale_scale:     U128;
+  total_payments:   U128;   // D11: state.total_payments
+  effective_supply: U128;   // D11: state.effective_supply
+  sale_token_id:    Field;
 }
 
 export interface RaiseClaimVestedInput {
-  total_payments:  U128;
-  raise_target:    U128;
-  supply:          U128;
-  sale_token_id:   Field;
-  sale_scale:      U128;
-  ended_at_block:  U32;
-  cliff_blocks:    U32;
-  vest_end_blocks: U32;
+  total_payments:   U128;
+  effective_supply: U128;   // D11: state.effective_supply
+  sale_token_id:    Field;
+  ended_at_block:   U32;
+  cliff_blocks:     U32;
+  vest_end_blocks:  U32;
 }
 
 export interface RaiseWithdrawPaymentsInput {

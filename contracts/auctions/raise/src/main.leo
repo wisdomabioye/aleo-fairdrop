@@ -124,20 +124,22 @@ struct AuctionConfig {
     closer_reward:      u128,     // D16: snapshotted from fairdrop_config at create
     referral_pool_bps:  u16,      // D16: snapshotted from fairdrop_config at create
     metadata_hash:      field,    // BHP256 of off-chain metadata JSON. 0field = none.
+    fill_min_bps:       u16,      // minimum fill to succeed (e.g. 7000 = 70%). 0 = disabled (100% required).
 }
 
 // Mutable auction lifecycle state. Identical schema to all other auction programs.
 struct AuctionState {
-    total_committed: u128,  // set to supply at cleared close; 0 otherwise
+    total_committed: u128,  // set to effective_supply at cleared close; 0 otherwise
     total_payments:  u128,  // cumulative bidder credits locked
     supply_met:      bool,  // true when total_payments >= raise_target
     ended_at_block:  u32,   // block raise_target reached OR config.end_block at close
     cleared:         bool,  // true after successful close_auction
     clearing_price:  u128,  // raise_target * sale_scale / supply; set at cleared close
-    creator_revenue: u128,  // raise_target - protocol_fee; set at cleared close
-    protocol_fee:    u128,  // raise_target * fee_bps / 10000; set at cleared close
+    creator_revenue: u128,  // total_payments - protocol_fee; set at cleared close
+    protocol_fee:    u128,  // total_payments * fee_bps / 10000; set at cleared close
     voided:          bool,  // true after cancel_auction or failed-target close
     referral_budget: u128,  // portion of protocol_fee for referrals; set at cleared close
+    effective_supply: u128, // actual tokens to distribute at close; < supply for partial fill; 0 until cleared
 }
 
 // Global stats for enumeration and volume tracking.
@@ -266,6 +268,7 @@ program fairdrop_raise_v2.aleo {
         public sale_scale:     u128,
         public nonce:          u64,    // D11: creator_nonces[creator]
         public metadata_hash:  field,
+        public fill_min_bps:   u16,    // minimum fill threshold; 0 = disabled (100% required)
         public gate:           GateParams,
         public vest:           VestParams,
         public snapshot:       ConfigSnapshot,
@@ -326,6 +329,7 @@ program fairdrop_raise_v2.aleo {
             closer_reward:      snapshot.closer_reward,
             referral_pool_bps:  snapshot.referral_pool_bps,
             metadata_hash:      metadata_hash,
+            fill_min_bps:       fill_min_bps,
         };
 
         let creation_fee: u128 = snapshot.creation_fee;
@@ -343,6 +347,7 @@ program fairdrop_raise_v2.aleo {
             assert(config.raise_target > 0u128);
             assert(config.min_bid_amount > 0u128);
             assert(config.max_bid_amount == 0u128 || config.max_bid_amount >= config.min_bid_amount);
+            assert(config.fill_min_bps <= 10000u16);
 
             // D11: nonce must equal the current per-creator counter.
             assert_eq(nonce, creator_nonces.get_or_use(creator, 0u64));
@@ -382,16 +387,17 @@ program fairdrop_raise_v2.aleo {
             auction_configs.set(auction_id, config);
 
             auction_states.set(auction_id, AuctionState {
-                total_committed: 0u128,
-                total_payments:  0u128,
-                supply_met:      false,
-                ended_at_block:  0u32,
-                cleared:         false,
-                clearing_price:  0u128,
-                creator_revenue: 0u128,
-                protocol_fee:    0u128,
-                voided:          false,
-                referral_budget: 0u128,
+                total_committed:  0u128,
+                total_payments:   0u128,
+                supply_met:       false,
+                ended_at_block:   0u32,
+                cleared:          false,
+                clearing_price:   0u128,
+                creator_revenue:  0u128,
+                protocol_fee:     0u128,
+                voided:           false,
+                referral_budget:  0u128,
+                effective_supply: 0u128,
             });
 
             escrow_sales.set(auction_id, config.supply);
@@ -486,16 +492,17 @@ program fairdrop_raise_v2.aleo {
             bid_totals.set(bidder_key, new_bidder_total);
             let is_supply_met: bool = new_total_payments >= config.raise_target;
             auction_states.set(auction_id, AuctionState {
-                total_committed: 0u128,
-                total_payments:  new_total_payments,
-                supply_met:      is_supply_met,
-                ended_at_block:  is_supply_met ? block.height : state.ended_at_block,
-                cleared:         false,
-                clearing_price:  0u128,
-                creator_revenue: 0u128,
-                protocol_fee:    0u128,
-                voided:          false,
-                referral_budget: 0u128,
+                total_committed:  0u128,
+                total_payments:   new_total_payments,
+                supply_met:       is_supply_met,
+                ended_at_block:   is_supply_met ? block.height : state.ended_at_block,
+                cleared:          false,
+                clearing_price:   0u128,
+                creator_revenue:  0u128,
+                protocol_fee:     0u128,
+                voided:           false,
+                referral_budget:  0u128,
+                effective_supply: 0u128,
             });
             let escrow: u128 = escrow_payments.get_or_use(auction_id, 0u128);
             escrow_payments.set(auction_id, escrow + amount_u128);
@@ -568,16 +575,17 @@ program fairdrop_raise_v2.aleo {
             bid_totals.set(bidder_key, new_bidder_total);
             let is_supply_met: bool = new_total_payments >= config.raise_target;
             auction_states.set(auction_id, AuctionState {
-                total_committed: 0u128,
-                total_payments:  new_total_payments,
-                supply_met:      is_supply_met,
-                ended_at_block:  is_supply_met ? block.height : state.ended_at_block,
-                cleared:         false,
-                clearing_price:  0u128,
-                creator_revenue: 0u128,
-                protocol_fee:    0u128,
-                voided:          false,
-                referral_budget: 0u128,
+                total_committed:  0u128,
+                total_payments:   new_total_payments,
+                supply_met:       is_supply_met,
+                ended_at_block:   is_supply_met ? block.height : state.ended_at_block,
+                cleared:          false,
+                clearing_price:   0u128,
+                creator_revenue:  0u128,
+                protocol_fee:     0u128,
+                voided:           false,
+                referral_budget:  0u128,
+                effective_supply: 0u128,
             });
             let escrow: u128 = escrow_payments.get_or_use(auction_id, 0u128);
             escrow_payments.set(auction_id, escrow + amount_u128);
@@ -660,16 +668,17 @@ program fairdrop_raise_v2.aleo {
             bid_totals.set(bidder_key, new_bidder_total);
             let is_supply_met: bool = new_total_payments >= config.raise_target;
             auction_states.set(auction_id, AuctionState {
-                total_committed: 0u128,
-                total_payments:  new_total_payments,
-                supply_met:      is_supply_met,
-                ended_at_block:  is_supply_met ? block.height : state.ended_at_block,
-                cleared:         false,
-                clearing_price:  0u128,
-                creator_revenue: 0u128,
-                protocol_fee:    0u128,
-                voided:          false,
-                referral_budget: 0u128,
+                total_committed:  0u128,
+                total_payments:   new_total_payments,
+                supply_met:       is_supply_met,
+                ended_at_block:   is_supply_met ? block.height : state.ended_at_block,
+                cleared:          false,
+                clearing_price:   0u128,
+                creator_revenue:  0u128,
+                protocol_fee:     0u128,
+                voided:           false,
+                referral_budget:  0u128,
+                effective_supply: 0u128,
             });
             let escrow: u128 = escrow_payments.get_or_use(auction_id, 0u128);
             escrow_payments.set(auction_id, escrow + amount_u128);
@@ -751,16 +760,17 @@ program fairdrop_raise_v2.aleo {
             bid_totals.set(bidder_key, new_bidder_total);
             let is_supply_met: bool = new_total_payments >= config.raise_target;
             auction_states.set(auction_id, AuctionState {
-                total_committed: 0u128,
-                total_payments:  new_total_payments,
-                supply_met:      is_supply_met,
-                ended_at_block:  is_supply_met ? block.height : state.ended_at_block,
-                cleared:         false,
-                clearing_price:  0u128,
-                creator_revenue: 0u128,
-                protocol_fee:    0u128,
-                voided:          false,
-                referral_budget: 0u128,
+                total_committed:  0u128,
+                total_payments:   new_total_payments,
+                supply_met:       is_supply_met,
+                ended_at_block:   is_supply_met ? block.height : state.ended_at_block,
+                cleared:          false,
+                clearing_price:   0u128,
+                creator_revenue:  0u128,
+                protocol_fee:     0u128,
+                voided:           false,
+                referral_budget:  0u128,
+                effective_supply: 0u128,
             });
             let escrow: u128 = escrow_payments.get_or_use(auction_id, 0u128);
             escrow_payments.set(auction_id, escrow + amount_u128);
@@ -821,7 +831,17 @@ program fairdrop_raise_v2.aleo {
 
             assert(!state.cleared);
             assert(!state.voided);
-            assert(state.supply_met || block.height >= config.end_block);
+
+            // Compute minimum payments required for a partial or full success.
+            // fill_min_bps = 0: require full raise_target (existing behaviour).
+            // fill_min_bps > 0: partial fill succeeds if total_payments >= threshold.
+            let min_payments: u128 = config.fill_min_bps > 0u16
+                ? config.raise_target * (config.fill_min_bps as u128) / 10000u128
+                : config.raise_target;
+
+            // Allow early close when: supply fully met, end_block passed,
+            // OR partial-fill threshold is already reached (fill_min_bps > 0).
+            assert(state.supply_met || block.height >= config.end_block || state.total_payments >= min_payments);
 
             // D11 validations.
             assert_eq(creator,       config.creator);
@@ -831,18 +851,23 @@ program fairdrop_raise_v2.aleo {
 
             let treasury: u128 = protocol_treasury.get_or_use(0field, 0u128);
             assert(treasury >= closer_reward);
+            let is_cleared: bool = state.total_payments >= min_payments;
 
-            // Determine outcome.
-            // Since bids are capped at raise_target, supply_met implies total_payments == raise_target.
-            let is_cleared: bool = state.total_payments >= config.raise_target;
+            // effective_supply: scale down proportionally for partial fill; full supply for exact/over.
+            // Bids are capped at raise_target so total_payments <= raise_target always.
+            let effective_supply: u128 = is_cleared
+                ? (state.total_payments >= config.raise_target
+                    ? config.supply
+                    : config.supply * state.total_payments / config.raise_target)
+                : 0u128;
 
-            // Revenue (zeroed in void case via ternaries).
             // clearing_price = raise_target * sale_scale / supply (implied price per token unit).
             let clearing_price: u128 = is_cleared
                 ? config.raise_target * config.sale_scale / config.supply
                 : 0u128;
 
-            let total_cost: u128   = is_cleared ? config.raise_target : 0u128;
+            // Revenue on total_payments — full amount received (no refunds).
+            let total_cost: u128   = is_cleared ? state.total_payments : 0u128;
             let protocol_fee: u128 = total_cost * (config.fee_bps as u128) / 10000u128;
             let creator_rev: u128  = total_cost - protocol_fee;
             let ref_budget: u128   = protocol_fee * (config.referral_pool_bps as u128) / 10000u128;
@@ -854,20 +879,18 @@ program fairdrop_raise_v2.aleo {
 
             let ended_block: u32 = state.supply_met ? state.ended_at_block : config.end_block;
 
-            // total_committed: supply when cleared (all allocated); 0 when voided.
-            let final_committed: u128 = is_cleared ? config.supply : 0u128;
-
             auction_states.set(auction_id, AuctionState {
-                total_committed: final_committed,
-                total_payments:  state.total_payments,
-                supply_met:      state.supply_met,
-                ended_at_block:  ended_block,
-                cleared:         is_cleared,
-                clearing_price:  clearing_price,
-                creator_revenue: creator_rev,
-                protocol_fee:    protocol_fee,
-                voided:          !is_cleared,
-                referral_budget: ref_budget,
+                total_committed:  effective_supply,
+                total_payments:   state.total_payments,
+                supply_met:       state.supply_met,
+                ended_at_block:   ended_block,
+                cleared:          is_cleared,
+                clearing_price:   clearing_price,
+                creator_revenue:  creator_rev,
+                protocol_fee:     protocol_fee,
+                voided:           !is_cleared,
+                referral_budget:  ref_budget,
+                effective_supply: effective_supply,
             });
         };
     }
@@ -898,16 +921,17 @@ program fairdrop_raise_v2.aleo {
             assert_eq(budget, state.referral_budget);
 
             auction_states.set(auction_id, AuctionState {
-                total_committed: state.total_committed,
-                total_payments:  state.total_payments,
-                supply_met:      state.supply_met,
-                ended_at_block:  state.ended_at_block,
-                cleared:         state.cleared,
-                clearing_price:  state.clearing_price,
-                creator_revenue: state.creator_revenue,
-                protocol_fee:    state.protocol_fee,
-                voided:          state.voided,
-                referral_budget: 0u128,
+                total_committed:  state.total_committed,
+                total_payments:   state.total_payments,
+                supply_met:       state.supply_met,
+                ended_at_block:   state.ended_at_block,
+                cleared:          state.cleared,
+                clearing_price:   state.clearing_price,
+                creator_revenue:  state.creator_revenue,
+                protocol_fee:     state.protocol_fee,
+                voided:           state.voided,
+                referral_budget:  0u128,
+                effective_supply: state.effective_supply,
             });
         };
     }
@@ -917,37 +941,28 @@ program fairdrop_raise_v2.aleo {
     // =========================================================================
     //
     // Pro-rata allocation:
-    //   actual_quantity = bid.payment_amount * supply / total_payments
-    //   (Since total_payments == raise_target at cleared close:
-    //    actual_quantity = bid.payment_amount * supply / raise_target)
+    //   actual_quantity = effective_supply * bid.payment_amount / total_payments
     //
-    // Cost = actual_quantity * raise_target / supply ≤ bid.payment_amount (floor division).
-    // Refund = bid.payment_amount − cost (integer rounding dust; ≤ 1 microunit per bidder).
+    // No refund — bidder pays in full; creator keeps all payments minus protocol fee.
+    // Works for partial fill (effective_supply < supply) and exact fill (effective_supply == supply).
     //
-    // D11 params: total_payments, raise_target, supply, sale_token_id, sale_scale.
-    // bid.owner is private — both token recipient and refund recipient are hidden.
-    // assert(actual_quantity > 0): tiny payments relative to large supply round to 0 → reject.
-    // Frontend should warn: payment_amount >= raise_target / supply (min for >0 allocation).
+    // D11 params: total_payments, effective_supply, sale_token_id.
+    // bid.owner is private — token recipient is hidden.
+    // assert(actual_quantity > 0): tiny payments relative to supply round to 0 → reject.
+    // Frontend should warn: payment_amount * effective_supply >= total_payments (min for >0 allocation).
 
     fn claim(
-        bid:                   RaiseBid,
-        public total_payments: u128,    // D11: state.total_payments (== raise_target)
-        public raise_target:   u128,    // D11: config.raise_target
-        public supply:         u128,    // D11: config.supply
-        public sale_token_id:  field,
-        public sale_scale:     u128,
-    ) -> (token_registry.aleo::Token, credits.aleo::credits, Final) {
+        bid:                      RaiseBid,
+        public total_payments:    u128,    // D11: state.total_payments
+        public effective_supply:  u128,    // D11: state.effective_supply
+        public sale_token_id:     field,
+    ) -> (token_registry.aleo::Token, Final) {
         // Capture record fields before final {}
         let bid_auction_id:     field = bid.auction_id;
-        let bid_owner:          address = bid.owner;
         let bid_payment_amount: u128 = bid.payment_amount;
 
-        // Pro-rata allocation: payment's share of supply.
-        let actual_quantity: u128 = bid.payment_amount * supply / total_payments;
-        // Cost at implied fixed price. ≤ bid.payment_amount due to floor division.
-        let cost: u128            = actual_quantity * raise_target / supply;
-        // Rounding dust refund (≤ 1 microunit).
-        let refund_amount: u64    = (bid.payment_amount - cost) as u64;
+        // Pro-rata allocation: payment's share of effective_supply.
+        let actual_quantity: u128 = effective_supply * bid.payment_amount / total_payments;
 
         let (sale_token, f_mint): (token_registry.aleo::Token, Final) =
             token_registry.aleo::mint_private(
@@ -958,13 +973,9 @@ program fairdrop_raise_v2.aleo {
                 4294967295u32,
             );
 
-        let (refund, f_refund): (credits.aleo::credits, Final) =
-            credits.aleo::transfer_public_to_private(bid.owner, refund_amount);
-
-        return (sale_token, refund, final {
+        return (sale_token, final {
             assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
             f_mint.run();
-            f_refund.run();
 
             let config: AuctionConfig = auction_configs.get(bid_auction_id);
             let state:  AuctionState  = auction_states.get(bid_auction_id);
@@ -974,11 +985,9 @@ program fairdrop_raise_v2.aleo {
             assert(!config.vest_enabled);
 
             // D11 validations.
-            assert_eq(total_payments, state.total_payments);
-            assert_eq(raise_target,   config.raise_target);
-            assert_eq(sale_token_id,  config.sale_token_id);
-            assert_eq(sale_scale,     config.sale_scale);
-            assert_eq(supply,         config.supply);
+            assert_eq(total_payments,   state.total_payments);
+            assert_eq(effective_supply, state.effective_supply);
+            assert_eq(sale_token_id,    config.sale_token_id);
             // Guard: payment too small relative to supply would round actual_quantity to 0.
             assert(actual_quantity > 0u128);
 
@@ -987,8 +996,7 @@ program fairdrop_raise_v2.aleo {
             assert(actual_quantity <= sale_remaining);
             escrow_sales.set(bid_auction_id, sale_remaining - actual_quantity);
 
-            // Deduct full bid payment from payment escrow.
-            // (cost portion stays for creator withdrawal; refund portion returned to bidder above.)
+            // Deduct full bid payment from payment escrow (no refund).
             let payment_remaining: u128 = escrow_payments.get(bid_auction_id);
             assert(bid_payment_amount <= payment_remaining);
             escrow_payments.set(bid_auction_id, payment_remaining - bid_payment_amount);
@@ -1000,28 +1008,24 @@ program fairdrop_raise_v2.aleo {
     // =========================================================================
     //
     // Issues a VestedAllocation record instead of an immediate Token.
-    // Rounding dust refund still delivered privately at claim time.
+    // No refund — bidder pays in full; uses effective_supply for pro-rata allocation.
     // Only vest_enabled auctions may use this path.
 
     fn claim_vested(
-        bid:                    RaiseBid,
-        public total_payments:  u128,
-        public raise_target:    u128,
-        public supply:          u128,
-        public sale_token_id:   field,
-        public sale_scale:      u128,
-        public ended_at_block:  u32,
-        public cliff_blocks:    u32,
-        public vest_end_blocks: u32,
-    ) -> (fairdrop_vest_v2.aleo::VestedAllocation, credits.aleo::credits, Final) {
+        bid:                      RaiseBid,
+        public total_payments:    u128,
+        public effective_supply:  u128,    // D11: state.effective_supply
+        public sale_token_id:     field,
+        public ended_at_block:    u32,
+        public cliff_blocks:      u32,
+        public vest_end_blocks:   u32,
+    ) -> (fairdrop_vest_v2.aleo::VestedAllocation, Final) {
         // Capture record fields before final {}
         let bid_auction_id:     field   = bid.auction_id;
         let bid_owner:          address = bid.owner;
         let bid_payment_amount: u128    = bid.payment_amount;
 
-        let actual_quantity: u128 = bid.payment_amount * supply / total_payments;
-        let cost: u128            = actual_quantity * raise_target / supply;
-        let refund_amount: u64    = (bid.payment_amount - cost) as u64;
+        let actual_quantity: u128 = effective_supply * bid.payment_amount / total_payments;
 
         let (vest, f_vest): (fairdrop_vest_v2.aleo::VestedAllocation, Final) =
             fairdrop_vest_v2.aleo::create_vest(
@@ -1034,13 +1038,9 @@ program fairdrop_raise_v2.aleo {
                 vest_end_blocks,
             );
 
-        let (refund, f_refund): (credits.aleo::credits, Final) =
-            credits.aleo::transfer_public_to_private(bid.owner, refund_amount);
-
-        return (vest, refund, final {
+        return (vest, final {
             assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
             f_vest.run();
-            f_refund.run();
 
             let config: AuctionConfig = auction_configs.get(bid_auction_id);
             let state:  AuctionState  = auction_states.get(bid_auction_id);
@@ -1049,14 +1049,12 @@ program fairdrop_raise_v2.aleo {
             assert(!state.voided);
             assert(config.vest_enabled);
 
-            assert_eq(total_payments,  state.total_payments);
-            assert_eq(raise_target,    config.raise_target);
-            assert_eq(sale_token_id,   config.sale_token_id);
-            assert_eq(sale_scale,      config.sale_scale);
-            assert_eq(supply,          config.supply);
-            assert_eq(ended_at_block,  state.ended_at_block);
-            assert_eq(cliff_blocks,    config.vest_cliff_blocks);
-            assert_eq(vest_end_blocks, config.vest_end_blocks);
+            assert_eq(total_payments,   state.total_payments);
+            assert_eq(effective_supply, state.effective_supply);
+            assert_eq(sale_token_id,    config.sale_token_id);
+            assert_eq(ended_at_block,   state.ended_at_block);
+            assert_eq(cliff_blocks,     config.vest_cliff_blocks);
+            assert_eq(vest_end_blocks,  config.vest_end_blocks);
             assert(actual_quantity > 0u128);
 
             let sale_remaining: u128 = escrow_sales.get(bid_auction_id);
@@ -1202,16 +1200,17 @@ program fairdrop_raise_v2.aleo {
 
             // Mark voided; bidders recover via claim_voided.
             auction_states.set(auction_id, AuctionState {
-                total_committed: state.total_committed,
-                total_payments:  state.total_payments,
-                supply_met:      state.supply_met,
-                ended_at_block:  state.ended_at_block,
-                cleared:         false,
-                clearing_price:  0u128,
-                creator_revenue: 0u128,
-                protocol_fee:    0u128,
-                voided:          true,
-                referral_budget: 0u128,
+                total_committed:  state.total_committed,
+                total_payments:   state.total_payments,
+                supply_met:       state.supply_met,
+                ended_at_block:   state.ended_at_block,
+                cleared:          false,
+                clearing_price:   0u128,
+                creator_revenue:  0u128,
+                protocol_fee:     0u128,
+                voided:           true,
+                referral_budget:  0u128,
+                effective_supply: 0u128,
             });
         });
     }

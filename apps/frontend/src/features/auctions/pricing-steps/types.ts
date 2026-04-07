@@ -13,7 +13,9 @@ export interface SealedPricingValues extends DutchPricingValues {
 }
 
 export interface RaisePricingValues {
-  raiseTarget: string; // ALEO — total credits required for success
+  raiseTarget:   string; // ALEO — total credits required for success
+  fillMinBpsEnabled: boolean;
+  fillMinBps:    string; // percentage string (e.g. "70") — converted to bps (* 100) at build time
 }
 
 export interface AscendingPricingValues {
@@ -35,7 +37,9 @@ export interface LbpPricingValues {
 
 export interface QuadraticPricingValues {
   /** Minimum total credits required for the auction to clear. ALEO units. */
-  raiseTarget: string;
+  raiseTarget:   string;
+  fillMinBpsEnabled: boolean;
+  fillMinBps:    string; // percentage string — converted to bps (* 100) at build time
 }
 
 export interface PricingStepProps<T> {

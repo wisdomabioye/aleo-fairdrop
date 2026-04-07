@@ -36,7 +36,7 @@ import credits.aleo;
 //   - place_bid_private / place_bid_private_ref: require private credits record.
 //   - close_auction happy path: raise must be in proof's allowed_callers.
 //   - push_referral_budget happy path: raise must be in ref's allowed_callers.
-//   - claim: requires RaiseBid record; returns (Token, credits refund, Future).
+//   - claim: requires RaiseBid record; returns (Token, Future). No refund — full payment kept by creator.
 //   - claim_vested: requires RaiseBid record + vest-enabled cleared auction.
 //   - claim_voided: requires RaiseBid record from a voided (target not met) auction.
 //   - Revenue invariant: creator_revenue + sum(rounding_refunds) + protocol_fee
@@ -94,6 +94,7 @@ program test_raise.aleo {
         let f: Final = fairdrop_raise_v2.aleo::withdraw_payments(
             1field,  // auction_id — dummy; assert fires before credits CPI
             0u128,   // amount — ZERO triggers assert(amount > 0)
+            aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc,
         );
         return final { f.run(); };
     }
@@ -107,6 +108,7 @@ program test_raise.aleo {
                 1field,   // auction_id
                 0u128,    // amount — ZERO triggers assert(amount > 0)
                 1field,   // sale_token_id — dummy; never reached
+                aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc,
             );
         return final { f.run(); };
     }
@@ -181,6 +183,7 @@ program test_raise.aleo {
                 1field,      // auction_id
                 1u128,       // amount = 1 — passes transition-body assert
                 12345field,  // sale_token_id
+                aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc,
             );
         return final { f.run(); };
     }
@@ -194,6 +197,7 @@ program test_raise.aleo {
         let f: Final = fairdrop_raise_v2.aleo::withdraw_payments(
             1field,  // auction_id
             1u128,   // amount = 1 — passes transition-body assert; credits fails
+            aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc,
         );
         return final { f.run(); };
     }

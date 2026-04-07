@@ -69,7 +69,8 @@ export async function fetchConfig(
     commit_end_block:   optU32('commit_end_block'),
     slash_reward_bps:   f['slash_reward_bps'] ? parseU16(f['slash_reward_bps']) : null,
     // Raise-Quadratic-specific
-    raise_target:       optU128('raise_target')
+    raise_target:       optU128('raise_target'),
+    fill_min_bps:       f['fill_min_bps'] ? parseU16(f['fill_min_bps']) : null,
   };
 }
 
@@ -96,5 +97,7 @@ export async function fetchState(
     referral_budget:    parseU128(f['referral_budget']),
     // Ascending-only: null for all other auction types (field absent from their AuctionState).
     effective_end_block: f['effective_end_block'] ? parseU32(f['effective_end_block']) : null,
+    // Raise + Quadratic only: actual tokens distributed at close; null until cleared or absent for other types.
+    effective_supply:   f['effective_supply'] ? parseU128(f['effective_supply']) : null,
   };
 }

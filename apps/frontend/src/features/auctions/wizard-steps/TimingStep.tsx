@@ -60,8 +60,8 @@ export function TimingStep({ form, onChange, protocolConfig }: TimingStepProps) 
   const endBlock   = parseInt(form.endBlock)   || 0;
   const duration   = endBlock - startBlock;
 
-  const isSealed = form.auctionType === AuctionType.Sealed;
-  const isRaise  = form.auctionType === AuctionType.Raise;
+  const isSealed       = form.auctionType === AuctionType.Sealed;
+  const isPaymentsType = form.auctionType === AuctionType.Raise || form.auctionType === AuctionType.Quadratic;
 
   const commitOffset = isSealed
     ? parseInt((form.pricing as { commitEndBlockOffset?: string })?.commitEndBlockOffset ?? '0') || 0
@@ -147,7 +147,7 @@ export function TimingStep({ form, onChange, protocolConfig }: TimingStepProps) 
       )}
 
       <div className="grid grid-cols-2 gap-4">
-        {isRaise ? (
+        {isPaymentsType ? (
           <>
             <div className="space-y-1.5">
               <Label>Min contribution (ALEO)</Label>

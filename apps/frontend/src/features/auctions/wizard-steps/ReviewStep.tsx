@@ -58,7 +58,14 @@ function PricingRows({ form }: { form: StepProps['form'] }) {
     }
     case AuctionType.Raise: {
       const p = pricing as RaisePricingValues;
-      return <ReviewRow label="Raise target" value={`${p.raiseTarget || '0'} ALEO`} />;
+      return (
+        <>
+          <ReviewRow label="Raise target" value={`${p.raiseTarget || '0'} ALEO`} />
+          {p.fillMinBpsEnabled && p.fillMinBps && (
+            <ReviewRow label="Minimum fill" value={`${p.fillMinBps}% of raise target`} />
+          )}
+        </>
+      );
     }
     case AuctionType.Lbp: {
       const p = pricing as LbpPricingValues;
@@ -71,7 +78,14 @@ function PricingRows({ form }: { form: StepProps['form'] }) {
     }
     case AuctionType.Quadratic: {
       const p = pricing as QuadraticPricingValues;
-      return <ReviewRow label="Raise target" value={`${p.raiseTarget || '0'} ALEO`} />;
+      return (
+        <>
+          <ReviewRow label="Raise target" value={`${p.raiseTarget || '0'} ALEO`} />
+          {p.fillMinBpsEnabled && p.fillMinBps && (
+            <ReviewRow label="Minimum fill" value={`${p.fillMinBps}% of raise target`} />
+          )}
+        </>
+      );
     }
     default: return null;
   }

@@ -18,10 +18,11 @@ import { AscendingPricePanel } from './price-panels/AscendingPricePanel';
 import { LbpPricePanel }       from './price-panels/LbpPricePanel';
 import { QuadraticPricePanel } from './price-panels/QuadraticPricePanel';
 
-import { DefaultProgressPanel }   from './progress-panels/DefaultProgressPanel';
-import { RaiseProgressPanel }     from './progress-panels/RaiseProgressPanel';
-import { SealedProgressPanel }    from './progress-panels/SealedProgressPanel';
-import { AscendingProgressPanel } from './progress-panels/AscendingProgressPanel';
+import { DefaultProgressPanel }    from './progress-panels/DefaultProgressPanel';
+import { RaiseProgressPanel }      from './progress-panels/RaiseProgressPanel';
+import { SealedProgressPanel }     from './progress-panels/SealedProgressPanel';
+import { AscendingProgressPanel }  from './progress-panels/AscendingProgressPanel';
+import { QuadraticProgressPanel }  from './progress-panels/QuadraticProgressPanel';
 
 export interface AuctionTypeSlot {
   type:          AuctionType;
@@ -88,7 +89,7 @@ export const AUCTION_REGISTRY: Record<AuctionType, AuctionTypeSlot> = {
     description:   'Square-root weighting — smaller voices count more.',
     BidForm:       QuadraticBidForm,
     PricePanel:    QuadraticPricePanel,
-    ProgressPanel: DefaultProgressPanel,
+    ProgressPanel: QuadraticProgressPanel,
   },
 };
 

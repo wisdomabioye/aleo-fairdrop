@@ -46,6 +46,8 @@ export const auctions = pgTable('auctions', {
 
   // Raise-specific — null for all other auction types
   raiseTarget:     text('raise_target'),
+  /** Minimum fill threshold in bps. 0 = disabled. Raise + Quadratic only. Null for other types. */
+  fillMinBps:      integer('fill_min_bps'),
   // Sealed-specific - null for all other auction types
   commitEndBlock: integer('commit_end_block'),
 
@@ -67,6 +69,8 @@ export const auctions = pgTable('auctions', {
   creatorRevenue:  text('creator_revenue'),
   protocolFee:     text('protocol_fee'),
   referralBudget:  text('referral_budget'),
+  /** Actual tokens distributed at close. < supply for partial fill; == supply for full. Null until cleared. Raise + Quadratic only. */
+  effectiveSupply: text('effective_supply'),
 
   // Full on-chain config + state snapshots (authoritative — contains all fields)
   configJson:      jsonb('config_json').notNull().default({}),

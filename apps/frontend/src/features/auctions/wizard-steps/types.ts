@@ -99,10 +99,10 @@ export const DEFAULT_FORM: WizardForm = {
 export const DEFAULT_PRICING: Record<AuctionType, AnyPricingValues> = {
   dutch:     { startPrice: '', floorPrice: '', priceDecayBlocks: '100', priceDecayAmount: '' },
   sealed:    { startPrice: '', floorPrice: '', priceDecayBlocks: '100', priceDecayAmount: '', commitEndBlockOffset: '' },
-  raise:     { raiseTarget: '' },
+  raise:     { raiseTarget: '', fillMinBpsEnabled: false, fillMinBps: '' },
   ascending: { floorPrice: '', ceilingPrice: '', priceRiseBlocks: '100', priceRiseAmount: '', extensionWindow: '60', extensionBlocks: '120', maxEndBlock: '' },
   lbp:       { startPrice: '', floorPrice: '' },
-  quadratic: { raiseTarget: '' },
+  quadratic: { raiseTarget: '', fillMinBpsEnabled: false, fillMinBps: '' },
 } as Record<AuctionType, AnyPricingValues>;
 
 export interface StepProps {

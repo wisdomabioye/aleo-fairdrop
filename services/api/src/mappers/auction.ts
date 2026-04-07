@@ -201,8 +201,9 @@ export function toAuctionView(
   tokenInfo: TokenInfo | null,
 ): AuctionView {
   const auctionParams = buildParams(row);
-  const isRaise = row.type === AuctionType.Raise
-  const raiseTarget    = auctionParams.type === AuctionType.Raise ? auctionParams.raise_target : '0'
+  // Both Raise and Quadratic measure progress as payments-toward-raise_target.
+  const isPaymentsType = row.type === AuctionType.Raise || row.type === AuctionType.Quadratic;
+  const raiseTarget    = auctionParams.type === AuctionType.Raise ? auctionParams.raise_target : (row.raiseTarget ?? '0');
 
   return {
     id:                 row.id,
@@ -221,9 +222,12 @@ export function toAuctionView(
     totalPayments:     BigInt(row.totalPayments),
     minBidAmount:       BigInt(row.minBidAmount ?? 0),
     maxBidAmount:       BigInt(row.maxBidAmount ?? 0),
+    effectiveSupply:    row.effectiveSupply != null ? BigInt(row.effectiveSupply) : null,
+    fillMinBps:         row.fillMinBps ?? null,
+    raiseTarget:        bigOrNull(row.raiseTarget),
     progressPct:        progressPct(
-      isRaise ? row.totalPayments : row.totalCommitted, 
-      isRaise ? raiseTarget : row.supply
+      isPaymentsType ? row.totalPayments : row.totalCommitted,
+      isPaymentsType ? raiseTarget       : row.supply
     ),
     currentPrice:       computeCurrentPrice(row, ctx.currentBlock),
     clearingPrice:      bigOrNull(row.clearingPrice),
@@ -253,8 +257,8 @@ export function toAuctionListItem(
   tokenInfo: TokenInfo | null,
 ): AuctionListItem {
   const auctionParams = buildParams(row);
-  const isRaise = row.type === AuctionType.Raise
-  const raiseTarget    = auctionParams.type === AuctionType.Raise ? auctionParams.raise_target : '0'
+  const isPaymentsType = row.type === AuctionType.Raise || row.type === AuctionType.Quadratic;
+  const raiseTarget    = auctionParams.type === AuctionType.Raise ? auctionParams.raise_target : (row.raiseTarget ?? '0');
 
   return {
     id:              row.id,
@@ -268,8 +272,8 @@ export function toAuctionListItem(
     saleTokenSymbol: tokenInfo?.symbol      ?? null,
     supply:          BigInt(row.supply),
     progressPct:        progressPct(
-      isRaise ? row.totalPayments : row.totalCommitted, 
-      isRaise ? raiseTarget : row.supply
+      isPaymentsType ? row.totalPayments : row.totalCommitted,
+      isPaymentsType ? raiseTarget       : row.supply
     ),
     currentPrice:    computeCurrentPrice(row, ctx.currentBlock),
     clearingPrice:   bigOrNull(row.clearingPrice),

@@ -1,14 +1,22 @@
 import { Progress } from '@/components';
 import { formatMicrocredits } from '@fairdrop/sdk/credits';
-import { AuctionType } from '@fairdrop/types/domain';
 import type { PricePanelProps } from './types';
 
 export function RaisePricePanel({ auction }: PricePanelProps) {
-  const target    = auction.params.type === AuctionType.Raise ? BigInt(auction.params.raise_target) : 0n;
+  const target        = auction.raiseTarget ?? 0n;
   const totalPayments = BigInt(auction.totalPayments);
   const raisePct = target > 0n
     ? Math.min(100, Number((totalPayments * 100n) / target))
     : 0;
+
+  const fillMinBps = auction.fillMinBps ?? 0;
+  const threshold  = fillMinBps > 0 && target > 0n
+    ? (target * BigInt(fillMinBps)) / 10000n
+    : null;
+
+  const description = fillMinBps > 0
+    ? `Tokens distributed pro-rata if at least ${fillMinBps / 100}% of the raise target is collected by end block.`
+    : 'Tokens distributed pro-rata if the raise target is met by end block.';
 
   return (
     <div className="space-y-3">
@@ -25,11 +33,15 @@ export function RaisePricePanel({ auction }: PricePanelProps) {
             <span>{formatMicrocredits(totalPayments)} raised</span>
             <span>{raisePct.toFixed(1)}%</span>
           </div>
+          {threshold != null && (
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>Min fill threshold</span>
+              <span>{formatMicrocredits(threshold)} ({fillMinBps / 100}%)</span>
+            </div>
+          )}
         </>
       )}
-      <p className="text-xs text-muted-foreground">
-        Tokens distributed pro-rata if the raise target is met by end block.
-      </p>
+      <p className="text-xs text-muted-foreground">{description}</p>
     </div>
   );
 }

@@ -131,6 +131,7 @@ export function AuctionHeader({ auction, currentPrice }: AuctionHeaderProps) {
 
   const isActive = auction.status === AuctionStatus.Active || auction.status === AuctionStatus.Clearing;
   const isRaise = auction.type === AuctionType.Raise;
+  const isPaymentsType = isRaise || auction.type === AuctionType.Quadratic;
   const isSealed = auction.type === AuctionType.Sealed;
   const priceLabel = isSealed
     ? (auction.status === AuctionStatus.Clearing || auction.status === AuctionStatus.Cleared ? 'Clearing price' : 'Dutch ref.')
@@ -269,19 +270,16 @@ export function AuctionHeader({ auction, currentPrice }: AuctionHeaderProps) {
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5 border-t border-border/50 pt-2.5">
-          {isRaise ? (() => {
-            const raiseTarget = auction.params.type === AuctionType.Raise
-              ? BigInt(auction.params.raise_target)
-              : null;
+          {isPaymentsType && auction.raiseTarget != null ? (() => {
             const targetMet = auction.status === AuctionStatus.Clearing
               || auction.status === AuctionStatus.Cleared;
-            return raiseTarget != null ? (
+            return (
               <InlineStat
                 label={targetMet ? 'Target met' : 'Raise target'}
-                value={formatMicrocredits(raiseTarget)}
+                value={formatMicrocredits(auction.raiseTarget!)}
                 icon={Target}
               />
-            ) : null;
+            );
           })() : currentPrice != null ? (
             <InlineStat
               label={priceLabel}

@@ -99,6 +99,8 @@ export type CreateAuctionInput =
   | (CreateBase & {
       type:        AuctionType.Raise;
       raiseTarget: bigint;
+      /** Minimum fill threshold in bps. 0 = disabled (100% required). Default: 0. */
+      fillMinBps?: number;
     })
   | (CreateBase & {
       type:       AuctionType.Lbp;
@@ -111,6 +113,8 @@ export type CreateAuctionInput =
       type:        AuctionType.Quadratic;
       /** Minimum total credits for the auction to clear. In base units. */
       raiseTarget: bigint;
+      /** Minimum fill threshold in bps. 0 = disabled (100% required). Default: 0. */
+      fillMinBps?: number;
     });
 
 // ── Shared serializers ────────────────────────────────────────────────────────
@@ -222,11 +226,11 @@ export function buildCreateAuction(p: CreateAuctionInput): TxSpec {
       };
 
     case AuctionType.Raise: {
-      // Raise has no params struct — raise_target is a flat positional input.
+      // Raise: raise_target after supply, fill_min_bps after metadata_hash, before gate/vest/snapshot.
       const [tokenId, supply, ...rest] = common;
       return {
         program: PROGRAMS.raise.programId, function: 'create_auction', fee, privateFee: false,
-        inputs: [p.tokenRecord, tokenId, supply, u128(p.raiseTarget), ...rest, ...tail],
+        inputs: [p.tokenRecord, tokenId, supply, u128(p.raiseTarget), ...rest, u16(p.fillMinBps ?? 0), ...tail],
       };
     }
 
@@ -242,11 +246,11 @@ export function buildCreateAuction(p: CreateAuctionInput): TxSpec {
       };
 
     case AuctionType.Quadratic: {
-      // raise_target is a flat positional input between supply and start_block — same layout as Raise.
+      // Quadratic: raise_target after supply, fill_min_bps after metadata_hash, before gate/vest/snapshot.
       const [tokenId, supply, ...rest] = common;
       return {
         program: PROGRAMS.quadratic.programId, function: 'create_auction', fee, privateFee: false,
-        inputs: [p.tokenRecord, tokenId, supply, u128(p.raiseTarget), ...rest, ...tail],
+        inputs: [p.tokenRecord, tokenId, supply, u128(p.raiseTarget), ...rest, u16(p.fillMinBps ?? 0), ...tail],
       };
     }
   }

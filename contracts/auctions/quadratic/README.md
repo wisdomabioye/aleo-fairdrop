@@ -19,10 +19,10 @@ contribution_weight  = approx_sqrt(payment_amount)
 total_sqrt_weight   += contribution_weight            ← accumulated in mapping
 
 At claim:
-actual_quantity = supply × bid.contribution_weight / state.total_sqrt_weight
+actual_quantity = effective_supply × bid.contribution_weight / state.total_sqrt_weight
 ```
 
-Weights are accumulated across all bids. Each bidder's allocation is their share of the total weight, applied to the full supply.
+Weights are accumulated across all bids. Each bidder's allocation is their share of the total weight, applied to `effective_supply` (set at close).
 
 ### `approx_sqrt` implementation
 
@@ -34,10 +34,26 @@ Newton-Raphson with 64 unrolled iterations. Starting estimate: `2^33 = 8_589_934
 
 The auction always runs to `end_block` — there is no early close on `supply_met`.
 
-| Condition at `close_auction` | Outcome |
-|---|---|
-| `total_payments >= raise_target` | **CLEARED** — allocations proceed |
-| `total_payments < raise_target` | **VOIDED** — bidders refunded, creator reclaims supply |
+At `close_auction`, the outcome depends on `fill_min_bps`:
+
+| Condition | `fill_min_bps` | Outcome |
+|---|---|---|
+| `total_payments >= raise_target` | any | **CLEARED (full)** — full supply distributed |
+| `total_payments >= raise_target × fill_min_bps / 10000` | > 0 | **CLEARED (partial)** — scaled supply distributed |
+| otherwise | any | **VOIDED** — bidders reclaim credits, creator reclaims supply |
+
+When `fill_min_bps = 0` (default), the auction clears only on full `raise_target`.
+
+#### Effective supply
+
+For partial fills, only a proportional share of the supply is distributed:
+
+```
+effective_supply = supply × total_payments / raise_target   (partial fill)
+effective_supply = supply                                    (full / over-subscribed)
+```
+
+`effective_supply` is written to `AuctionState` at close. The claim formula uses `effective_supply`, not `supply`.
 
 ### Sybil risk
 
@@ -64,8 +80,8 @@ Per-bidder cumulative cap enforced via `max_bid_amount` (0 = no cap).
 ### Cleared path
 
 At `claim`:
-- `actual_quantity = supply × bid.contribution_weight / state.total_sqrt_weight`
-- Cost and integer-rounding refund computed privately, validated in finalize.
+- `actual_quantity = effective_supply × bid.contribution_weight / state.total_sqrt_weight`
+- The bidder's full `payment_amount` is kept by the creator — there are **no refunds**.
 - If `vest_enabled`, use `claim_vested` instead.
 
 ### Voided path
@@ -82,13 +98,21 @@ If the raise fails:
 Set at cleared `close_auction`:
 
 ```
-protocol_fee    = total_payments * fee_bps / 10000
-creator_revenue = total_payments - protocol_fee
-referral_budget = protocol_fee * referral_pool_bps / 10000
+total_cost      = total_payments    (= raise_target for full raise; ≤ raise_target for partial)
+protocol_fee    = total_cost × fee_bps / 10000
+creator_revenue = total_cost - protocol_fee
+referral_budget = protocol_fee × referral_pool_bps / 10000
 treasury_credit = protocol_fee - referral_budget - closer_reward
 ```
 
-Voided auctions: no revenue computed.
+**Escrow invariant** (no refunds):
+
+```
+escrow_payments = creator_revenue + protocol_fee
+               = total_payments  ✓
+```
+
+Creator withdraws up to `creator_revenue` via `withdraw_payments(auction_id, amount, recipient)`. Protocol fee accrues in the contract balance; governance withdraws via `withdraw_treasury_fees`.
 
 ---
 
@@ -107,8 +131,11 @@ Voided auctions: no revenue computed.
 | `claim_vested` | after cleared close | bidder (`vest_enabled` auctions) |
 | `withdraw_payments` | after cleared close | creator |
 | `withdraw_unsold` | after cleared or voided close | creator |
+| `withdraw_treasury_fees` | after cleared close + multisig approval | governance |
 | `cancel_auction` | any (pre-clear) | creator |
 | `claim_voided` | after voided (cancel or target miss) | bidder |
+
+`withdraw_payments` and `withdraw_unsold` both accept a `recipient: address` parameter — the creator can direct funds to any address (treasury, DEX, partner).
 
 ---
 
@@ -123,7 +150,7 @@ Voided auctions: no revenue computed.
 | Token recipients | Private (`mint_private`) |
 | Vest owner | Private |
 
-Allocation amounts are private at claim — the link between payment and quantity is hidden. The weight itself (public) reveals only `sqrt(payment)`, not the full payment amount (though payment is also public).
+Allocation amounts are private at claim — the link between weight and quantity is hidden. The weight itself (public) reveals only `sqrt(payment)`, not the full payment (though payment is also public).
 
 ---
 
@@ -133,6 +160,7 @@ Allocation amounts are private at claim — the link between payment and quantit
 |---|---|---|
 | `supply` | `u128` | Total tokens to distribute. |
 | `raise_target` | `u128` | Minimum total credits for the auction to clear. Must be > 0. |
+| `fill_min_bps` | `u16` | Minimum fill threshold in basis points (0 = disabled; 7000 = 70%). When > 0, the auction clears with partial supply if `total_payments ≥ raise_target × fill_min_bps / 10000`. |
 | `start_block` / `end_block` | `u32` | Auction window. No early close. |
 | `min_bid_amount` | `u128` | Minimum payment per bid (microcredits). |
 | `max_bid_amount` | `u128` | Maximum cumulative payment per bidder (0 = no cap). |
@@ -159,6 +187,7 @@ auction_id = BHP256(AuctionKey { creator, nonce, program_salt: 6field })
 | Allocation | Pro-rata by payment | Pro-rata by `sqrt(payment)` |
 | Anti-whale | No — proportional to capital | Yes — diminishing returns |
 | Raise target | Required for success | Required for success |
-| Early close | Yes (`supply_met`) | No — always runs to `end_block` |
+| Partial fill | Configurable via `fill_min_bps` | Configurable via `fill_min_bps` |
+| Early close | Yes — `supply_met` or fill threshold | No — always runs to `end_block` |
 | Sybil resistance | Not applicable | Requires credential gate |
 | Ideal use case | Fair fixed-price raise | Community raise favouring broad participation |

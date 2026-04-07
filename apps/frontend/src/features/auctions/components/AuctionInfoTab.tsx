@@ -74,6 +74,7 @@ export function AuctionInfoTab({ auction, protocolConfig }: AuctionInfoTabProps)
   const tokenDecimals = auction.saleTokenDecimals as number;
   const isSealed = auction.type === AuctionType.Sealed;
   const isRaise = auction.type === AuctionType.Raise;
+  const isPaymentsType = isRaise || auction.type === AuctionType.Quadratic;
   const commitEndBlock = auction.params.type === AuctionType.Sealed ? auction.params.commit_end_block : 0 
   
   return (
@@ -213,10 +214,9 @@ export function AuctionInfoTab({ auction, protocolConfig }: AuctionInfoTabProps)
                 <Row
                   label="Min bid"
                   value={
-                    isRaise ?
-                    `${formatAmount(auction.minBidAmount, tokenDecimals)} ALEO` // minAmount contribution is ALEO
-                    :
-                    `${formatAmount(auction.minBidAmount, tokenDecimals)} ${auction.saleTokenSymbol}`
+                    isPaymentsType
+                    ? `${formatAmount(auction.minBidAmount, tokenDecimals)} ALEO`
+                    : `${formatAmount(auction.minBidAmount, tokenDecimals)} ${auction.saleTokenSymbol}`
                   }
                   valueClassName="text-[11px] text-foreground/82"
                 />
@@ -226,11 +226,18 @@ export function AuctionInfoTab({ auction, protocolConfig }: AuctionInfoTabProps)
                 <Row
                   label="Max bid"
                   value={
-                    isRaise ?
-                    `${formatAmount(auction.maxBidAmount, tokenDecimals)} ALEO` // minAmount contribution is ALEO
-                    :
-                    `${formatAmount(auction.maxBidAmount, tokenDecimals)} ${auction.saleTokenSymbol}`
+                    isPaymentsType
+                    ? `${formatAmount(auction.maxBidAmount, tokenDecimals)} ALEO`
+                    : `${formatAmount(auction.maxBidAmount, tokenDecimals)} ${auction.saleTokenSymbol}`
                   }
+                  valueClassName="text-[11px] text-foreground/82"
+                />
+              ) : null}
+
+              {auction.fillMinBps != null && auction.fillMinBps > 0 ? (
+                <Row
+                  label="Min fill"
+                  value={`${auction.fillMinBps / 100}% of raise target`}
                   valueClassName="text-[11px] text-foreground/82"
                 />
               ) : null}

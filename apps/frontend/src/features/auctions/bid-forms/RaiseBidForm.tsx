@@ -32,6 +32,9 @@ export function RaiseBidForm({ auction, protocolConfig, onBidSuccess }: BidFormP
 
   const minBidAmount = auction.minBidAmount ?? 0n;
   const maxBidAmount = auction.maxBidAmount ?? 0n;
+  const remaining    = auction.raiseTarget != null
+    ? auction.raiseTarget - BigInt(auction.totalPayments)
+    : null;
 
   const [payInput,         setPayInput]         = useState('');
   const [payTouched,       setPayTouched]       = useState(false);
@@ -57,8 +60,10 @@ export function RaiseBidForm({ auction, protocolConfig, onBidSuccess }: BidFormP
     if (parsedPayment == null || parsedPayment <= 0n) return 'Enter a valid ALEO amount.';
     if (minBidAmount > 0n && parsedPayment < minBidAmount) return `Minimum ${formatMicrocredits(minBidAmount)}.`;
     if (maxBidAmount > 0n && parsedPayment > maxBidAmount) return `Maximum ${formatMicrocredits(maxBidAmount)}.`;
+    if (remaining != null && remaining >= 0n && parsedPayment > remaining)
+      return `Exceeds remaining capacity (${formatMicrocredits(remaining)}).`;
     return null;
-  }, [payTouched, payInput, parsedPayment, minBidAmount, maxBidAmount]);
+  }, [payTouched, payInput, parsedPayment, minBidAmount, maxBidAmount, remaining]);
 
   const recordError = useMemo(() => {
     if (mode !== 'private' || !recordTouched) return null;
@@ -143,6 +148,11 @@ export function RaiseBidForm({ auction, protocolConfig, onBidSuccess }: BidFormP
               {minBidAmount > 0n ? `Min ${formatMicrocredits(minBidAmount)}` : null}
               {minBidAmount > 0n && maxBidAmount > 0n ? ' • ' : null}
               {maxBidAmount > 0n ? `Max ${formatMicrocredits(maxBidAmount)}` : null}
+            </span>
+          )}
+          {remaining != null && remaining >= 0n && (
+            <span className="text-muted-foreground">
+              Remaining: {formatMicrocredits(remaining)}
             </span>
           )}
           {amountError && <span className="text-destructive">{amountError}</span>}
