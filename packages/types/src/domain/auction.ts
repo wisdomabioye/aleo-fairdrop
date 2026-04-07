@@ -4,13 +4,13 @@
  * human-readable values, and wall-clock timestamps derived from block heights.
  */
 
-import type { DutchParams }        from '../contracts/auctions/dutch';
-import type { SealedParams }       from '../contracts/auctions/sealed';
-import type { RaiseAuctionConfig } from '../contracts/auctions/raise';
-import type { AscendingParams }    from '../contracts/auctions/ascending';
-import type { LbpAuctionConfig }   from '../contracts/auctions/lbp';
+import type { DutchParams }            from '../contracts/auctions/dutch';
+import type { SealedParams }           from '../contracts/auctions/sealed';
+import type { RaiseAuctionConfig }     from '../contracts/auctions/raise';
+import type { AscendingParams }        from '../contracts/auctions/ascending';
+import type { LbpParams }              from '../contracts/auctions/lbp';
 import type { QuadraticAuctionConfig } from '../contracts/auctions/quadratic';
-import type { U16 }                from '../primitives/scalars';
+import type { U16 }                    from '../primitives/scalars';
 
 /** All supported auction mechanisms. Matches PROGRAM_SALT constants. */
 export enum AuctionType {
@@ -70,15 +70,30 @@ export interface AuctionMetadata {
  *
  * - Dutch/Ascending/Sealed: use existing *Params interfaces from contracts/auctions/
  * - Sealed adds `slash_reward_bps` (snapshotted at create, not in SealedParams)
- * - Raise/LBP/Quadratic: Pick only the mechanism-specific fields from their configs
+ * - Raise/Quadratic: mechanism target fields; full raise state lives in `raise?` on AuctionView
+ * - LBP: price bounds (start_price, floor_price) from LbpParams
  */
 export type AuctionParams =
   | (DutchParams     & { type: AuctionType.Dutch })
   | (SealedParams    & { slash_reward_bps: U16; type: AuctionType.Sealed })
-  | (Pick<RaiseAuctionConfig, 'raise_target'> & { type: AuctionType.Raise })
-  | (AscendingParams & { type: AuctionType.Ascending })
-  | (Pick<LbpAuctionConfig,   'start_weight' | 'end_weight' | 'swap_fee_bps' | 'initial_price'> & { type: AuctionType.Lbp })
-  | (Pick<QuadraticAuctionConfig, 'matching_pool' | 'contribution_cap' | 'matching_deadline'>    & { type: AuctionType.Quadratic });
+  | (Pick<RaiseAuctionConfig,     'raise_target'>              & { type: AuctionType.Raise })
+  | (AscendingParams                                           & { type: AuctionType.Ascending })
+  | (LbpParams                                                 & { type: AuctionType.Lbp })
+  | (Pick<QuadraticAuctionConfig, 'raise_target' | 'fill_min_bps'> & { type: AuctionType.Quadratic });
+
+/**
+ * Mechanism-specific fields present only on Raise + Quadratic auctions.
+ * The presence of this sub-object is the type-safe signal that the auction
+ * is a contribution-type mechanism — no separate flag check required.
+ */
+export interface RaiseMechanismFields {
+  /** Fundraising target in microcredits. */
+  raiseTarget:     bigint;
+  /** Partial-fill threshold in basis points. 0 = disabled (100% required). */
+  fillMinBps:      number;
+  /** Actual tokens to distribute at close. Null until close_auction is called. */
+  effectiveSupply: bigint | null;
+}
 
 /** Full auction view — used on detail pages. */
 export interface AuctionView {
@@ -109,12 +124,12 @@ export interface AuctionView {
   progressPct:      number;  // 0–100, capped
   minBidAmount:     bigint;
   maxBidAmount:     bigint;
-  /** Actual tokens to distribute at close. Raise + Quadratic only; null for other types or before clearing. */
-  effectiveSupply:  bigint | null;
-  /** Minimum fill threshold in bps. 0 = disabled (100% required). Raise + Quadratic only; null for other types. */
-  fillMinBps:       number | null;
-  /** Raise target in microcredits. Raise + Quadratic only; null for other types. */
-  raiseTarget:      bigint | null;
+  /**
+   * Raise/Quadratic mechanism fields. Present only for those two types; undefined for all others.
+   * The presence of this field is the type-safe signal that the auction is a contribution-type
+   * mechanism — use `auction.raise?.raiseTarget` etc., or `if (auction.raise)` to branch.
+   */
+  raise?:           RaiseMechanismFields;
   // Price (null until relevant lifecycle stage)
   currentPrice:    bigint | null;  // computed from block height; null if not active
   clearingPrice:   bigint | null;  // set at close_auction
@@ -140,6 +155,13 @@ export interface AuctionView {
   creatorRevenue:  bigint | null;
   protocolFee:     bigint | null;
   referralBudget:  bigint | null;
+
+  /**
+   * Whether the on-chain state.supply_met flag is set.
+   * True for Dutch/Sealed/Ascending once fully subscribed; true for Raise/Quadratic
+   * once total_payments >= raise_target. Used as the `filled` input to close_auction.
+   */
+  supplyMet:       boolean;
 
   // Protocol config (snapshotted at create)
   feeBps:          number;

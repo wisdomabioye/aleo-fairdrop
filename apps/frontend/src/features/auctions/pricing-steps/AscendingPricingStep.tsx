@@ -1,10 +1,58 @@
 import { Input, Label, TokenAmountInput } from '@/components';
 import { parseTokenAmount } from '@fairdrop/sdk/format';
-import { formatMicrocredits } from '@fairdrop/sdk/credits';
-import type { PricingStepProps, AscendingPricingValues } from './types';
+import { formatMicrocredits, aleoToMicro } from '@fairdrop/sdk/credits';
+import { AuctionType } from '@fairdrop/types/domain';
+import { buildCreateAuction } from '@fairdrop/sdk/transactions';
+import type { CreateBase, TxSpec } from '@fairdrop/sdk/transactions';
+import type { PricingStepProps, AscendingPricingValues, AnyPricingValues } from './types';
+import { ReviewRow } from '../wizard-steps/ReviewSection';
+
+const mic = (v: string) => aleoToMicro(v) ?? 0n;
+const blk = (v: string) => parseInt(v || '0');
+
+export const defaultPricing: AscendingPricingValues = {
+  type: AuctionType.Ascending,
+  floorPrice: '', ceilingPrice: '', priceRiseBlocks: '100', priceRiseAmount: '',
+  extensionWindow: '60', extensionBlocks: '120', maxEndBlock: '',
+};
+
+export function PricingReviewRows({ pricing }: { pricing: AscendingPricingValues }) {
+  const extWindow = blk(pricing.extensionWindow);
+  return (
+    <>
+      <ReviewRow label="Floor price"   value={`${pricing.floorPrice || '0'} ALEO`} />
+      <ReviewRow label="Ceiling price" value={`${pricing.ceilingPrice || '0'} ALEO`} />
+      <ReviewRow label="Rise blocks"   value={pricing.priceRiseBlocks || '0'} />
+      <ReviewRow label="Rise amount"   value={`${pricing.priceRiseAmount || '0'} ALEO`} />
+      <ReviewRow
+        label="Anti-sniping"
+        value={extWindow > 0
+          ? `${pricing.extensionWindow} block window · +${pricing.extensionBlocks || '0'} blocks per bid`
+          : 'Disabled'}
+      />
+      {extWindow > 0 && pricing.maxEndBlock && (
+        <ReviewRow label="Hard cap block" value={pricing.maxEndBlock} />
+      )}
+    </>
+  );
+}
+
+export function buildWizardInputs(pricing: AnyPricingValues, base: CreateBase): TxSpec {
+  if (pricing.type !== AuctionType.Ascending) throw new Error(`buildWizardInputs[ascending]: got ${pricing.type}`);
+  return buildCreateAuction({
+    ...base, type: AuctionType.Ascending,
+    floorPrice:      mic(pricing.floorPrice),
+    ceilingPrice:    mic(pricing.ceilingPrice),
+    priceRiseBlocks: blk(pricing.priceRiseBlocks),
+    priceRiseAmount: mic(pricing.priceRiseAmount),
+    extensionWindow: blk(pricing.extensionWindow),
+    extensionBlocks: blk(pricing.extensionBlocks),
+    maxEndBlock:     blk(pricing.maxEndBlock) || base.endBlock,
+  });
+}
 
 export function AscendingPricingStep({ value, onChange }: PricingStepProps<AscendingPricingValues>) {
-  const set = (k: keyof AscendingPricingValues) =>
+  const set = (k: keyof Omit<AscendingPricingValues, 'type'>) =>
     (v: string) => onChange({ ...value, [k]: v });
 
   const extensionEnabled = parseInt(value.extensionWindow) > 0;

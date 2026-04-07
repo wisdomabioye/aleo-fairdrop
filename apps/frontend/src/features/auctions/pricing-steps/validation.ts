@@ -8,7 +8,7 @@ import type {
   LbpPricingValues,
   QuadraticPricingValues,
 } from './types';
-import type { AnyPricingValues } from '../wizard-steps/types';
+import type { AnyPricingValues } from './types';
 
 export function isPricingComplete(type: AuctionType, pricing: AnyPricingValues): boolean {
   switch (type) {

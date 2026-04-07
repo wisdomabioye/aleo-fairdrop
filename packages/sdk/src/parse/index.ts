@@ -34,6 +34,8 @@ export {
   parseAuctionState,
   parseAuctionStats,
   parseProtocolConfig,
+  buildAuctionParams,
+  type ParamsRow,
 } from './auction';
 
 export {

@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle, Button } from '@/components';
 import { formatMicrocredits } from '@fairdrop/sdk/credits';
 import { AuctionStatus, AuctionType } from '@fairdrop/types/domain';
 import type { AuctionView } from '@fairdrop/types/domain';
+import { getRegistrySlot } from '../registry';
 import { AppRoutes } from '@/config';
 import { closeAuction, pushReferralBudget } from '@fairdrop/sdk/transactions';
 import { useConfirmedSequentialTx, type SequentialStep } from '@/shared/hooks/useConfirmedSequentialTx';
@@ -103,14 +104,14 @@ export function ActionsPanel({ auction, blockHeight }: ActionsPanelProps) {
     : auction.endBlock;
   const pastEnd   = blockHeight != null && blockHeight > liveEndBlock;
 
-  // Raise auctions can close early once the partial fill threshold is met,
-  // even while status is still Active (before end_block and supply not fully met).
-  // Quadratic always runs to end_block — no early threshold close.
+  // Contribution-type auctions with early-close support can close once the partial fill
+  // threshold is met (currently Raise only — Quadratic always runs to end_block).
+  const slot = getRegistrySlot(auction.type);
   const fillThresholdMet =
-    auction.type === AuctionType.Raise &&
-    auction.fillMinBps != null && auction.fillMinBps > 0 &&
-    auction.raiseTarget != null &&
-    auction.totalPayments >= (auction.raiseTarget * BigInt(auction.fillMinBps)) / 10000n;
+    slot?.supportsEarlyClose === true &&
+    auction.raise != null &&
+    auction.raise.fillMinBps > 0 &&
+    auction.totalPayments >= (auction.raise.raiseTarget * BigInt(auction.raise.fillMinBps)) / 10000n;
 
   const canClose =
     auction.status === AuctionStatus.Ended ||

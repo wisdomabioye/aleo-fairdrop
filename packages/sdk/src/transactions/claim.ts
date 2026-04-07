@@ -9,28 +9,32 @@
  *
  * claim_vested appends (ended_at_block, cliff_blocks, vest_end_blocks) to each.
  *
- * Quadratic claim requires `totalSqrtWeight` — the accumulated sqrt_weights[auctionId]
- * value. Fetch it with fetchSqrtWeights() from @fairdrop/sdk/chain before calling.
+ * Raise and Quadratic have dedicated typed functions that enforce:
+ *   - auction.raise is non-null (ContributionAuction intersection type)
+ *   - totalSqrtWeight is a required parameter for Quadratic (not optional)
+ * Fetch totalSqrtWeight with fetchSqrtWeights() from @fairdrop/sdk/chain.
  */
 
-import type { AuctionView } from '@fairdrop/types/domain';
+import type { AuctionView, RaiseMechanismFields } from '@fairdrop/types/domain';
 import { AuctionType } from '@fairdrop/types/domain';
 import { DEFAULT_TX_FEE, type ClaimRecord, type TxSpec } from './_types';
+
+/**
+ * Raise or Quadratic auction where `raise` is confirmed non-null.
+ * Call sites must assert `auction.raise != null` before casting/passing.
+ */
+export type ContributionAuction = AuctionView & { raise: RaiseMechanismFields };
 
 // ── claim ─────────────────────────────────────────────────────────────────────
 
 /**
- * claim — settled auction; delivers sale tokens to the bidder.
+ * claim — Dutch / Sealed / Ascending / LBP only.
  *
- * @param record          - Bid/commitment record from the user's wallet.
- * @param auction         - View of the cleared auction.
- * @param totalSqrtWeight - Required for Quadratic: on-chain sqrt_weights[auctionId].
- * @param fee             - Transaction fee in microcredits (default 0.3 ALEO).
+ * For Raise use claimRaiseBid; for Quadratic use claimQuadraticBid.
  */
 export function claimBid(
-  record:           ClaimRecord,
-  auction:          AuctionView,
-  totalSqrtWeight?: bigint,
+  record:  ClaimRecord,
+  auction: AuctionView,
   fee = DEFAULT_TX_FEE,
 ): TxSpec {
   let inputs: string[];
@@ -52,50 +56,73 @@ export function claimBid(
       break;
 
     case AuctionType.Raise:
-      if (auction.effectiveSupply === null) {
-        throw new Error('claimBid: effectiveSupply is null — auction not yet cleared');
-      }
-      inputs = [
-        record.raw,
-        `${auction.totalPayments}u128`,
-        `${auction.effectiveSupply}u128`,
-        auction.saleTokenId,
-      ];
-      break;
-
     case AuctionType.Quadratic:
-      if (totalSqrtWeight === undefined) {
-        throw new Error('claimBid: totalSqrtWeight is required for Quadratic auctions');
-      }
-      if (auction.effectiveSupply === null) {
-        throw new Error('claimBid: effectiveSupply is null — auction not yet cleared');
-      }
-      inputs = [
-        record.raw,
-        `${totalSqrtWeight}u128`,
-        `${auction.effectiveSupply}u128`,
-        auction.saleTokenId,
-      ];
-      break;
+      throw new Error(
+        `claimBid: use claimRaiseBid / claimQuadraticBid for ${auction.type} auctions`,
+      );
   }
 
   return { program: record.programId, function: 'claim', inputs, fee, privateFee: false };
 }
 
+/**
+ * claimRaiseBid — Raise auction; tokens distributed pro-rata to contributions.
+ */
+export function claimRaiseBid(
+  record:  ClaimRecord,
+  auction: ContributionAuction,
+  fee = DEFAULT_TX_FEE,
+): TxSpec {
+  if (auction.raise.effectiveSupply == null) {
+    throw new Error('claimRaiseBid: effectiveSupply is null — auction not yet cleared');
+  }
+  return {
+    program: record.programId, function: 'claim', fee, privateFee: false,
+    inputs: [
+      record.raw,
+      `${auction.totalPayments}u128`,
+      `${auction.raise.effectiveSupply}u128`,
+      auction.saleTokenId,
+    ],
+  };
+}
+
+/**
+ * claimQuadraticBid — Quadratic auction; tokens distributed by sqrt-weight.
+ *
+ * @param totalSqrtWeight - On-chain sqrt_weights[auctionId]. Fetch with
+ *   fetchSqrtWeights(auction.id, auction.programId) from @fairdrop/sdk/chain.
+ */
+export function claimQuadraticBid(
+  record:           ClaimRecord,
+  auction:          ContributionAuction,
+  totalSqrtWeight:  bigint,
+  fee = DEFAULT_TX_FEE,
+): TxSpec {
+  if (auction.raise.effectiveSupply == null) {
+    throw new Error('claimQuadraticBid: effectiveSupply is null — auction not yet cleared');
+  }
+  return {
+    program: record.programId, function: 'claim', fee, privateFee: false,
+    inputs: [
+      record.raw,
+      `${totalSqrtWeight}u128`,
+      `${auction.raise.effectiveSupply}u128`,
+      auction.saleTokenId,
+    ],
+  };
+}
+
 // ── claim_vested ──────────────────────────────────────────────────────────────
 
 /**
- * claim_vested — settled auction with vesting; issues a VestedAllocation record.
+ * claimVested — Dutch / Sealed / Ascending / LBP only.
  *
- * @param record          - Bid/commitment record from the user's wallet.
- * @param auction         - View of the cleared auction (vestEnabled must be true).
- * @param totalSqrtWeight - Required for Quadratic: on-chain sqrt_weights[auctionId].
- * @param fee             - Transaction fee in microcredits (default 0.3 ALEO).
+ * For Raise use claimRaiseVested; for Quadratic use claimQuadraticVested.
  */
 export function claimVested(
-  record:           ClaimRecord,
-  auction:          AuctionView,
-  totalSqrtWeight?: bigint,
+  record:  ClaimRecord,
+  auction: AuctionView,
   fee = DEFAULT_TX_FEE,
 ): TxSpec {
   const endedAt = `${auction.endedAtBlock!}u32`;
@@ -122,36 +149,69 @@ export function claimVested(
       break;
 
     case AuctionType.Raise:
-      if (auction.effectiveSupply === null) {
-        throw new Error('claimVested: effectiveSupply is null — auction not yet cleared');
-      }
-      inputs = [
-        record.raw,
-        `${auction.totalPayments}u128`,
-        `${auction.effectiveSupply}u128`,
-        auction.saleTokenId,
-        endedAt, cliff, vestEnd,
-      ];
-      break;
-
     case AuctionType.Quadratic:
-      if (totalSqrtWeight === undefined) {
-        throw new Error('claimVested: totalSqrtWeight is required for Quadratic auctions');
-      }
-      if (auction.effectiveSupply === null) {
-        throw new Error('claimVested: effectiveSupply is null — auction not yet cleared');
-      }
-      inputs = [
-        record.raw,
-        `${totalSqrtWeight}u128`,
-        `${auction.effectiveSupply}u128`,
-        auction.saleTokenId,
-        endedAt, cliff, vestEnd,
-      ];
-      break;
+      throw new Error(
+        `claimVested: use claimRaiseVested / claimQuadraticVested for ${auction.type} auctions`,
+      );
   }
 
   return { program: record.programId, function: 'claim_vested', inputs, fee, privateFee: false };
+}
+
+/**
+ * claimRaiseVested — Raise auction with vesting.
+ */
+export function claimRaiseVested(
+  record:  ClaimRecord,
+  auction: ContributionAuction,
+  fee = DEFAULT_TX_FEE,
+): TxSpec {
+  if (auction.raise.effectiveSupply == null) {
+    throw new Error('claimRaiseVested: effectiveSupply is null — auction not yet cleared');
+  }
+  const endedAt = `${auction.endedAtBlock!}u32`;
+  const cliff   = `${auction.vestCliffBlocks}u32`;
+  const vestEnd = `${auction.vestEndBlocks}u32`;
+  return {
+    program: record.programId, function: 'claim_vested', fee, privateFee: false,
+    inputs: [
+      record.raw,
+      `${auction.totalPayments}u128`,
+      `${auction.raise.effectiveSupply}u128`,
+      auction.saleTokenId,
+      endedAt, cliff, vestEnd,
+    ],
+  };
+}
+
+/**
+ * claimQuadraticVested — Quadratic auction with vesting.
+ *
+ * @param totalSqrtWeight - On-chain sqrt_weights[auctionId]. Fetch with
+ *   fetchSqrtWeights(auction.id, auction.programId) from @fairdrop/sdk/chain.
+ */
+export function claimQuadraticVested(
+  record:          ClaimRecord,
+  auction:         ContributionAuction,
+  totalSqrtWeight: bigint,
+  fee = DEFAULT_TX_FEE,
+): TxSpec {
+  if (auction.raise.effectiveSupply == null) {
+    throw new Error('claimQuadraticVested: effectiveSupply is null — auction not yet cleared');
+  }
+  const endedAt = `${auction.endedAtBlock!}u32`;
+  const cliff   = `${auction.vestCliffBlocks}u32`;
+  const vestEnd = `${auction.vestEndBlocks}u32`;
+  return {
+    program: record.programId, function: 'claim_vested', fee, privateFee: false,
+    inputs: [
+      record.raw,
+      `${totalSqrtWeight}u128`,
+      `${auction.raise.effectiveSupply}u128`,
+      auction.saleTokenId,
+      endedAt, cliff, vestEnd,
+    ],
+  };
 }
 
 // ── voided claims ─────────────────────────────────────────────────────────────

@@ -21,6 +21,7 @@ export { DEFAULT_TX_FEE, type TxSpec, type ClaimRecord } from './_types';
 export {
   buildCreateAuction,
   type CreateAuctionInput,
+  type CreateBase,
   type GateInput,
   type VestInput,
   type ConfigSnapshotInput,
@@ -44,6 +45,11 @@ export {
   claimVested,
   claimVoided,
   claimCommitVoided,
+  claimRaiseBid,
+  claimRaiseVested,
+  claimQuadraticBid,
+  claimQuadraticVested,
+  type ContributionAuction,
 } from './claim';
 
 // ── Bids ──────────────────────────────────────────────────────────────────────

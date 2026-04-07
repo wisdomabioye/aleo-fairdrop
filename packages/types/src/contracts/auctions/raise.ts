@@ -28,7 +28,8 @@ import type {
  * No price-curve fields (start_price, floor_price, etc.) — raise has a fixed target.
  */
 export interface RaiseAuctionConfig extends BaseAuctionConfig {
-  raise_target: U128;  // total credits required for the raise to succeed
+  raise_target:  U128;  // total credits required for the raise to succeed
+  fill_min_bps:  U16;   // partial-fill threshold in bps; 0 = disabled (100% required)
 }
 
 /**

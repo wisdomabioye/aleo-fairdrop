@@ -5,6 +5,7 @@ import { formatMicrocredits } from '@fairdrop/sdk/credits';
 import { formatAmount } from '@fairdrop/sdk/format';
 import { AuctionType } from '@fairdrop/types/domain';
 import type { AuctionView, ProtocolConfig } from '@fairdrop/types/domain';
+import { getRegistrySlot } from '../registry';
 import { IPFS_GATEWAY } from '@/env';
 import { cn } from '@/lib/utils';
 
@@ -72,10 +73,9 @@ export function AuctionInfoTab({ auction, protocolConfig }: AuctionInfoTabProps)
     : 'Disabled';
 
   const tokenDecimals = auction.saleTokenDecimals as number;
+  const slot = getRegistrySlot(auction.type);
   const isSealed = auction.type === AuctionType.Sealed;
-  const isRaise = auction.type === AuctionType.Raise;
-  const isPaymentsType = isRaise || auction.type === AuctionType.Quadratic;
-  const commitEndBlock = auction.params.type === AuctionType.Sealed ? auction.params.commit_end_block : 0 
+  const commitEndBlock = auction.params.type === AuctionType.Sealed ? auction.params.commit_end_block : 0;
   
   return (
     <Card className="border-sky-500/10 bg-gradient-surface shadow-xs ring-1 ring-white/5">
@@ -214,7 +214,7 @@ export function AuctionInfoTab({ auction, protocolConfig }: AuctionInfoTabProps)
                 <Row
                   label="Min bid"
                   value={
-                    isPaymentsType
+                    slot?.isContributionType
                     ? `${formatAmount(auction.minBidAmount, tokenDecimals)} ALEO`
                     : `${formatAmount(auction.minBidAmount, tokenDecimals)} ${auction.saleTokenSymbol}`
                   }
@@ -226,7 +226,7 @@ export function AuctionInfoTab({ auction, protocolConfig }: AuctionInfoTabProps)
                 <Row
                   label="Max bid"
                   value={
-                    isPaymentsType
+                    slot?.isContributionType
                     ? `${formatAmount(auction.maxBidAmount, tokenDecimals)} ALEO`
                     : `${formatAmount(auction.maxBidAmount, tokenDecimals)} ${auction.saleTokenSymbol}`
                   }
@@ -234,10 +234,10 @@ export function AuctionInfoTab({ auction, protocolConfig }: AuctionInfoTabProps)
                 />
               ) : null}
 
-              {auction.fillMinBps != null && auction.fillMinBps > 0 ? (
+              {auction.raise && auction.raise.fillMinBps > 0 ? (
                 <Row
                   label="Min fill"
-                  value={`${auction.fillMinBps / 100}% of raise target`}
+                  value={`${auction.raise.fillMinBps / 100}% of raise target`}
                   valueClassName="text-[11px] text-foreground/82"
                 />
               ) : null}

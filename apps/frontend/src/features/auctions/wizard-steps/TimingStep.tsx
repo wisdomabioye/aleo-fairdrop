@@ -3,6 +3,7 @@ import { Input, Label, Button } from '@/components';
 import { estimateDate } from '@fairdrop/sdk/format';
 import { AuctionType } from '@fairdrop/types/domain';
 import { useBlockHeight } from '@/shared/hooks/useBlockHeight';
+import { getRegistrySlot } from '../registry';
 import type { ProtocolConfig } from '@fairdrop/types/domain';
 import type { StepProps } from './types';
 
@@ -60,8 +61,8 @@ export function TimingStep({ form, onChange, protocolConfig }: TimingStepProps) 
   const endBlock   = parseInt(form.endBlock)   || 0;
   const duration   = endBlock - startBlock;
 
+  const slot           = getRegistrySlot(form.auctionType);
   const isSealed       = form.auctionType === AuctionType.Sealed;
-  const isPaymentsType = form.auctionType === AuctionType.Raise || form.auctionType === AuctionType.Quadratic;
 
   const commitOffset = isSealed
     ? parseInt((form.pricing as { commitEndBlockOffset?: string })?.commitEndBlockOffset ?? '0') || 0
@@ -147,7 +148,7 @@ export function TimingStep({ form, onChange, protocolConfig }: TimingStepProps) 
       )}
 
       <div className="grid grid-cols-2 gap-4">
-        {isPaymentsType ? (
+        {slot?.isContributionType ? (
           <>
             <div className="space-y-1.5">
               <Label>Min contribution (ALEO)</Label>

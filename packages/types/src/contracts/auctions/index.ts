@@ -87,7 +87,32 @@ export type {
 } from './ascending';
 
 // LBP auction
-export type { LbpAuctionConfig, LbpBid } from './lbp';
+export type {
+  LbpParams,
+  LbpAuctionConfig,
+  LbpBid,
+  LbpCreateAuctionInput,
+  LbpPlaceBidInput,
+  LbpCloseAuctionInput,
+  LbpPushReferralBudgetInput,
+  LbpClaimInput,
+  LbpClaimVestedInput,
+  LbpWithdrawPaymentsInput,
+  LbpWithdrawUnsoldInput,
+  LbpCancelAuctionInput,
+} from './lbp';
 
 // Quadratic auction
-export type { QuadraticAuctionConfig, QuadraticBid } from './quadratic';
+export type {
+  QuadraticAuctionConfig,
+  QuadraticBid,
+  QuadraticCreateAuctionInput,
+  QuadraticPlaceBidInput,
+  QuadraticCloseAuctionInput,
+  QuadraticPushReferralBudgetInput,
+  QuadraticClaimInput,
+  QuadraticClaimVestedInput,
+  QuadraticWithdrawPaymentsInput,
+  QuadraticWithdrawUnsoldInput,
+  QuadraticCancelAuctionInput,
+} from './quadratic';

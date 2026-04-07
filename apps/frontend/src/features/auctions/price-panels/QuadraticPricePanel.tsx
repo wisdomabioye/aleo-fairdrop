@@ -3,13 +3,13 @@ import { formatMicrocredits } from '@fairdrop/sdk/credits';
 import type { PricePanelProps } from './types';
 
 export function QuadraticPricePanel({ auction }: PricePanelProps) {
-  const target        = auction.raiseTarget ?? 0n;
+  const target        = auction.raise?.raiseTarget ?? 0n;
   const totalPayments = BigInt(auction.totalPayments);
   const raisePct = target > 0n
     ? Math.min(100, Number((totalPayments * 100n) / target))
     : 0;
 
-  const fillMinBps = auction.fillMinBps ?? 0;
+  const fillMinBps = auction.raise?.fillMinBps ?? 0;
   const threshold  = fillMinBps > 0 && target > 0n
     ? (target * BigInt(fillMinBps)) / 10000n
     : null;

@@ -1,94 +1,16 @@
-import { AuctionType } from '@fairdrop/types/domain';
-import { AUCTION_REGISTRY } from '../registry';
+import { AUCTION_REGISTRY, getRegistrySlot } from '../registry';
 import { useBlockHeight } from '@/shared/hooks/useBlockHeight';
 import { useProtocolConfig } from '@/shared/hooks/useProtocolConfig';
 import { formatAmount } from '@fairdrop/sdk/format';
 import { GATE_LABEL } from './types';
 import { ReviewSection, ReviewRow } from './ReviewSection';
 import type { StepProps } from './types';
-import type {
-  DutchPricingValues,
-  SealedPricingValues,
-  RaisePricingValues,
-  AscendingPricingValues,
-  LbpPricingValues,
-  QuadraticPricingValues,
-} from '../pricing-steps/types';
 
 function PricingRows({ form }: { form: StepProps['form'] }) {
-  const { auctionType, pricing } = form;
-  if (!auctionType || !pricing) return <ReviewRow label="Pricing" value="—" />;
-
-  switch (auctionType) {
-    case AuctionType.Dutch:
-    case AuctionType.Sealed: {
-      const p = pricing as DutchPricingValues;
-      return (
-        <>
-          <ReviewRow label="Start price"  value={`${p.startPrice || '0'} ALEO`} />
-          <ReviewRow label="Floor price"  value={`${p.floorPrice || '0'} ALEO`} />
-          <ReviewRow label="Decay blocks" value={p.priceDecayBlocks || '0'} />
-          <ReviewRow label="Decay amount" value={`${p.priceDecayAmount || '0'} ALEO`} />
-          {auctionType === AuctionType.Sealed && (
-            <ReviewRow label="Commit window" value={`${(pricing as SealedPricingValues).commitEndBlockOffset || '0'} blocks`} />
-          )}
-        </>
-      );
-    }
-    case AuctionType.Ascending: {
-      const p = pricing as AscendingPricingValues;
-      const extWindow = parseInt(p.extensionWindow) || 0;
-      return (
-        <>
-          <ReviewRow label="Floor price"   value={`${p.floorPrice || '0'} ALEO`} />
-          <ReviewRow label="Ceiling price" value={`${p.ceilingPrice || '0'} ALEO`} />
-          <ReviewRow label="Rise blocks"   value={p.priceRiseBlocks || '0'} />
-          <ReviewRow label="Rise amount"   value={`${p.priceRiseAmount || '0'} ALEO`} />
-          <ReviewRow
-            label="Anti-sniping"
-            value={extWindow > 0
-              ? `${p.extensionWindow} block window · +${p.extensionBlocks || '0'} blocks per bid`
-              : 'Disabled'}
-          />
-          {extWindow > 0 && p.maxEndBlock && (
-            <ReviewRow label="Hard cap block" value={p.maxEndBlock} />
-          )}
-        </>
-      );
-    }
-    case AuctionType.Raise: {
-      const p = pricing as RaisePricingValues;
-      return (
-        <>
-          <ReviewRow label="Raise target" value={`${p.raiseTarget || '0'} ALEO`} />
-          {p.fillMinBpsEnabled && p.fillMinBps && (
-            <ReviewRow label="Minimum fill" value={`${p.fillMinBps}% of raise target`} />
-          )}
-        </>
-      );
-    }
-    case AuctionType.Lbp: {
-      const p = pricing as LbpPricingValues;
-      return (
-        <>
-          <ReviewRow label="Start price" value={`${p.startPrice || '0'} ALEO`} />
-          <ReviewRow label="Floor price" value={`${p.floorPrice || '0'} ALEO`} />
-        </>
-      );
-    }
-    case AuctionType.Quadratic: {
-      const p = pricing as QuadraticPricingValues;
-      return (
-        <>
-          <ReviewRow label="Raise target" value={`${p.raiseTarget || '0'} ALEO`} />
-          {p.fillMinBpsEnabled && p.fillMinBps && (
-            <ReviewRow label="Minimum fill" value={`${p.fillMinBps}% of raise target`} />
-          )}
-        </>
-      );
-    }
-    default: return null;
-  }
+  const slot = getRegistrySlot(form.auctionType);
+  if (!slot || !form.pricing) return <ReviewRow label="Pricing" value="—" />;
+  const { PricingReviewRows } = slot;
+  return <PricingReviewRows pricing={form.pricing} />;
 }
 
 export function ReviewStep({ form }: StepProps) {

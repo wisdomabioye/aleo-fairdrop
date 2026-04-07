@@ -1,12 +1,20 @@
 import { useWallet }             from '@provablehq/aleo-wallet-adaptor-react';
 import { Button, Spinner, Badge } from '@/components';
 import { formatMicrocredits }    from '@fairdrop/sdk/credits';
-import { AuctionStatus }         from '@fairdrop/types/domain';
+import { AuctionType, AuctionStatus } from '@fairdrop/types/domain';
 import type { AuctionView }      from '@fairdrop/types/domain';
 import { parseExecutionError }   from '@/shared/utils/errors';
 import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
 import type { ClaimableRecord }  from '../hooks/useClaimable';
-import { claimBid, claimVested, claimVoided, claimCommitVoided } from '@fairdrop/sdk/transactions';
+import {
+  claimBid, claimVested,
+  claimRaiseBid, claimRaiseVested,
+  claimQuadraticBid, claimQuadraticVested,
+  claimVoided, claimCommitVoided,
+  type ContributionAuction,
+} from '@fairdrop/sdk/transactions';
+import type { ClaimRecord, TxSpec } from '@fairdrop/sdk/transactions';
+import { fetchSqrtWeights } from '@fairdrop/sdk/chain';
 
 interface Props {
   record:  ClaimableRecord;
@@ -32,42 +40,48 @@ const ACTION_LABELS: Record<ClaimAction, string> = {
   claim_commit_voided: 'Claim Refund',
 };
 
+async function buildClaimSpec(
+  action:  ClaimAction,
+  record:  ClaimRecord,
+  auction: AuctionView,
+): Promise<TxSpec> {
+  if (action === 'claim_voided')        return claimVoided(record);
+  if (action === 'claim_commit_voided') return claimCommitVoided(record);
+
+  const vested = action === 'claim_vested';
+
+  if (auction.type === AuctionType.Quadratic) {
+    if (!auction.raise) throw new Error('Missing raise fields on Quadratic auction');
+    const totalSqrtWeight = await fetchSqrtWeights(auction.id, auction.programId);
+    const ca = auction as ContributionAuction;
+    return vested
+      ? claimQuadraticVested(record, ca, totalSqrtWeight)
+      : claimQuadraticBid(record, ca, totalSqrtWeight);
+  }
+
+  if (auction.type === AuctionType.Raise) {
+    if (!auction.raise) throw new Error('Missing raise fields on Raise auction');
+    const ca = auction as ContributionAuction;
+    return vested ? claimRaiseVested(record, ca) : claimRaiseBid(record, ca);
+  }
+
+  return vested ? claimVested(record, auction) : claimBid(record, auction);
+}
+
 export function BidClaimRow({ record, auction }: Props) {
   const { executeTransaction } = useWallet();
 
-  // Derived before hooks so the step closure captures the latest values via stepsRef
-  const action = auction ? resolveAction(record, auction) : null;
-  const claimed = record.raw.spent
-  const label  = (
-    action ?
-    claimed ?
-    "Claimed"
-    : 
-    ACTION_LABELS[action] : 
-    null
-  );
+  const action  = auction ? resolveAction(record, auction) : null;
+  const claimed = record.raw.spent;
+  const label   = action ? (claimed ? 'Claimed' : ACTION_LABELS[action]) : null;
 
   const tx = useConfirmedSequentialTx([{
     label: label ?? 'Claim',
     execute: async () => {
       if (!action || !auction) throw new Error('Nothing to claim');
       const claimRec = { raw: record.raw.recordPlaintext, programId: record.programId };
-      const spec = (
-        action === 'claim'
-        ?
-        claimBid(claimRec, auction)
-        :
-        action === 'claim_vested'
-        ?
-        claimVested(claimRec, auction)
-        :
-        action === 'claim_voided'
-        ?
-        claimVoided(claimRec)
-        :
-        claimCommitVoided(claimRec));
-      
-        const result = await executeTransaction({ ...spec, inputs: spec.inputs as string[] });
+      const spec = await buildClaimSpec(action, claimRec, auction);
+      const result = await executeTransaction({ ...spec, inputs: spec.inputs as string[] });
       return result?.transactionId;
     },
   }]);

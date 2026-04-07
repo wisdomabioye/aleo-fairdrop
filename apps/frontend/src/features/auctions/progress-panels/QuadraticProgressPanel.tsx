@@ -8,8 +8,8 @@ export function QuadraticProgressPanel({ auction }: ProgressPanelProps) {
   const totalPayments = auction.totalPayments;
   const isCleared     = auction.status === AuctionStatus.Cleared;
 
-  const isPartialFill = isCleared && auction.effectiveSupply != null &&
-    auction.effectiveSupply < auction.supply;
+  const isPartialFill = isCleared && auction.raise?.effectiveSupply != null &&
+    auction.raise.effectiveSupply < auction.supply;
 
   return (
     <div className="space-y-2">

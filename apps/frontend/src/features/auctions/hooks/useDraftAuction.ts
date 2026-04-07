@@ -1,9 +1,9 @@
 import { useState, useRef, useCallback } from 'react';
 import { useWallet }                     from '@provablehq/aleo-wallet-adaptor-react';
-import { AuctionType }                   from '@fairdrop/types/domain';
 import { useLocalStorage }               from '@/shared/hooks/useLocalStorage';
-import { DEFAULT_FORM, DEFAULT_PRICING } from '../wizard-steps/types';
-import type { WizardForm }               from '../wizard-steps/types';
+import { DEFAULT_FORM }   from '../wizard-steps/types';
+import type { WizardForm } from '../wizard-steps/types';
+import { getRegistrySlot } from '../registry';
 
 // ── volatile fields ────────────────────────────────────────────────────────────
 //
@@ -52,7 +52,7 @@ function applyAuctionType(current: WizardForm, updates: Partial<WizardForm>): Wi
     updates.auctionType &&
     updates.auctionType !== current.auctionType
   ) {
-    next.pricing = DEFAULT_PRICING[updates.auctionType as AuctionType] ?? null;
+    next.pricing = getRegistrySlot(updates.auctionType)?.defaultPricing ?? null;
   }
   return next;
 }

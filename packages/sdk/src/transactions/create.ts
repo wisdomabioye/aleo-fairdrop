@@ -43,7 +43,7 @@ export interface ConfigSnapshotInput {
   referralPoolBps: number;
 }
 
-interface CreateBase {
+export interface CreateBase {
   /** Token record to burn as sale supply (wallet record object or raw string). */
   tokenRecord:   string | Record<string, unknown>;
   saleTokenId:   string;   // field
@@ -168,6 +168,14 @@ function commonInputs(p: CreateBase): string[] {
  * Pass the result directly to executeTransaction().
  */
 export function buildCreateAuction(p: CreateAuctionInput): TxSpec {
+  if (
+    (p.type === AuctionType.Raise || p.type === AuctionType.Quadratic) &&
+    p.fillMinBps != null &&
+    (p.fillMinBps < 0 || p.fillMinBps > 10000)
+  ) {
+    throw new Error(`fillMinBps must be 0–10000, got ${p.fillMinBps}`);
+  }
+
   const common   = commonInputs(p);
   const gate     = buildGate(p.gate);
   const vest     = buildVest(p.vest);

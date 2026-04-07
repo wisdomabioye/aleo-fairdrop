@@ -7,7 +7,6 @@
  */
 
 import type { AuctionView } from '@fairdrop/types/domain';
-import { AuctionStatus } from '@fairdrop/types/domain';
 import { DEFAULT_TX_FEE, type TxSpec } from './_types';
 
 /**
@@ -26,7 +25,7 @@ export function closeAuction(auction: AuctionView, fee = DEFAULT_TX_FEE): TxSpec
     inputs: [
       auction.id,
       auction.creator,
-      String(auction.status === AuctionStatus.Clearing),  // filled = supply_met
+      String(auction.supplyMet),                           // filled = state.supply_met
       `${auction.totalPayments}u128`,
       `${auction.closerReward}u128`,
     ],

@@ -1,10 +1,46 @@
 import { Input, Label, TokenAmountInput } from '@/components';
 import { parseTokenAmount } from '@fairdrop/sdk/format';
-import { formatMicrocredits } from '@fairdrop/sdk/credits';
-import type { PricingStepProps, SealedPricingValues } from './types';
+import { formatMicrocredits, aleoToMicro } from '@fairdrop/sdk/credits';
+import { AuctionType } from '@fairdrop/types/domain';
+import { buildCreateAuction } from '@fairdrop/sdk/transactions';
+import type { CreateBase, TxSpec } from '@fairdrop/sdk/transactions';
+import type { PricingStepProps, SealedPricingValues, AnyPricingValues } from './types';
+import { ReviewRow } from '../wizard-steps/ReviewSection';
+
+const mic = (v: string) => aleoToMicro(v) ?? 0n;
+const blk = (v: string) => parseInt(v || '0');
+
+export const defaultPricing: SealedPricingValues = {
+  type: AuctionType.Sealed,
+  startPrice: '', floorPrice: '', priceDecayBlocks: '100', priceDecayAmount: '', commitEndBlockOffset: '',
+};
+
+export function PricingReviewRows({ pricing }: { pricing: SealedPricingValues }) {
+  return (
+    <>
+      <ReviewRow label="Start price"   value={`${pricing.startPrice || '0'} ALEO`} />
+      <ReviewRow label="Floor price"   value={`${pricing.floorPrice || '0'} ALEO`} />
+      <ReviewRow label="Decay blocks"  value={pricing.priceDecayBlocks || '0'} />
+      <ReviewRow label="Decay amount"  value={`${pricing.priceDecayAmount || '0'} ALEO`} />
+      <ReviewRow label="Commit window" value={`${pricing.commitEndBlockOffset || '0'} blocks`} />
+    </>
+  );
+}
+
+export function buildWizardInputs(pricing: AnyPricingValues, base: CreateBase): TxSpec {
+  if (pricing.type !== AuctionType.Sealed) throw new Error(`buildWizardInputs[sealed]: got ${pricing.type}`);
+  return buildCreateAuction({
+    ...base, type: AuctionType.Sealed,
+    startPrice:       mic(pricing.startPrice),
+    floorPrice:       mic(pricing.floorPrice),
+    priceDecayBlocks: blk(pricing.priceDecayBlocks),
+    priceDecayAmount: mic(pricing.priceDecayAmount),
+    commitEndBlock:   base.startBlock + blk(pricing.commitEndBlockOffset),
+  });
+}
 
 export function SealedPricingStep({ value, onChange }: PricingStepProps<SealedPricingValues>) {
-  const set = (k: keyof SealedPricingValues) =>
+  const set = (k: keyof Omit<SealedPricingValues, 'type'>) =>
     (v: string) => onChange({ ...value, [k]: v });
 
   const startMicro   = parseTokenAmount(value.startPrice, 6);

@@ -1,4 +1,4 @@
-export type { AuctionView, AuctionListItem, AuctionMetadata, AuctionParams } from './auction';
+export type { AuctionView, AuctionListItem, AuctionMetadata, AuctionParams, RaiseMechanismFields } from './auction';
 export { AuctionType, AuctionStatus, GateMode } from './auction';
 
 export type { BidView, ReleasableAmount } from './bid';

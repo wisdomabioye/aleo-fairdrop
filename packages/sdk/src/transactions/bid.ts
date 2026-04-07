@@ -10,8 +10,6 @@
  * Private variants prepend the credits record before auction_id.
  * Ref variants append code_id after the core inputs.
  *
- * NOTE: The frontend LBP form is missing quantity + max_bid_price, and the
- * Quadratic form incorrectly includes quantity — this module has the correct inputs.
  */
 
 import type { AuctionView } from '@fairdrop/types/domain';

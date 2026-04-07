@@ -113,8 +113,8 @@ export async function fetchAuctionStats(programId: string): Promise<AuctionStats
  * Fetch the accumulated sqrt weights for a Quadratic auction.
  * Reads sqrt_weights[auctionId]. Returns 0n on miss.
  *
- * Pass the result as `totalSqrtWeight` to claimBid() / claimVested() for
- * Quadratic auctions (D11: finalize asserts against this mapping value).
+ * Pass the result as `totalSqrtWeight` to claimQuadraticBid() / claimQuadraticVested()
+ * (D11: finalize asserts against this mapping value).
  */
 export async function fetchSqrtWeights(auctionId: string, programId: string): Promise<bigint> {
   const raw = await getMappingValue(programId, 'sqrt_weights', auctionId);

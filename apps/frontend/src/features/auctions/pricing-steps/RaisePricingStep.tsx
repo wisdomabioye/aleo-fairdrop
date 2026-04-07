@@ -1,7 +1,37 @@
 import { TokenAmountInput } from '@/components';
 import { parseTokenAmount } from '@fairdrop/sdk/format';
-import { formatMicrocredits } from '@fairdrop/sdk/credits';
-import type { PricingStepProps, RaisePricingValues } from './types';
+import { formatMicrocredits, aleoToMicro } from '@fairdrop/sdk/credits';
+import { AuctionType } from '@fairdrop/types/domain';
+import { buildCreateAuction } from '@fairdrop/sdk/transactions';
+import type { CreateBase, TxSpec } from '@fairdrop/sdk/transactions';
+import type { PricingStepProps, RaisePricingValues, AnyPricingValues } from './types';
+import { ReviewRow } from '../wizard-steps/ReviewSection';
+
+const mic = (v: string) => aleoToMicro(v) ?? 0n;
+
+export const defaultPricing: RaisePricingValues = {
+  type: AuctionType.Raise,
+  raiseTarget: '', fillMinBpsEnabled: false, fillMinBps: '',
+};
+
+export function PricingReviewRows({ pricing }: { pricing: RaisePricingValues }) {
+  return (
+    <>
+      <ReviewRow label="Raise target" value={`${pricing.raiseTarget || '0'} ALEO`} />
+      {pricing.fillMinBpsEnabled && pricing.fillMinBps && (
+        <ReviewRow label="Min fill" value={`${pricing.fillMinBps}% of raise target`} />
+      )}
+    </>
+  );
+}
+
+export function buildWizardInputs(pricing: AnyPricingValues, base: CreateBase): TxSpec {
+  if (pricing.type !== AuctionType.Raise) throw new Error(`buildWizardInputs[raise]: got ${pricing.type}`);
+  const fillMinBps = pricing.fillMinBpsEnabled && pricing.fillMinBps
+    ? Math.round(parseFloat(pricing.fillMinBps) * 100)
+    : 0;
+  return buildCreateAuction({ ...base, type: AuctionType.Raise, raiseTarget: mic(pricing.raiseTarget), fillMinBps });
+}
 
 export function RaisePricingStep({ value, onChange, supply, saleTokenDecimals }: PricingStepProps<RaisePricingValues>) {
   const targetMicro = parseTokenAmount(value.raiseTarget, 6);

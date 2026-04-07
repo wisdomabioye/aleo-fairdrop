@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { formatMicrocredits } from '@fairdrop/sdk/credits';
 import { AuctionStatus, AuctionType } from '@fairdrop/types/domain';
 import type { AuctionView } from '@fairdrop/types/domain';
+import { getRegistrySlot } from '../registry';
 import { useBlockHeight } from '@/shared/hooks/useBlockHeight';
 import { useProtocolConfig } from '@/shared/hooks/useProtocolConfig';
 import { AppRoutes } from '@/config';
@@ -107,12 +108,14 @@ export function AuctionEarnTab({ auction }: AuctionEarnTabProps) {
     auction.status === AuctionStatus.Ended    ||
     auction.status === AuctionStatus.Clearing;
 
-  // Raise auctions can close early once the partial fill threshold is met.
+  // Contribution-type auctions with early-close support can close once the partial fill
+  // threshold is met (currently Raise only — Quadratic always runs to end_block).
+  const slot = getRegistrySlot(auction.type);
   const fillThresholdMet =
-    auction.type === AuctionType.Raise &&
-    auction.fillMinBps != null && auction.fillMinBps > 0 &&
-    auction.raiseTarget != null &&
-    auction.totalPayments >= (auction.raiseTarget * BigInt(auction.fillMinBps)) / 10000n;
+    slot?.supportsEarlyClose === true &&
+    auction.raise != null &&
+    auction.raise.fillMinBps > 0 &&
+    auction.totalPayments >= (auction.raise.raiseTarget * BigInt(auction.raise.fillMinBps)) / 10000n;
 
   const canCloseNow =
     auction.status === AuctionStatus.Ended    ||

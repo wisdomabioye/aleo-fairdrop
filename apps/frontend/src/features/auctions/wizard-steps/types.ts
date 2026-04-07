@@ -1,16 +1,5 @@
 import type { AuctionType } from '@fairdrop/types/domain';
-import type {
-  DutchPricingValues, SealedPricingValues, RaisePricingValues,
-  AscendingPricingValues, LbpPricingValues, QuadraticPricingValues,
-} from '../pricing-steps/types';
-
-export type AnyPricingValues =
-  | DutchPricingValues
-  | SealedPricingValues
-  | RaisePricingValues
-  | AscendingPricingValues
-  | LbpPricingValues
-  | QuadraticPricingValues;
+import type { AnyPricingValues } from '../pricing-steps/types';
 
 export interface WizardForm {
   // Step 1
@@ -95,15 +84,6 @@ export const DEFAULT_FORM: WizardForm = {
   metadataIpfsCid:     '',
 };
 
-/** Default pricing values per auction type — used when switching types. */
-export const DEFAULT_PRICING: Record<AuctionType, AnyPricingValues> = {
-  dutch:     { startPrice: '', floorPrice: '', priceDecayBlocks: '100', priceDecayAmount: '' },
-  sealed:    { startPrice: '', floorPrice: '', priceDecayBlocks: '100', priceDecayAmount: '', commitEndBlockOffset: '' },
-  raise:     { raiseTarget: '', fillMinBpsEnabled: false, fillMinBps: '' },
-  ascending: { floorPrice: '', ceilingPrice: '', priceRiseBlocks: '100', priceRiseAmount: '', extensionWindow: '60', extensionBlocks: '120', maxEndBlock: '' },
-  lbp:       { startPrice: '', floorPrice: '' },
-  quadratic: { raiseTarget: '', fillMinBpsEnabled: false, fillMinBps: '' },
-} as Record<AuctionType, AnyPricingValues>;
 
 export interface StepProps {
   form:     WizardForm;

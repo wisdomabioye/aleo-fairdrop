@@ -3,10 +3,15 @@
  *
  * Each function accepts a raw Leo struct string returned by getProgramMappingValue
  * and returns the corresponding TypeScript type from @fairdrop/types.
+ *
+ * Also exports buildAuctionParams — converts a stored DB row into the discriminated
+ * AuctionParams view-model (extracted from the API mapper so the switch lives once).
  */
 
 import type { BaseAuctionConfig, AuctionState, AuctionStats } from '@fairdrop/types/contracts/auctions';
 import type { ProtocolConfig } from '@fairdrop/types/contracts/utilities';
+import type { AuctionParams }  from '@fairdrop/types/domain';
+import { AuctionType }         from '@fairdrop/types/domain';
 import { asField, asAddress, asU128, asU64 } from '@fairdrop/types/primitives';
 import {
   parseStruct,
@@ -76,6 +81,100 @@ export function parseAuctionStats(raw: string): AuctionStats {
     total_bids:              asU64(parseU128(p['total_bids'] ?? '0u64')),
     total_payment_collected: asU128(parseU128(p['total_payment_collected'] ?? '0u128')),
   };
+}
+
+// ── Params builder ────────────────────────────────────────────────────────────
+
+/**
+ * Minimal row shape required by buildAuctionParams. Satisfied by AuctionRow.
+ * Dutch / Ascending / Sealed use flat price columns; LBP likewise.
+ * Sealed + configJson carry commit_end_block + slash_reward_bps.
+ */
+export interface ParamsRow {
+  type:             string;
+  startPrice:       string | null;
+  floorPrice:       string | null;
+  priceDecayBlocks: number | null;
+  priceDecayAmount: string | null;
+  ceilingPrice:     string | null;
+  priceRiseBlocks:  number | null;
+  priceRiseAmount:  string | null;
+  extensionWindow:  number | null;
+  extensionBlocks:  number | null;
+  maxEndBlock:      number | null;
+  raiseTarget:      string | null;
+  fillMinBps:       number | null;   // Raise + Quadratic flat column
+  commitEndBlock:   number | null;   // Sealed flat column
+  configJson:       unknown;         // Full config snapshot — used for slash_reward_bps (no flat column)
+}
+
+/**
+ * Build the discriminated AuctionParams view-model from a stored row.
+ * Dutch / Ascending / Sealed / LBP use flat price columns.
+ * Sealed additionally reads commit_end_block + slash_reward_bps from configJson.
+ * Raise + Quadratic derive their targets from flat columns.
+ */
+export function buildAuctionParams(row: ParamsRow): AuctionParams {
+  const cfg = (row.configJson ?? {}) as Record<string, unknown>;
+
+  switch (row.type as AuctionType) {
+    case AuctionType.Dutch:
+      return {
+        type:               AuctionType.Dutch,
+        start_price:        asU128(row.startPrice!),
+        floor_price:        asU128(row.floorPrice!),
+        price_decay_blocks: row.priceDecayBlocks!,
+        price_decay_amount: asU128(row.priceDecayAmount!),
+      };
+
+    case AuctionType.Sealed:
+      return {
+        type:               AuctionType.Sealed,
+        start_price:        asU128(row.startPrice!),
+        floor_price:        asU128(row.floorPrice!),
+        price_decay_blocks: row.priceDecayBlocks!,
+        price_decay_amount: asU128(row.priceDecayAmount!),
+        commit_end_block:   row.commitEndBlock ?? 0,
+        slash_reward_bps:   Number(cfg.slash_reward_bps  ?? 0),  // no flat column
+      };
+
+    case AuctionType.Raise:
+      return {
+        type:         AuctionType.Raise,
+        raise_target: asU128(row.raiseTarget ?? '0'),
+      };
+
+    case AuctionType.Ascending:
+      return {
+        type:              AuctionType.Ascending,
+        floor_price:       asU128(row.floorPrice!),
+        ceiling_price:     asU128(row.ceilingPrice!),
+        price_rise_blocks: row.priceRiseBlocks!,
+        price_rise_amount: asU128(row.priceRiseAmount!),
+        extension_window:  row.extensionWindow ?? 0,
+        extension_blocks:  row.extensionBlocks ?? 0,
+        max_end_block:     row.maxEndBlock      ?? 0,
+      };
+
+    case AuctionType.Lbp:
+      return {
+        type:        AuctionType.Lbp,
+        start_price: asU128(row.startPrice ?? '0'),
+        floor_price: asU128(row.floorPrice ?? '0'),
+      };
+
+    case AuctionType.Quadratic:
+      return {
+        type:          AuctionType.Quadratic,
+        raise_target:  asU128(row.raiseTarget ?? '0'),
+        fill_min_bps:  row.fillMinBps ?? 0,
+      };
+
+    default: {
+      const _exhaustive: never = row.type as never;
+      throw new Error(`[buildAuctionParams] unhandled AuctionType: ${_exhaustive}`);
+    }
+  }
 }
 
 /** Parse a ProtocolConfig struct from fairdrop_config_v2.aleo. */

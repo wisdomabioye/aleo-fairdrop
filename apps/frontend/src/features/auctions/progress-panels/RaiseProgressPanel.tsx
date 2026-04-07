@@ -1,17 +1,17 @@
 import { Progress } from '@/components';
 import { formatMicrocredits } from '@fairdrop/sdk/credits';
-import { AuctionStatus, AuctionType } from '@fairdrop/types/domain';
+import { AuctionStatus } from '@fairdrop/types/domain';
 import type { ProgressPanelProps } from './types';
 
 /** Supply bar with a raise-target threshold marker. */
 export function RaiseProgressPanel({ auction }: ProgressPanelProps) {
-  const target        = auction.params.type === AuctionType.Raise ? BigInt(auction.params.raise_target) : 0n;
+  const target        = auction.raise?.raiseTarget ?? 0n;
   const totalPayments = BigInt(auction.totalPayments);
   const isCleared     = auction.status === AuctionStatus.Cleared;
 
-  // Partial fill: cleared but total_payments < raise_target
-  const isPartialFill = isCleared && auction.effectiveSupply != null &&
-    auction.effectiveSupply < auction.supply;
+  // Partial fill: cleared but effective_supply < supply (tokens scaled back)
+  const isPartialFill = isCleared && auction.raise?.effectiveSupply != null &&
+    auction.raise.effectiveSupply < auction.supply;
   const fillPct = target > 0n
     ? Number((totalPayments * 10000n / target)) / 100
     : auction.progressPct;

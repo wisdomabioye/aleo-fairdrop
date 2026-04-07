@@ -5,23 +5,15 @@
  * buildCreateAuction in @fairdrop/sdk/transactions. Leo serialization lives in
  * the SDK; this file only handles the WizardForm → SDK boundary.
  */
-import { AuctionType }          from '@fairdrop/types/domain';
 import type { ProtocolConfig }  from '@fairdrop/types/domain';
 import { aleoToMicro }          from '@fairdrop/sdk/credits';
 import { ZERO_ADDRESS }         from '@fairdrop/sdk/constants';
-import { buildCreateAuction, type TxSpec } from '@fairdrop/sdk/transactions';
+import type { TxSpec } from '@fairdrop/sdk/transactions';
+import { getRegistrySlot }      from '../registry';
 import type { WizardForm }      from './types';
-import type {
-  DutchPricingValues,
-  SealedPricingValues,
-  RaisePricingValues,
-  AscendingPricingValues,
-  LbpPricingValues,
-  QuadraticPricingValues,
-} from '../pricing-steps/types';
 
-function mic(v: string): bigint { return aleoToMicro(v) ?? 0n; }
-function blk(v: string): number { return parseInt(v || '0'); }
+const mic = (v: string) => aleoToMicro(v) ?? 0n;
+const blk = (v: string) => parseInt(v || '0');
 
 export function buildCreateAuctionInputs(
   form:           WizardForm,
@@ -32,6 +24,9 @@ export function buildCreateAuctionInputs(
   if (!auctionType) throw new Error('Auction type is required.');
   if (!pricing)     throw new Error('Pricing config is required.');
   if (!tokenRecord) throw new Error('Token record is required.');
+
+  const slot = getRegistrySlot(auctionType);
+  if (!slot) throw new Error(`Unknown auction type: ${auctionType}`);
 
   const base = {
     tokenRecord:  tokenRecord as string | Record<string, unknown>,
@@ -63,68 +58,5 @@ export function buildCreateAuctionInputs(
     },
   };
 
-  switch (auctionType) {
-    case AuctionType.Dutch: {
-      const p = pricing as DutchPricingValues;
-      return buildCreateAuction({
-        ...base, type: AuctionType.Dutch,
-        startPrice:       mic(p.startPrice),
-        floorPrice:       mic(p.floorPrice),
-        priceDecayBlocks: blk(p.priceDecayBlocks),
-        priceDecayAmount: mic(p.priceDecayAmount),
-      });
-    }
-    case AuctionType.Sealed: {
-      const p = pricing as SealedPricingValues;
-      return buildCreateAuction({
-        ...base, type: AuctionType.Sealed,
-        startPrice:       mic(p.startPrice),
-        floorPrice:       mic(p.floorPrice),
-        priceDecayBlocks: blk(p.priceDecayBlocks),
-        priceDecayAmount: mic(p.priceDecayAmount),
-        commitEndBlock:   base.startBlock + blk(p.commitEndBlockOffset),
-      });
-    }
-    case AuctionType.Ascending: {
-      const p = pricing as AscendingPricingValues;
-      return buildCreateAuction({
-        ...base, type: AuctionType.Ascending,
-        floorPrice:       mic(p.floorPrice),
-        ceilingPrice:     mic(p.ceilingPrice),
-        priceRiseBlocks:  blk(p.priceRiseBlocks),
-        priceRiseAmount:  mic(p.priceRiseAmount),
-        extensionWindow:  blk(p.extensionWindow),
-        extensionBlocks:  blk(p.extensionBlocks),
-        maxEndBlock:      blk(p.maxEndBlock) || base.endBlock,
-      });
-    }
-    case AuctionType.Raise: {
-      const p = pricing as RaisePricingValues;
-      const fillMinBps = p.fillMinBpsEnabled && p.fillMinBps
-        ? Math.round(parseFloat(p.fillMinBps) * 100)
-        : 0;
-      return buildCreateAuction({ ...base, type: AuctionType.Raise, raiseTarget: mic(p.raiseTarget), fillMinBps });
-    }
-    case AuctionType.Lbp: {
-      const p = pricing as LbpPricingValues;
-      return buildCreateAuction({
-        ...base, type: AuctionType.Lbp,
-        startPrice: mic(p.startPrice),
-        floorPrice: mic(p.floorPrice),
-      });
-    }
-    case AuctionType.Quadratic: {
-      const p = pricing as QuadraticPricingValues;
-      const fillMinBps = p.fillMinBpsEnabled && p.fillMinBps
-        ? Math.round(parseFloat(p.fillMinBps) * 100)
-        : 0;
-      return buildCreateAuction({
-        ...base, type: AuctionType.Quadratic,
-        raiseTarget: mic(p.raiseTarget),
-        fillMinBps,
-      });
-    }
-    default:
-      throw new Error(`Unknown auction type: ${String(auctionType)}`);
-  }
+  return slot.buildWizardInputs(pricing, base);
 }

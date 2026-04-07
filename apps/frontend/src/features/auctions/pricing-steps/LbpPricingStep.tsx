@@ -1,9 +1,39 @@
 import { TokenAmountInput } from '@/components';
 import { parseTokenAmount } from '@fairdrop/sdk/format';
-import type { PricingStepProps, LbpPricingValues } from './types';
+import { aleoToMicro } from '@fairdrop/sdk/credits';
+import { AuctionType } from '@fairdrop/types/domain';
+import { buildCreateAuction } from '@fairdrop/sdk/transactions';
+import type { CreateBase, TxSpec } from '@fairdrop/sdk/transactions';
+import type { PricingStepProps, LbpPricingValues, AnyPricingValues } from './types';
+import { ReviewRow } from '../wizard-steps/ReviewSection';
+
+const mic = (v: string) => aleoToMicro(v) ?? 0n;
+
+export const defaultPricing: LbpPricingValues = {
+  type: AuctionType.Lbp,
+  startPrice: '', floorPrice: '',
+};
+
+export function PricingReviewRows({ pricing }: { pricing: LbpPricingValues }) {
+  return (
+    <>
+      <ReviewRow label="Start price" value={`${pricing.startPrice || '0'} ALEO`} />
+      <ReviewRow label="Floor price" value={`${pricing.floorPrice || '0'} ALEO`} />
+    </>
+  );
+}
+
+export function buildWizardInputs(pricing: AnyPricingValues, base: CreateBase): TxSpec {
+  if (pricing.type !== AuctionType.Lbp) throw new Error(`buildWizardInputs[lbp]: got ${pricing.type}`);
+  return buildCreateAuction({
+    ...base, type: AuctionType.Lbp,
+    startPrice: mic(pricing.startPrice),
+    floorPrice: mic(pricing.floorPrice),
+  });
+}
 
 export function LbpPricingStep({ value, onChange }: PricingStepProps<LbpPricingValues>) {
-  const set = (k: keyof LbpPricingValues) =>
+  const set = (k: keyof Omit<LbpPricingValues, 'type'>) =>
     (v: string) => onChange({ ...value, [k]: v });
 
   const startMicro = parseTokenAmount(value.startPrice, 6);

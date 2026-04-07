@@ -1,10 +1,44 @@
 import { Input, Label, TokenAmountInput } from '@/components';
 import { parseTokenAmount } from '@fairdrop/sdk/format';
-import { formatMicrocredits } from '@fairdrop/sdk/credits';
-import type { PricingStepProps, DutchPricingValues } from './types';
+import { formatMicrocredits, aleoToMicro } from '@fairdrop/sdk/credits';
+import { AuctionType } from '@fairdrop/types/domain';
+import { buildCreateAuction } from '@fairdrop/sdk/transactions';
+import type { CreateBase, TxSpec } from '@fairdrop/sdk/transactions';
+import type { PricingStepProps, DutchPricingValues, AnyPricingValues } from './types';
+import { ReviewRow } from '../wizard-steps/ReviewSection';
+
+const mic = (v: string) => aleoToMicro(v) ?? 0n;
+const blk = (v: string) => parseInt(v || '0');
+
+export const defaultPricing: DutchPricingValues = {
+  type: AuctionType.Dutch,
+  startPrice: '', floorPrice: '', priceDecayBlocks: '100', priceDecayAmount: '',
+};
+
+export function PricingReviewRows({ pricing }: { pricing: DutchPricingValues }) {
+  return (
+    <>
+      <ReviewRow label="Start price"  value={`${pricing.startPrice || '0'} ALEO`} />
+      <ReviewRow label="Floor price"  value={`${pricing.floorPrice || '0'} ALEO`} />
+      <ReviewRow label="Decay blocks" value={pricing.priceDecayBlocks || '0'} />
+      <ReviewRow label="Decay amount" value={`${pricing.priceDecayAmount || '0'} ALEO`} />
+    </>
+  );
+}
+
+export function buildWizardInputs(pricing: AnyPricingValues, base: CreateBase): TxSpec {
+  if (pricing.type !== AuctionType.Dutch) throw new Error(`buildWizardInputs[dutch]: got ${pricing.type}`);
+  return buildCreateAuction({
+    ...base, type: AuctionType.Dutch,
+    startPrice:       mic(pricing.startPrice),
+    floorPrice:       mic(pricing.floorPrice),
+    priceDecayBlocks: blk(pricing.priceDecayBlocks),
+    priceDecayAmount: mic(pricing.priceDecayAmount),
+  });
+}
 
 export function DutchPricingStep({ value, onChange }: PricingStepProps<DutchPricingValues>) {
-  const set = (k: keyof DutchPricingValues) =>
+  const set = (k: keyof Omit<DutchPricingValues, 'type'>) =>
     (v: string) => onChange({ ...value, [k]: v });
 
   const startMicro  = parseTokenAmount(value.startPrice, 6);

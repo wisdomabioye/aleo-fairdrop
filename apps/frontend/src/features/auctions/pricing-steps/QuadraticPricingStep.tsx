@@ -1,5 +1,36 @@
 import { TokenAmountInput } from '@/components';
-import type { PricingStepProps, QuadraticPricingValues } from './types';
+import { aleoToMicro } from '@fairdrop/sdk/credits';
+import { AuctionType } from '@fairdrop/types/domain';
+import { buildCreateAuction } from '@fairdrop/sdk/transactions';
+import type { CreateBase, TxSpec } from '@fairdrop/sdk/transactions';
+import type { PricingStepProps, QuadraticPricingValues, AnyPricingValues } from './types';
+import { ReviewRow } from '../wizard-steps/ReviewSection';
+
+const mic = (v: string) => aleoToMicro(v) ?? 0n;
+
+export const defaultPricing: QuadraticPricingValues = {
+  type: AuctionType.Quadratic,
+  raiseTarget: '', fillMinBpsEnabled: false, fillMinBps: '',
+};
+
+export function PricingReviewRows({ pricing }: { pricing: QuadraticPricingValues }) {
+  return (
+    <>
+      <ReviewRow label="Raise target" value={`${pricing.raiseTarget || '0'} ALEO`} />
+      {pricing.fillMinBpsEnabled && pricing.fillMinBps && (
+        <ReviewRow label="Min fill" value={`${pricing.fillMinBps}% of raise target`} />
+      )}
+    </>
+  );
+}
+
+export function buildWizardInputs(pricing: AnyPricingValues, base: CreateBase): TxSpec {
+  if (pricing.type !== AuctionType.Quadratic) throw new Error(`buildWizardInputs[quadratic]: got ${pricing.type}`);
+  const fillMinBps = pricing.fillMinBpsEnabled && pricing.fillMinBps
+    ? Math.round(parseFloat(pricing.fillMinBps) * 100)
+    : 0;
+  return buildCreateAuction({ ...base, type: AuctionType.Quadratic, raiseTarget: mic(pricing.raiseTarget), fillMinBps });
+}
 
 export function QuadraticPricingStep({ value, onChange }: PricingStepProps<QuadraticPricingValues>) {
   const fillPct = Number(value.fillMinBps);
