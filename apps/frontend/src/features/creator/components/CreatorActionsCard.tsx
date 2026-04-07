@@ -64,19 +64,27 @@ export function CreatorActionsCard({
   const canPushReferral   = isCleared && auction.referralBudget != null && auction.referralBudget > 0n;
   const canCancel         = isCreator && (isUpcoming || isActive);
 
-  // Amount inputs
-  const [payStr,   setPayStr]   = useState('');
-  const [unsoldStr, setUnsoldStr] = useState('');
+  // Amount + recipient inputs
+  const [payStr,         setPayStr]         = useState('');
+  const [payRecipient,   setPayRecipient]   = useState(auction.creator);
+  const [unsoldStr,      setUnsoldStr]      = useState('');
+  const [unsoldRecipient, setUnsoldRecipient] = useState(auction.creator);
 
   const payAmount    = useMemo(() => parseTokenAmount(payStr,   6),       [payStr]);
   const unsoldAmount = useMemo(() => parseTokenAmount(unsoldStr, decimals), [unsoldStr, decimals]);
 
+  const isValidAddress = (addr: string) => /^aleo1[a-z0-9]{58}$/.test(addr);
+
   const payError = payStr && (payAmount <= 0n || payAmount > revenueLeft)
     ? payAmount <= 0n ? 'Enter a valid amount.' : `Max ${formatMicrocredits(revenueLeft)}.`
     : null;
+  const payRecipientError = payRecipient && !isValidAddress(payRecipient)
+    ? 'Invalid Aleo address.' : null;
   const unsoldError = unsoldStr && (unsoldAmount <= 0n || unsoldAmount > unsoldLeft)
     ? unsoldAmount <= 0n ? 'Enter a valid amount.' : `Max ${formatAmount(unsoldLeft, decimals)} ${symbol}.`
     : null;
+  const unsoldRecipientError = unsoldRecipient && !isValidAddress(unsoldRecipient)
+    ? 'Invalid Aleo address.' : null;
 
   // Sequential tx
   const [activeKey, setActiveKey] = useState<string | null>(null);
@@ -166,9 +174,22 @@ export function CreatorActionsCard({
                 decimals={6} symbol="ALEO" max={revenueLeft} maxLabel="Max remaining"
                 placeholder="0.0" error={payError ?? undefined}
                 hint={`Available: ${formatMicrocredits(revenueLeft)}`} />
+              <div className="space-y-1">
+                <label className="text-[11px] text-muted-foreground">Send to</label>
+                <input
+                  className="w-full rounded-md border border-border bg-background/60 px-2.5 py-1.5 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-sky-500/40"
+                  value={payRecipient}
+                  onChange={(e) => setPayRecipient(e.target.value)}
+                  placeholder="aleo1…"
+                  spellCheck={false}
+                />
+                {payRecipientError && (
+                  <p className="text-[11px] text-destructive">{payRecipientError}</p>
+                )}
+              </div>
               <Button size="sm" variant="outline" className="w-full border-sky-500/10 bg-background/60 hover:bg-background/80"
-                disabled={!connected || anyBusy || payAmount <= 0n || !!payError}
-                onClick={() => runAction('withdraw-payments', 'Withdraw revenue', withdrawPayments(auction, payAmount))}>
+                disabled={!connected || anyBusy || payAmount <= 0n || !!payError || !!payRecipientError}
+                onClick={() => runAction('withdraw-payments', 'Withdraw revenue', withdrawPayments(auction, payAmount, payRecipient))}>
                 {isBusy('withdraw-payments') ? <><Spinner className="mr-2 size-3" />Submitting…</> : <><HandCoins className="mr-2 size-3.5" />Withdraw Revenue</>}
               </Button>
             </section>
@@ -191,9 +212,22 @@ export function CreatorActionsCard({
                 decimals={decimals} symbol={symbol || undefined} max={unsoldLeft} maxLabel="Max remaining"
                 placeholder="0" error={unsoldError ?? undefined}
                 hint={`Available: ${formatAmount(unsoldLeft, decimals)}${symbol ? ` ${symbol}` : ''}`} />
+              <div className="space-y-1">
+                <label className="text-[11px] text-muted-foreground">Send to</label>
+                <input
+                  className="w-full rounded-md border border-border bg-background/60 px-2.5 py-1.5 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-sky-500/40"
+                  value={unsoldRecipient}
+                  onChange={(e) => setUnsoldRecipient(e.target.value)}
+                  placeholder="aleo1…"
+                  spellCheck={false}
+                />
+                {unsoldRecipientError && (
+                  <p className="text-[11px] text-destructive">{unsoldRecipientError}</p>
+                )}
+              </div>
               <Button size="sm" variant="outline" className="w-full border-sky-500/10 bg-background/60 hover:bg-background/80"
-                disabled={!connected || anyBusy || unsoldAmount <= 0n || !!unsoldError}
-                onClick={() => runAction('withdraw-unsold', 'Withdraw unsold', withdrawUnsold(auction, unsoldAmount))}>
+                disabled={!connected || anyBusy || unsoldAmount <= 0n || !!unsoldError || !!unsoldRecipientError}
+                onClick={() => runAction('withdraw-unsold', 'Withdraw unsold', withdrawUnsold(auction, unsoldAmount, unsoldRecipient))}>
                 {isBusy('withdraw-unsold') ? <><Spinner className="mr-2 size-3" />Submitting…</> : <><Coins className="mr-2 size-3.5" />Withdraw Unsold</>}
               </Button>
             </section>

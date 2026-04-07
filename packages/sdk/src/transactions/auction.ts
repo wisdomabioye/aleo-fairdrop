@@ -71,16 +71,19 @@ export function pushReferralBudget(auction: AuctionView, fee = DEFAULT_TX_FEE): 
  * withdraw_payments — creator only; call after close_auction.
  *
  * Withdraws up to `amount` microcredits from creator_revenue escrow.
+ * `recipient` defaults to the creator's own address — override to direct
+ * funds to a partner, treasury, or DEX contract for AMM seeding.
  */
 export function withdrawPayments(
-  auction: AuctionView,
-  amount:  bigint,
+  auction:   AuctionView,
+  amount:    bigint,
+  recipient: string,
   fee = DEFAULT_TX_FEE,
 ): TxSpec {
   return {
     program:  auction.programId,
     function: 'withdraw_payments',
-    inputs:   [auction.id, `${amount}u128`],
+    inputs:   [auction.id, `${amount}u128`, recipient],
     fee,
     privateFee: false,
   };
@@ -118,16 +121,19 @@ export function withdrawTreasuryFees(
  *
  * Mints up to `amount` unsold tokens back to the creator.
  * Also used in VOIDED state to reclaim full supply.
+ * `recipient` defaults to the creator's own address — override to direct
+ * tokens to a partner or DEX contract for AMM seeding.
  */
 export function withdrawUnsold(
-  auction: AuctionView,
-  amount:  bigint,
+  auction:   AuctionView,
+  amount:    bigint,
+  recipient: string,
   fee = DEFAULT_TX_FEE,
 ): TxSpec {
   return {
     program:  auction.programId,
     function: 'withdraw_unsold',
-    inputs:   [auction.id, `${amount}u128`, auction.saleTokenId],
+    inputs:   [auction.id, `${amount}u128`, auction.saleTokenId, recipient],
     fee,
     privateFee: false,
   };

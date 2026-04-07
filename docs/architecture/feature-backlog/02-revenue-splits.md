@@ -1,10 +1,15 @@
-# Plan: Automatic Revenue Splits
+# Plan: Flexible Revenue Withdrawal
 
 ## Summary
 
-Creator configures a split table at `create_auction` time: up to N recipients with basis-point
-weights that must sum to 10 000. `withdraw_payments` distributes proportionally in one transaction.
-No trust required — allocations are immutable once set and enforced by the contract.
+Add a `recipient` parameter to `withdraw_payments` and `withdraw_unsold` in all 6 auction
+contracts. The creator specifies where funds go on each call — their own address, a partner's
+address, or a DEX contract for AMM seeding. No split table, no on-chain enforcement of
+creator-partner agreements.
+
+**Design rationale**: Fairdrop's trust guarantee covers bidders (payment → tokens). What the
+creator does with their revenue after close is a business relationship outside the protocol's
+scope. The `recipient` param enables trustworthy behaviour without enforcing it.
 
 Applies to all 6 auction contracts: `dutch`, `sealed`, `ascending`, `raise`, `lbp`, `quadratic`.
 
@@ -14,150 +19,203 @@ Applies to all 6 auction contracts: `dutch`, `sealed`, `ascending`, `raise`, `lb
 
 | Layer | Touch |
 |---|---|
-| Contract (×6) | Add `SplitEntry[]` to `AuctionConfig`; update `withdraw_payments` |
-| SDK | `buildCreateAuction` — add `splits` to every auction variant; `buildWithdrawPayments` |
-| Frontend | `GateVestStep` or new `SplitsStep`; `build-inputs.ts`; `ReviewStep` |
+| Contract (×6) | Add `recipient` param to `withdraw_payments` and `withdraw_unsold` |
+| SDK | Update `buildWithdrawPayments`, `buildWithdrawUnsold`; add `buildSeedFromAuction` |
+| Frontend | Update `CreatorActionsCard` withdrawal inputs; `SeedLiquidityPanel` |
 
 ---
 
 ## Contract changes
 
-### New types
+### `withdraw_payments`
 
+**Before:**
 ```leo
-struct SplitEntry {
-    recipient: address,
-    bps:       u16,   // basis points (1 = 0.01%)
-}
-
-// Fixed-size table; unused slots have bps = 0u16 and a zero address.
-// Max N = 5 to stay within Leo's struct size limits.
-struct SplitTable {
-    entry0: SplitEntry,
-    entry1: SplitEntry,
-    entry2: SplitEntry,
-    entry3: SplitEntry,
-    entry4: SplitEntry,
-    count:  u8,   // number of active entries (0 = no split, pay creator directly)
+fn withdraw_payments(
+    public auction_id: field,
+    public amount:     u128,
+) -> Final {
+    let caller: address = self.signer;
+    let f0: Final = credits.aleo::transfer_public(caller, amount as u64);
+    return final {
+        assert_eq(caller, config.creator);
+        ...
+    };
 }
 ```
 
-### `AuctionConfig` addition
-
+**After:**
 ```leo
-struct AuctionConfig {
-    ...existing fields...
-    splits: SplitTable,   // NEW — 0 count = all revenue to config.creator
+fn withdraw_payments(
+    public auction_id: field,
+    public amount:     u128,
+    public recipient:  address,
+) -> Final {
+    let caller: address = self.signer;
+    let f0: Final = credits.aleo::transfer_public(recipient, amount as u64);
+    return final {
+        assert_eq(caller, config.creator);   // only creator may initiate
+        ...                                  // existing escrow/revenue guards unchanged
+    };
 }
 ```
 
-### `create_auction` finalize
+Creator still must be the signer. They direct funds anywhere they choose.
 
-Assert split table is valid when `count > 0`:
+---
 
-```
-if splits.count > 0u8 {
-    let total_bps: u16 = sum of entry.bps for entries 0..count-1;
-    assert_eq(total_bps, 10000u16);
-    assert(splits.count <= 5u8);
-}
-```
+### `withdraw_unsold`
 
-### `withdraw_payments` finalize
-
-Replace single `transfer_public` call with split-aware distribution.
-Caller passes `amount` = total to distribute. Contract divides proportionally
-and issues one `credits.aleo::transfer_public` per active entry.
-
-```
-if config.splits.count == 0u8 {
-    // Existing behaviour: pay caller (creator)
-    transfer_public(caller, amount);
-} else {
-    // Distribute proportionally
-    let share0: u128 = amount * config.splits.entry0.bps as u128 / 10000u128;
-    transfer_public(config.splits.entry0.recipient, share0);
-    // ... repeat for entries 1-4 if count > 1 ...
-    // Remainder (rounding dust) goes to the first entry to avoid locked funds.
-}
+**Before:**
+```leo
+fn withdraw_unsold(
+    public auction_id:    field,
+    public amount:        u128,
+    public sale_token_id: field,
+) -> (token_registry.aleo::Token, Final)
 ```
 
-> **Rounding**: integer division truncates; accumulate dust and credit it to entry0 so total
-> distributed == amount. Invariant: sum of shares = amount.
+**After:**
+```leo
+fn withdraw_unsold(
+    public auction_id:    field,
+    public amount:        u128,
+    public sale_token_id: field,
+    public recipient:     address,
+) -> (token_registry.aleo::Token, Final)
+```
 
-### Backward compatibility
-
-`splits.count = 0` → identical to today's behavior. No migration needed for existing auctions.
+The `mint_private` call targets `recipient` instead of `self.signer`. Creator guard unchanged.
 
 ---
 
 ## SDK changes
 
-- All 6 `CreateAuctionInput` variants: add optional `splits?: Array<{ recipient: string; bps: number }>`
-- `buildCreateAuction` per variant: serialise `SplitTable` struct. If `splits` is undefined or empty,
-  serialise with `count: 0` and zero-address entries.
-- `buildWithdrawPayments`: no signature change needed — amount + auction_id is unchanged.
-- Add `serialiseSplitTable(splits)` helper in `format.ts` or `create.ts`.
+### `buildWithdrawPayments`
+
+```ts
+export function buildWithdrawPayments(
+  auction:   AuctionView,
+  amount:    bigint,
+  recipient: string,   // was implicit (always creator); now explicit
+): TxSpec
+```
+
+Frontend defaults to `auction.creator` when rendering the withdrawal input; passes the resolved
+address when the creator overrides it.
+
+---
+
+### `buildWithdrawUnsold`
+
+```ts
+export function buildWithdrawUnsold(
+  auction:        AuctionView,
+  amount:         bigint,
+  saleTokenId:    string,
+  recipient:      string,   // new — defaults to creator
+): TxSpec
+```
+
+---
+
+### `buildSeedFromAuction` — new composite helper
+
+Builds the transaction sequence for AMM seeding. Accepts both public and private credit paths
+(the DEX handles either). The seeding amount is whatever the creator decides to commit —
+they may have already sent part of their revenue elsewhere via earlier `withdraw_payments` calls.
+
+```ts
+export interface SeedFromAuctionInput {
+  auction:      AuctionView;
+  creditsAmount: bigint;   // how much revenue to seed (≤ remaining creator_revenue)
+  tokenAmount:   bigint;   // how much unsold supply to seed (≤ remaining unsold)
+  minLpTokens:  bigint;   // slippage guard
+}
+
+// Returns an ordered TxSpec[]:
+// [0] withdraw_payments  — creditsAmount → creator (for DEX input)
+// [1] withdraw_unsold    — tokenAmount   → creator (for DEX input)
+// [2] add_liquidity      — credits + tokens → LP token
+export function buildSeedFromAuction(input: SeedFromAuctionInput): TxSpec[]
+```
+
+`buildSeedFromAuction` is the only AMM-aware helper in the SDK. It always seeds to the creator
+(who then holds the LP token). The DEX `add_liquidity` accepts public or private credits — no
+`transfer_public_to_private` step needed.
 
 ---
 
 ## Frontend changes
 
-### New `SplitsStep.tsx` (or section inside `GateVestStep`)
+### `CreatorActionsCard` — withdrawal inputs
 
-- "Add revenue recipient" button, up to 5 entries.
-- Per-entry: address input + bps input.
-- Live validation: sum must equal 10 000 bps (100%).
-- "Distribute evenly" helper button: sets all active entries to `10000 / n` bps.
-- If no entries added: creator receives 100% (default).
+Both withdrawal sections get an optional "Send to" address field:
 
-### `WizardForm` additions
+```
+Withdraw Revenue
+  Amount  [____________]   Send to  [creator address auto-filled, editable]
+  [Withdraw]
 
-```ts
-splits: Array<{ recipient: string; bps: number }>  // default: []
+Withdraw Unsold Tokens
+  Amount  [____________]   Send to  [creator address auto-filled, editable]
+  [Withdraw]
 ```
 
-### `build-inputs.ts`
-
-Pass `form.splits` to `buildCreateAuction` for every auction type.
-
-### `ReviewStep`
-
-Show split table if `splits.length > 0`:
-```
-Revenue splits: 3 recipients
-  0x1234…abcd — 60% (6000 bps)
-  0x5678…efgh — 30% (3000 bps)
-  0x9abc…ijkl — 10% (1000 bps)
-```
+- Defaults to `auction.creator` (no change in default behaviour).
+- Validates the address is a valid Aleo address before enabling the button.
+- No label or explanation needed beyond the field — the creator knows what they're doing.
 
 ---
 
-## Open decisions
+### `SeedLiquidityPanel` — new post-close panel (creator only)
 
-1. **Max entries**: 5 is the suggested cap. Leo 4.0 does not support dynamic arrays in structs;
-   fixed-size is required. Could lower to 3 if struct size becomes a concern.
-2. **Rounding dust destination**: Plan routes dust to `entry0` (typically the creator). Alternatively
-   burn it by leaving in escrow — but that means `creator_withdrawn` can never reach `creator_revenue`,
-   breaking the invariant. Dust-to-entry0 is cleaner.
-3. **Partial `withdraw_payments` calls**: if creator calls with `amount < creator_revenue` in
-   multiple calls, each call distributes proportionally. This is correct — no change needed.
-4. **Who can call `withdraw_payments`?**: Currently gated to `config.creator`. With splits, anyone
-   should be able to trigger distribution (the split table dictates destinations, not the caller).
-   Consider removing the `assert_eq(caller, config.creator)` guard when `count > 0`.
+Visible on `AuctionDetailPage` after `status === Cleared`, creator wallet connected,
+remaining `creator_revenue > 0` or unsold > 0.
+
+**Layout:**
+
+```
+Seed Liquidity Pool
+  Revenue remaining  X ALEO      [Amount to seed ____]
+  Unsold tokens      Y TOKEN     [Amount to seed ____]
+  Implied price      X/Y ALEO per token  (auto-computed, updates live)
+  Min LP tokens      [auto-computed at 1% slippage, editable]
+
+  [Seed Pool]   ← submits all 3 transactions in sequence
+```
+
+**Transaction sequencing** (`useSeedLiquidity` hook):
+1. Submit `withdraw_payments(id, creditsAmount, creator)`
+2. Poll until confirmed
+3. Submit `withdraw_unsold(id, tokenAmount, tokenId, creator)`
+4. Poll until confirmed
+5. Submit `add_liquidity(credits, tokens, minLpTokens)`
+
+Status shown per step: `idle → withdrawing → withdrawing_unsold → seeding → done | error`.
+
+The panel detects if either withdrawal has already been partially executed (compare
+`creator_withdrawn` against `creator_revenue`) and adjusts the available amounts accordingly.
+
+---
+
+## Backward compatibility
+
+Existing `withdraw_payments(id, amount)` calls break — `recipient` is a new required parameter.
+SDK callers always go through `buildWithdrawPayments`, so the only change needed is passing
+`auction.creator` as the default. No contract state migration.
 
 ---
 
 ## Steps
 
-1. Define `SplitEntry` and `SplitTable` structs in each of the 6 auction contracts.
-2. Add `splits: SplitTable` field to `AuctionConfig` in each contract.
-3. Update `create_auction` finalize: validate split bps sum when `count > 0`.
-4. Update `withdraw_payments` transition and finalize in each contract with proportional distribution.
-5. Add `serialiseSplitTable` helper to SDK `format.ts`.
-6. Update `CreateAuctionInput` variants and `buildCreateAuction` serialisation in SDK.
-7. Build `SplitsStep.tsx` UI component with live bps validation.
-8. Wire `SplitsStep` into the wizard, add to `WizardForm` + `DEFAULT_FORM`.
-9. Update `build-inputs.ts` to pass `splits`.
-10. Update `ReviewStep` to display split table.
-11. Run type-check.
+1. Update `withdraw_payments` in all 6 contracts: add `public recipient: address`; change CPI target.
+2. Update `withdraw_unsold` in all 6 contracts: add `public recipient: address`; change mint target.
+3. Update `buildWithdrawPayments` in SDK — add `recipient` param.
+4. Update `buildWithdrawUnsold` in SDK — add `recipient` param.
+5. Add `buildSeedFromAuction` to SDK (`packages/sdk/src/transactions/dex.ts`).
+6. Update `CreatorActionsCard`: add "Send to" address input for both withdrawal sections.
+7. Build `useSeedLiquidity` hook with 3-step sequencing + per-step status.
+8. Build `SeedLiquidityPanel` component.
+9. Wire `SeedLiquidityPanel` into `AuctionDetailPage` (creator only, post-close).
+10. Run type-check.

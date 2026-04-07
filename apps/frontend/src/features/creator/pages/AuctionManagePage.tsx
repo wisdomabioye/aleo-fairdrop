@@ -13,10 +13,11 @@ import { AppRoutes, auctionDetailUrl } from '@/config';
 import { useAuction } from '@/features/auctions/hooks/useAuction';
 import { useBlockHeight } from '@/shared/hooks/useBlockHeight';
 import { useCreatorWithdrawn } from '../hooks/useCreatorWithdrawn';
-import { AuctionOverviewCard } from '../components/AuctionOverviewCard';
-import { AuctionSalesCard }    from '../components/AuctionSalesCard';
-import { CreatorRevenueCard }  from '../components/CreatorRevenueCard';
-import { CreatorActionsCard }  from '../components/CreatorActionsCard';
+import { AuctionOverviewCard }  from '../components/AuctionOverviewCard';
+import { AuctionSalesCard }     from '../components/AuctionSalesCard';
+import { CreatorRevenueCard }   from '../components/CreatorRevenueCard';
+import { CreatorActionsCard }   from '../components/CreatorActionsCard';
+import { SeedLiquidityPanel }   from '../components/SeedLiquidityPanel';
 
 function LoadingSkeleton() {
   return (
@@ -105,13 +106,18 @@ function AuctionManageContent({ id }: { id: string }) {
           )}
         </div>
 
-        <div className="xl:sticky xl:top-4 xl:self-start">
+        <div className="space-y-4 xl:sticky xl:top-4 xl:self-start">
           <CreatorActionsCard
             auction={auction}
             blockHeight={blockHeight}
             paymentsWithdrawn={withdrawn.data?.paymentsWithdrawn ?? 0n}
             unsoldWithdrawn={withdrawn.data?.unsoldWithdrawn ?? 0n}
             onWithdrawDone={() => void withdrawn.refetch()}
+          />
+          <SeedLiquidityPanel
+            auction={auction}
+            paymentsWithdrawn={withdrawn.data?.paymentsWithdrawn ?? 0n}
+            unsoldWithdrawn={withdrawn.data?.unsoldWithdrawn ?? 0n}
           />
         </div>
       </div>

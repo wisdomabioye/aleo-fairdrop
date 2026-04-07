@@ -1080,10 +1080,11 @@ program fairdrop_raise_v2.aleo {
     fn withdraw_payments(
         public auction_id: field,
         public amount:     u128,
+        public recipient:  address,
     ) -> Final {
         assert(amount > 0u128);
         let caller: address = self.signer;
-        let f0: Final = credits.aleo::transfer_public(self.signer, amount as u64);
+        let f0: Final = credits.aleo::transfer_public(recipient, amount as u64);
         return final {
             assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
             f0.run();
@@ -1122,6 +1123,7 @@ program fairdrop_raise_v2.aleo {
         public auction_id:    field,
         public amount:        u128,
         public sale_token_id: field,
+        public recipient:     address,
     ) -> (token_registry.aleo::Token, Final) {
         assert(amount > 0u128);
 
@@ -1130,7 +1132,7 @@ program fairdrop_raise_v2.aleo {
         let (token, f_mint): (token_registry.aleo::Token, Final) =
             token_registry.aleo::mint_private(
                 sale_token_id,
-                self.signer,
+                recipient,
                 amount,
                 false,
                 4294967295u32,
