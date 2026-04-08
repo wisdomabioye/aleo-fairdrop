@@ -28,6 +28,7 @@ import { AdminPage }          from '@/features/admin/pages/AdminPage';
 import { CreatorsPage }       from '@/features/creators/pages/CreatorsPage';
 import { CreatorPage }        from '@/features/creators/pages/CreatorPage';
 import { AnalyticsPage }      from '@/features/analytics/pages/AnalyticsPage';
+import { GuidePage }          from '@/features/guide/pages/GuidePage';
 
 // ── Placeholder (for routes not yet built) ────────────────────────────────────
 function Placeholder({ name }: { name: string }) {
@@ -101,7 +102,7 @@ export function App() {
 
           {/* Admin & Guide */}
           <Route path={AppRoutes.admin}              element={<AdminPage />} />
-          <Route path={AppRoutes.guide}              element={<Placeholder name="Guide" />} />
+          <Route path={`${AppRoutes.guide}/*`}        element={<GuidePage />} />
 
           <Route path="*"                         element={<Placeholder name="404 — Not Found" />} />
         </Route>
