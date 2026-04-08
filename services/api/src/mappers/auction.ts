@@ -7,7 +7,7 @@ import {
 import { buildAuctionParams } from '@fairdrop/sdk/parse';
 import type { AuctionRow, AuctionMetadataRow, CreatorReputationRow } from '@fairdrop/database';
 import type { BlockContext } from '../queries/auctions.js';
-import type { TokenInfo } from '../lib/token-cache.js';
+import type { TokenInfo } from '@fairdrop/types/domain';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 

@@ -19,6 +19,7 @@ import type {
   indexerCheckpoints,
   indexerTransitions,
   protocolConfig,
+  tokens,
 } from './schema/index';
 
 // Auctions
@@ -58,3 +59,7 @@ export type NewIndexerTransition = InferInsertModel<typeof indexerTransitions>;
 // Protocol config (single-row; indexed from fairdrop_config_v2.aleo)
 export type ProtocolConfigRow = InferSelectModel<typeof protocolConfig>;
 export type NewProtocolConfig  = InferInsertModel<typeof protocolConfig>;
+
+// Tokens
+export type TokenRow    = InferSelectModel<typeof tokens>;
+export type NewToken    = InferInsertModel<typeof tokens>;

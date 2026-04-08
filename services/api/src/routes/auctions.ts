@@ -7,7 +7,7 @@ import { listAuctions, getAuction, getBlockContext } from '../queries/auctions.j
 import { getMetadataByHash, getMetadataByHashes } from '../queries/metadata.js';
 import { getCreatorReputation, getCreatorReputationBatch } from '../queries/creators.js';
 import { toAuctionView, toAuctionListItem } from '../mappers/auction.js';
-import { getTokenInfo, getTokenInfoBatch } from '../lib/token-cache.js';
+import { getToken, getTokensBatch } from '../lib/tokens.js';
 import { parsePagination, buildPage } from '../lib/pagination.js';
 import { json } from '../lib/respond.js';
 import { env } from '../env.js';
@@ -49,7 +49,7 @@ auctionsRouter.get('/', async (c) => {
 
   const [metadataMap, tokenInfoMap, creatorRepMap] = await Promise.all([
     getMetadataByHashes(db, rows.map((r) => r.metadataHash).filter((h): h is string => h != null)),
-    getTokenInfoBatch(env.aleoRpcUrl, [...new Set(rows.map((r) => r.saleTokenId))]),
+    getTokensBatch(db, env.aleoRpcUrl, [...new Set(rows.map((r) => r.saleTokenId))]),
     getCreatorReputationBatch(db, [...new Set(rows.map((r) => r.creator))]),
   ]);
 
@@ -90,7 +90,7 @@ auctionsRouter.get('/:id', async (c) => {
 
   const [metaRow, tokenInfo, creatorRep] = await Promise.all([
     row.metadataHash ? getMetadataByHash(db, row.metadataHash) : Promise.resolve(null),
-    getTokenInfo(env.aleoRpcUrl, row.saleTokenId),
+    getToken(db, env.aleoRpcUrl, row.saleTokenId),
     getCreatorReputation(db, row.creator),
   ]);
 

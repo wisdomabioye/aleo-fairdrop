@@ -9,7 +9,7 @@ import {
 } from '../queries/users.js';
 import { getBlockContext } from '../queries/auctions.js';
 import { getMetadataByHashes } from '../queries/metadata.js';
-import { getTokenInfoBatch } from '../lib/token-cache.js';
+import { getTokensBatch } from '../lib/tokens.js';
 import { toAuctionListItem } from '../mappers/auction.js';
 import { parsePagination, buildPage } from '../lib/pagination.js';
 import { json } from '../lib/respond.js';
@@ -56,7 +56,7 @@ usersRouter.get('/:address/auctions', async (c) => {
 
   const [metadataMap, tokenInfoMap] = await Promise.all([
     getMetadataByHashes(db, rows.map((r) => r.metadataHash).filter((h): h is string => h != null)),
-    getTokenInfoBatch(env.aleoRpcUrl, [...new Set(rows.map((r) => r.saleTokenId))]),
+    getTokensBatch(db, env.aleoRpcUrl, [...new Set(rows.map((r) => r.saleTokenId))]),
   ]);
 
   const items = rows.map((r) =>

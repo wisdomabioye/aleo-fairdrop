@@ -5,3 +5,4 @@ export { userReputation, creatorNonces, creatorReputation } from './users';
 export { referralCodes, referralAttributions } from './referrals';
 export { indexerCheckpoints, indexerTransitions } from './indexer';
 export { protocolConfig } from './protocol-config';
+export { tokens } from './tokens';
