@@ -7,6 +7,7 @@ import { formatMicrocredits } from '@fairdrop/sdk/credits';
 import { AuctionStatus, AuctionType } from '@fairdrop/types/domain';
 import type { AuctionView } from '@fairdrop/types/domain';
 import { getRegistrySlot } from '../registry';
+import { VestingScheduleChart } from '../charts/VestingScheduleChart';
 import { useBlockHeight } from '@/shared/hooks/useBlockHeight';
 import { useProtocolConfig } from '@/shared/hooks/useProtocolConfig';
 import { AppRoutes } from '@/config';
@@ -109,10 +110,10 @@ export function AuctionEarnTab({ auction }: AuctionEarnTabProps) {
     auction.status === AuctionStatus.Clearing;
 
   // Contribution-type auctions with early-close support can close once the partial fill
-  // threshold is met (currently Raise only — Quadratic always runs to end_block).
+  // threshold is met (currently Raise only — Quadratic has hasFillThreshold but supportsEarlyClose=false).
   const slot = getRegistrySlot(auction.type);
   const fillThresholdMet =
-    slot?.supportsEarlyClose === true &&
+    slot?.hasFillThreshold === true &&
     auction.raise != null &&
     auction.raise.fillMinBps > 0 &&
     auction.totalPayments >= (auction.raise.raiseTarget * BigInt(auction.raise.fillMinBps)) / 10000n;
@@ -121,7 +122,7 @@ export function AuctionEarnTab({ auction }: AuctionEarnTabProps) {
     auction.status === AuctionStatus.Ended    ||
     auction.status === AuctionStatus.Clearing ||
     (auction.status === AuctionStatus.Active && blockHeight > 0 && blockHeight >= liveEndBlock) ||
-    (auction.status === AuctionStatus.Active && fillThresholdMet);
+    (auction.status === AuctionStatus.Active && fillThresholdMet && slot?.supportsEarlyClose === true);
 
   const blocksLeft =
     auction.status === AuctionStatus.Active && blockHeight > 0
@@ -234,6 +235,12 @@ export function AuctionEarnTab({ auction }: AuctionEarnTabProps) {
           href={isActive && hasBudget ? '?tab=referral' : undefined}
         />
       </CardContent>
+
+      {auction.vestEnabled && (
+        <CardContent className="pt-0">
+          <VestingScheduleChart auction={auction} />
+        </CardContent>
+      )}
     </Card>
   );
 }

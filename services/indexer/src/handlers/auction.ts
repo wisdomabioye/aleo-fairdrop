@@ -9,7 +9,8 @@
  */
 
 import { auctions }                        from '@fairdrop/database';
-import { fetchFlatAuctionConfig, fetchFlatAuctionState } from '../lib/chain.js';
+import { eq, sql }                         from 'drizzle-orm';
+import { fetchFlatAuctionConfig, fetchFlatAuctionState, fetchSqrtWeight } from '../lib/chain.js';
 import { createLogger }                    from '../logger.js';
 import type { TransitionContext }          from './types.js';
 import type { FlatAuctionConfig }          from '../types/chain.js';
@@ -154,4 +155,39 @@ export async function upsertAuction(
     });
 
   return config;
+}
+
+// ── Bid count ─────────────────────────────────────────────────────────────────
+
+/**
+ * Increments bid_count for a known auction by 1.
+ * Called after upsertAuction for every place_bid_* and commit_bid_* transition.
+ */
+/**
+ * Reads the current sqrt_weights[auctionId] and stores it.
+ * Called after every Quadratic bid — the value is updated in the bid's finalize block.
+ */
+export async function updateSqrtWeight(
+  ctx:       TransitionContext,
+  auctionId: string,
+  programId: string,
+): Promise<void> {
+  const { db } = ctx;
+  const weight = await fetchSqrtWeight(auctionId, programId);
+  if (weight == null) return;
+  await db
+    .update(auctions)
+    .set({ sqrtWeight: weight })
+    .where(eq(auctions.id, auctionId));
+}
+
+export async function incrementBidCount(
+  ctx:       TransitionContext,
+  auctionId: string,
+): Promise<void> {
+  const { db } = ctx;
+  await db
+    .update(auctions)
+    .set({ bidCount: sql`${auctions.bidCount} + 1` })
+    .where(eq(auctions.id, auctionId));
 }

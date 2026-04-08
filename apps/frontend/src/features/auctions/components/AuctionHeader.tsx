@@ -17,7 +17,7 @@ import { truncateAddress, sanitizeExternalUrl } from '@fairdrop/sdk/format';
 import { AuctionStatus, AuctionType, GateMode } from '@fairdrop/types/domain';
 import type { AuctionView } from '@fairdrop/types/domain';
 import { IPFS_GATEWAY } from '@/env';
-import { AppRoutes } from '@/config';
+import { AppRoutes, creatorUrl } from '@/config';
 import { cn } from '@/lib/utils';
 import { getRegistrySlot } from '../registry';
 import { LetterAvatar } from './LetterAvatar';
@@ -239,12 +239,24 @@ export function AuctionHeader({ auction, currentPrice }: AuctionHeaderProps) {
                 More by creator
               </Link>
 
+              <Link
+                to={creatorUrl(auction.creator)}
+                className="inline-flex h-7 items-center rounded-lg border border-border/60 bg-background/50 px-2 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Creator profile
+              </Link>
+
               {auction.creatorReputation ? (
-                <CreatorBadge
-                  tier={auction.creatorReputation.tier}
-                  stats={auction.creatorReputation}
-                  size="md"
-                />
+                <>
+                  <CreatorBadge
+                    tier={auction.creatorReputation.tier}
+                    stats={auction.creatorReputation}
+                    size="md"
+                  />
+                  <span className="text-[11px] text-muted-foreground">
+                    {formatMicrocredits(BigInt(auction.creatorReputation.volumeMicrocredits))} raised total
+                  </span>
+                </>
               ) : null}
 
               {website ? (

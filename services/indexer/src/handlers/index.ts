@@ -12,8 +12,8 @@
 
 import { PROGRAMS }               from '@fairdrop/config';
 import { AuctionType }            from '@fairdrop/types/domain';
-import { upsertAuction }          from './auction.js';
-import { upsertCreatorReputation } from './reputation.js';
+import { upsertAuction, incrementBidCount, updateSqrtWeight } from './auction.js';
+import { upsertCreatorReputation }          from './reputation.js';
 import { buildConfigHandlerMap }  from './config.js';
 import {
   auctionIdFromCreateAuctionTransition,
@@ -33,10 +33,18 @@ function createProgramHandlerMap(
     await upsertAuction(ctx, programId, auctionType, auctionId);
   };
 
+  /** Bid transitions: upsert state + increment bid_count + update sqrt_weight (Quadratic only). */
+  const onBid: TransitionHandlerFn = async (ctx, auctionId) => {
+    await upsertAuction(ctx, programId, auctionType, auctionId);
+    await incrementBidCount(ctx, auctionId);
+    if (auctionType === AuctionType.Quadratic) {
+      await updateSqrtWeight(ctx, auctionId, programId);
+    }
+  };
+
   /**
    * close_auction: auction upsert + creator reputation.
    * update_reputation CPI only fires here — not on cancel_auction.
-   * Add more concerns (stats, referral totals, …) here as needed.
    */
   const onClose: TransitionHandlerFn = async (ctx, auctionId) => {
     const config = await upsertAuction(ctx, programId, auctionType, auctionId);
@@ -47,19 +55,19 @@ function createProgramHandlerMap(
     create_auction:        { getAuctionId: auctionIdFromCreateAuctionTransition, handle: onAuction },
     close_auction:         { getAuctionId: auctionIdFromTransitionInputZero,     handle: onClose   },
     cancel_auction:        { getAuctionId: auctionIdFromTransitionInputZero,     handle: onAuction },
-    place_bid_private:     { getAuctionId: auctionIdFromTransitionInputOne,      handle: onAuction },
-    place_bid_public:      { getAuctionId: auctionIdFromTransitionInputZero,     handle: onAuction },
-    place_bid_private_ref: { getAuctionId: auctionIdFromTransitionInputOne,      handle: onAuction },
-    place_bid_public_ref:  { getAuctionId: auctionIdFromTransitionInputZero,     handle: onAuction },
+    place_bid_private:     { getAuctionId: auctionIdFromTransitionInputOne,      handle: onBid     },
+    place_bid_public:      { getAuctionId: auctionIdFromTransitionInputZero,     handle: onBid     },
+    place_bid_private_ref: { getAuctionId: auctionIdFromTransitionInputOne,      handle: onBid     },
+    place_bid_public_ref:  { getAuctionId: auctionIdFromTransitionInputZero,     handle: onBid     },
   };
 
   if (auctionType === AuctionType.Sealed) {
     return {
       ...base,
-      commit_bid_private:     { getAuctionId: auctionIdFromTransitionInputOne,  handle: onAuction },
-      commit_bid_public:      { getAuctionId: auctionIdFromTransitionInputZero, handle: onAuction },
-      commit_bid_private_ref: { getAuctionId: auctionIdFromTransitionInputOne,  handle: onAuction },
-      commit_bid_public_ref:  { getAuctionId: auctionIdFromTransitionInputZero, handle: onAuction },
+      commit_bid_private:     { getAuctionId: auctionIdFromTransitionInputOne,  handle: onBid     },
+      commit_bid_public:      { getAuctionId: auctionIdFromTransitionInputZero, handle: onBid     },
+      commit_bid_private_ref: { getAuctionId: auctionIdFromTransitionInputOne,  handle: onBid     },
+      commit_bid_public_ref:  { getAuctionId: auctionIdFromTransitionInputZero, handle: onBid     },
       reveal_bid:             { getAuctionId: auctionIdFromFinalizeRevealBid,   handle: onAuction },
     };
   }

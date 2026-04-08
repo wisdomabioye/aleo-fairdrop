@@ -2,7 +2,7 @@ import {
   AuctionType, AuctionStatus, GateMode,
   computeTier,
   type AuctionView, type AuctionListItem, type AuctionMetadata,
-  type RaiseMechanismFields, type CreatorReputationStats,
+  type RaiseMechanismFields, type CreatorReputationResponse,
 } from '@fairdrop/types/domain';
 import { buildAuctionParams } from '@fairdrop/sdk/parse';
 import type { AuctionRow, AuctionMetadataRow, CreatorReputationRow } from '@fairdrop/database';
@@ -146,9 +146,10 @@ function toRevenueFields(
   };
 }
 
-function toCreatorStats(rep: CreatorReputationRow | null): CreatorReputationStats | null {
+function toCreatorStats(rep: CreatorReputationRow | null): CreatorReputationResponse | null {
   if (!rep) return null;
   return {
+    address:            rep.address,
     auctionsRun:        rep.auctionsRun,
     filledAuctions:     rep.filledAuctions,
     volumeMicrocredits: rep.volume,
@@ -160,10 +161,10 @@ function toCreatorStats(rep: CreatorReputationRow | null): CreatorReputationStat
 // ── Public mappers ────────────────────────────────────────────────────────────
 
 export function toAuctionView(
-  row:       AuctionRow,
-  ctx:       BlockContext,
-  metaRow:   AuctionMetadataRow | null,
-  tokenInfo: TokenInfo | null,
+  row:        AuctionRow,
+  ctx:        BlockContext,
+  metaRow:    AuctionMetadataRow | null,
+  tokenInfo:  TokenInfo | null,
   creatorRep: CreatorReputationRow | null = null,
 ): AuctionView {
   const isContributionType = row.type === AuctionType.Raise || row.type === AuctionType.Quadratic;
@@ -199,6 +200,8 @@ export function toAuctionView(
     vestEndBlocks:     row.vestEndBlocks,
     params:            buildAuctionParams(row),
     creatorReputation: toCreatorStats(creatorRep),
+    bidCount:   row.bidCount,
+    sqrtWeight: row.sqrtWeight ?? null,
     ...toTimingFields(row, ctx),
     ...toRevenueFields(row),
   };
@@ -239,6 +242,7 @@ export function toAuctionListItem(
     estimatedEnd:      estimateTime(row.effectiveEndBlock ?? row.endBlock, ctx),
     vestEnabled:       row.vestEnabled,
     gateMode:          gateMode(row.gateMode),
-    creatorTier:       creatorRep ? computeTier(creatorRep.auctionsRun, creatorRep.filledAuctions) : null,
+    creatorTier:       toCreatorStats(creatorRep)?.tier ?? null,
+    bidCount:          row.bidCount,
   };
 }

@@ -105,10 +105,10 @@ export function ActionsPanel({ auction, blockHeight }: ActionsPanelProps) {
   const pastEnd   = blockHeight != null && blockHeight > liveEndBlock;
 
   // Contribution-type auctions with early-close support can close once the partial fill
-  // threshold is met (currently Raise only — Quadratic always runs to end_block).
+  // threshold is met (currently Raise only — Quadratic has hasFillThreshold but supportsEarlyClose=false).
   const slot = getRegistrySlot(auction.type);
   const fillThresholdMet =
-    slot?.supportsEarlyClose === true &&
+    slot?.hasFillThreshold === true &&
     auction.raise != null &&
     auction.raise.fillMinBps > 0 &&
     auction.totalPayments >= (auction.raise.raiseTarget * BigInt(auction.raise.fillMinBps)) / 10000n;
@@ -116,7 +116,7 @@ export function ActionsPanel({ auction, blockHeight }: ActionsPanelProps) {
   const canClose =
     auction.status === AuctionStatus.Ended ||
     auction.status === AuctionStatus.Clearing ||
-    (auction.status === AuctionStatus.Active && fillThresholdMet);
+    (auction.status === AuctionStatus.Active && fillThresholdMet && slot?.supportsEarlyClose === true);
   
   const canSlash =
     auction.type === AuctionType.Sealed && pastEnd && auction.status === AuctionStatus.Ended;

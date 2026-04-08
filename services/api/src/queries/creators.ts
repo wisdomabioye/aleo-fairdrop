@@ -1,4 +1,4 @@
-import { eq, desc, inArray } from 'drizzle-orm';
+import { eq, desc, inArray, gt } from 'drizzle-orm';
 import { creatorReputation } from '@fairdrop/database';
 import type { Db, CreatorReputationRow } from '@fairdrop/database';
 
@@ -35,6 +35,7 @@ export async function listTopCreators(
   return db
     .select()
     .from(creatorReputation)
-    .orderBy(desc(creatorReputation.filledAuctions))
+    .where(gt(creatorReputation.filledAuctions, 0))
+    .orderBy(desc(creatorReputation.filledAuctions), desc(creatorReputation.auctionsRun))
     .limit(limit);
 }

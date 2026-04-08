@@ -86,6 +86,10 @@ export const auctions = pgTable('auctions', {
   vestCliffBlocks: integer('vest_cliff_blocks').notNull().default(0),
   vestEndBlocks:   integer('vest_end_blocks').notNull().default(0),
 
+  bidCount:        integer('bid_count').notNull().default(0),
+  /** Quadratic only — current sqrt_weights[auction_id] value. Updated on every bid. */
+  sqrtWeight:      text('sqrt_weight'),
+
   createdAtBlock:  integer('created_at_block').notNull(),
   createdAt:       timestamp('created_at').notNull(),
   updatedAt:       timestamp('updated_at').notNull(),

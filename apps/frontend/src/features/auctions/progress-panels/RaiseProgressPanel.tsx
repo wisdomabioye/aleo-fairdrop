@@ -5,8 +5,8 @@ import type { ProgressPanelProps } from './types';
 
 /** Supply bar with a raise-target threshold marker. */
 export function RaiseProgressPanel({ auction }: ProgressPanelProps) {
-  const target        = auction.raise?.raiseTarget ?? 0n;
-  const totalPayments = BigInt(auction.totalPayments);
+  const target        = BigInt(auction.raise?.raiseTarget ?? 0n);
+  const totalPayments = BigInt(auction.totalPayments ?? 0);
   const isCleared     = auction.status === AuctionStatus.Cleared;
 
   // Partial fill: cleared but effective_supply < supply (tokens scaled back)

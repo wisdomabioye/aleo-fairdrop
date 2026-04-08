@@ -30,10 +30,10 @@ export function RaiseBidForm({ auction, protocolConfig, onBidSuccess }: BidFormP
   const [searchParams] = useSearchParams();
   const { creditRecords, loading: creditsLoading } = useCreditRecords();
 
-  const minBidAmount = auction.minBidAmount ?? 0n;
-  const maxBidAmount = auction.maxBidAmount ?? 0n;
+  const minBidAmount = BigInt(auction.minBidAmount ?? 0n);
+  const maxBidAmount = BigInt(auction.maxBidAmount ?? 0n);
   const remaining    = auction.raise != null
-    ? auction.raise.raiseTarget - BigInt(auction.totalPayments)
+    ? BigInt(auction.raise.raiseTarget) - BigInt(auction.totalPayments)
     : null;
 
   const [payInput,         setPayInput]         = useState('');

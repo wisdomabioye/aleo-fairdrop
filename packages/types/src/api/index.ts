@@ -22,3 +22,5 @@ export type {
   UserAuctionsResponse,
   UserVestingResponse,
 } from './user';
+
+export type { DashboardStats } from './dashboard';

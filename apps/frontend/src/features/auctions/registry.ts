@@ -1,10 +1,19 @@
 import type { ComponentType } from 'react';
 import { AuctionType } from '@fairdrop/types/domain';
+import type { AuctionView } from '@fairdrop/types/domain';
 import type { BidFormProps }        from './bid-forms/types';
 import type { PricePanelProps }     from './price-panels/types';
 import type { ProgressPanelProps }  from './progress-panels/types';
 import type { PricingStepProps, AnyPricingValues } from './pricing-steps/types';
 import type { CreateBase, TxSpec } from '@fairdrop/sdk/transactions';
+
+import { PriceCurveChart }    from './charts/PriceCurveChart';
+import { NextPriceDropChip }  from './indicators/NextPriceDropChip';
+import { DutchSimulator }     from './simulators/DutchSimulator';
+import { SealedSimulator }    from './simulators/SealedSimulator';
+import { RaiseSimulator }     from './simulators/RaiseSimulator';
+import { LbpSimulator }       from './simulators/LbpSimulator';
+import { QuadraticSimulator } from './simulators/QuadraticSimulator';
 
 import { DutchBidForm }     from './bid-forms/DutchBidForm';
 import { SealedBidForm }    from './bid-forms/SealedBidForm';
@@ -85,6 +94,14 @@ export interface AuctionTypeSlot {
    */
   buildWizardInputs: (pricing: AnyPricingValues, base: CreateBase) => TxSpec;
 
+  // ── Analytics & UX surfaces ───────────────────────────────────────────────
+  /** Analytics tab — price curve chart, null for types without a price curve. */
+  chartComponent:     ComponentType<{ auction: AuctionView }> | null;
+  /** Collapsible allocation estimator shown on the detail page. */
+  simulatorComponent: ComponentType<{ auction: AuctionView }> | null;
+  /** Inline indicator rendered near the bid panel (e.g. next price drop chip). */
+  indicatorComponent: ComponentType<{ auction: AuctionView }> | null;
+
   // ── Capability flags ──────────────────────────────────────────────────────
   /**
    * Participants contribute ALEO credits directly; the bid IS a payment amount
@@ -114,6 +131,9 @@ export const AUCTION_REGISTRY: Record<AuctionType, AuctionTypeSlot> = {
     PricingReviewRows:   DutchPricingReviewRows  as ComponentType<{ pricing: AnyPricingValues }>,
     defaultPricing:      dutchDefaultPricing,
     buildWizardInputs:   dutchBuildWizardInputs,
+    chartComponent:      PriceCurveChart,
+    simulatorComponent:  DutchSimulator,
+    indicatorComponent:  NextPriceDropChip,
     isContributionType:  false,
     hasRaiseTarget:      false,
     hasFillThreshold:    false,
@@ -132,6 +152,9 @@ export const AUCTION_REGISTRY: Record<AuctionType, AuctionTypeSlot> = {
     PricingReviewRows:   SealedPricingReviewRows  as ComponentType<{ pricing: AnyPricingValues }>,
     defaultPricing:      sealedDefaultPricing,
     buildWizardInputs:   sealedBuildWizardInputs,
+    chartComponent:      null,
+    simulatorComponent:  SealedSimulator,
+    indicatorComponent:  null,
     isContributionType:  false,
     hasRaiseTarget:      false,
     hasFillThreshold:    false,
@@ -150,6 +173,9 @@ export const AUCTION_REGISTRY: Record<AuctionType, AuctionTypeSlot> = {
     PricingReviewRows:   RaisePricingReviewRows  as ComponentType<{ pricing: AnyPricingValues }>,
     defaultPricing:      raiseDefaultPricing,
     buildWizardInputs:   raiseBuildWizardInputs,
+    chartComponent:      null,
+    simulatorComponent:  RaiseSimulator,
+    indicatorComponent:  null,
     isContributionType:  true,
     hasRaiseTarget:      true,
     hasFillThreshold:    true,
@@ -168,6 +194,9 @@ export const AUCTION_REGISTRY: Record<AuctionType, AuctionTypeSlot> = {
     PricingReviewRows:   AscendingPricingReviewRows  as ComponentType<{ pricing: AnyPricingValues }>,
     defaultPricing:      ascendingDefaultPricing,
     buildWizardInputs:   ascendingBuildWizardInputs,
+    chartComponent:      PriceCurveChart,
+    simulatorComponent:  null,
+    indicatorComponent:  null,
     isContributionType:  false,
     hasRaiseTarget:      false,
     hasFillThreshold:    false,
@@ -176,7 +205,7 @@ export const AUCTION_REGISTRY: Record<AuctionType, AuctionTypeSlot> = {
   },
   [AuctionType.Lbp]: {
     type:                AuctionType.Lbp,
-    label:               'LBP (Not Available)',
+    label:               'LBP',
     color:               'bg-amber-500/15 text-amber-600 dark:text-amber-400',
     description:         'Liquidity bootstrapping pool — weight-decay price discovery.',
     BidForm:             LbpBidForm,
@@ -186,6 +215,9 @@ export const AUCTION_REGISTRY: Record<AuctionType, AuctionTypeSlot> = {
     PricingReviewRows:   LbpPricingReviewRows  as ComponentType<{ pricing: AnyPricingValues }>,
     defaultPricing:      lbpDefaultPricing,
     buildWizardInputs:   lbpBuildWizardInputs,
+    chartComponent:      PriceCurveChart,
+    simulatorComponent:  LbpSimulator,
+    indicatorComponent:  null,
     isContributionType:  false,
     hasRaiseTarget:      false,
     hasFillThreshold:    false,
@@ -194,7 +226,7 @@ export const AUCTION_REGISTRY: Record<AuctionType, AuctionTypeSlot> = {
   },
   [AuctionType.Quadratic]: {
     type:                AuctionType.Quadratic,
-    label:               'Quadratic (Not Available)',
+    label:               'Quadratic',
     color:               'bg-rose-500/15 text-rose-600 dark:text-rose-400',
     description:         'Square-root weighting — smaller voices count more.',
     BidForm:             QuadraticBidForm,
@@ -204,6 +236,9 @@ export const AUCTION_REGISTRY: Record<AuctionType, AuctionTypeSlot> = {
     PricingReviewRows:   QuadraticPricingReviewRows  as ComponentType<{ pricing: AnyPricingValues }>,
     defaultPricing:      quadraticDefaultPricing,
     buildWizardInputs:   quadraticBuildWizardInputs,
+    chartComponent:      null,
+    simulatorComponent:  QuadraticSimulator,
+    indicatorComponent:  null,
     isContributionType:  true,
     hasRaiseTarget:      true,
     hasFillThreshold:    true,

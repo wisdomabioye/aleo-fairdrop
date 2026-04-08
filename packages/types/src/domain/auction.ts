@@ -11,7 +11,7 @@ import type { AscendingParams }        from '../contracts/auctions/ascending';
 import type { LbpParams }              from '../contracts/auctions/lbp';
 import type { QuadraticAuctionConfig } from '../contracts/auctions/quadratic';
 import type { U16 }                    from '../primitives/scalars';
-import type { CreatorTier, CreatorReputationStats } from './creator';
+import type { CreatorTier, CreatorReputationResponse } from './creator';
 
 /** All supported auction mechanisms. Matches PROGRAM_SALT constants. */
 export enum AuctionType {
@@ -178,7 +178,16 @@ export interface AuctionView {
    * Creator's on-chain reputation stats — null if the creator has no recorded activity.
    * Populated from the `creatorReputation` DB table (updated on every `close_auction`).
    */
-  creatorReputation: CreatorReputationStats | null;
+  creatorReputation: CreatorReputationResponse | null;
+
+  /** Total bids placed on this auction (place_bid_* + commit_bid_* transitions). */
+  bidCount: number;
+
+  /**
+   * Quadratic auctions only — current value of `sqrt_weights[auction_id]` mapping.
+   * Required for the quadratic what-if simulator. Null for all other auction types.
+   */
+  sqrtWeight: string | null;
 }
 
 /** Lightweight auction summary — used in lists and cards. */
@@ -207,4 +216,6 @@ export interface AuctionListItem {
   gateMode:          GateMode;
   /** Creator's on-chain trust tier — from `creatorReputation` table, null if no record. */
   creatorTier:       CreatorTier | null;
+  /** Total bids placed on this auction. */
+  bidCount:          number;
 }

@@ -5,7 +5,7 @@ import type { ProgressPanelProps } from './types';
 
 /** Supply bar for quadratic auctions — raise-target threshold with partial fill status. */
 export function QuadraticProgressPanel({ auction }: ProgressPanelProps) {
-  const totalPayments = auction.totalPayments;
+  const totalPayments = BigInt(auction.totalPayments);
   const isCleared     = auction.status === AuctionStatus.Cleared;
 
   const isPartialFill = isCleared && auction.raise?.effectiveSupply != null &&

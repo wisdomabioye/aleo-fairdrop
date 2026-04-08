@@ -25,7 +25,7 @@ export function CreatorPage() {
 }
 
 function CreatorContent({ address }: { address: string }) {
-  const { data: rep, isLoading: repLoading } = useCreatorReputation(address);
+  const { data: rep, isLoading: repLoading, isError: repError, error: repErrorObj } = useCreatorReputation(address);
   const { data: auctionsPage, isLoading: auctionsLoading } = useAuctions({ creator: address, pageSize: 50 });
   const auctions = auctionsPage?.items ?? [];
 
@@ -48,17 +48,25 @@ function CreatorContent({ address }: { address: string }) {
         <CardContent>
           {repLoading ? (
             <Skeleton className="h-28 w-full rounded-lg" />
+          ) : repError ? (
+            // Distinguish 404 (no record) from unexpected server errors
+            (repErrorObj as Error)?.message?.includes('404') ||
+            (repErrorObj as Error)?.message?.includes('No reputation') ? (
+              <p className="text-sm text-muted-foreground">
+                No on-chain reputation yet — no closed auctions recorded.
+              </p>
+            ) : (
+              <p className="text-sm text-destructive">
+                Failed to load reputation data.
+              </p>
+            )
           ) : rep && rep.tier !== 'none' ? (
             <CreatorBadge tier={rep.tier} stats={rep} size="lg" />
           ) : rep ? (
             <p className="text-sm text-muted-foreground">
               {rep.auctionsRun} auction{rep.auctionsRun !== 1 ? 's' : ''} run, none filled yet.
             </p>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              No on-chain reputation yet — no closed auctions recorded.
-            </p>
-          )}
+          ) : null}
         </CardContent>
       </Card>
 

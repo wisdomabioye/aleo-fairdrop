@@ -134,6 +134,15 @@ export async function fetchFlatAuctionState(
   try { return parseFlatState(raw); } catch { return null; }
 }
 
+export async function fetchSqrtWeight(
+  auctionId: string,
+  programId: string,
+): Promise<string | null> {
+  const raw = await getRaw(programId, 'sqrt_weights', auctionId);
+  if (!raw) return null;
+  try { return parseU128(raw); } catch { return null; }
+}
+
 export async function fetchCreatorReputation(
   creator: string,
 ): Promise<CreatorReputation | null> {

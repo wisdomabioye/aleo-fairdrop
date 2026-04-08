@@ -1,7 +1,11 @@
 import { type ReactNode, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Search, Activity } from 'lucide-react';
+import { Search, Activity, BarChart3 } from 'lucide-react';
+import { useDashboardStats } from '@/shared/hooks/useDashboardStats';
+import {
+  Tooltip, TooltipContent, TooltipTrigger,
+} from '@/components/ui/tooltip';
 import {
   Popover,
   PopoverContent,
@@ -15,6 +19,7 @@ import {
   ItemTitle,
   ItemDescription,
 } from '@/components';
+import { formatMicrocredits } from '@fairdrop/sdk/credits';
 import { config } from '@/env';
 import { useIndexerStatus } from '@/shared/hooks/useIndexerStatus';
 import { auctionsService } from '@/services/auctions.service';
@@ -58,7 +63,7 @@ export function TopBar({ trigger, actions }: TopBarProps) {
 
   return (
     <>
-      {!!data?.lagBlocks && <StaleBanner lagBlocks={data.lagBlocks} />}
+      {data?.lagBlocks != null && data.lagBlocks > 0 && <StaleBanner lagBlocks={data.lagBlocks} />}
       <header className="flex h-14 items-center gap-3 border-b border-border bg-background/95 px-4 backdrop-blur-md">
         {trigger}
 
@@ -70,6 +75,7 @@ export function TopBar({ trigger, actions }: TopBarProps) {
         <AuctionSearchBar />
 
         <div className="flex-1" />
+        <ProtocolStatsBadge />
         <ChainStatusBadge />
 
         {actions}
@@ -218,6 +224,53 @@ function AuctionSearchBar() {
   );
 }
 
+function ProtocolStatsBadge() {
+  const { data } = useDashboardStats();
+
+  if (!data) return null;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="hidden sm:inline-flex h-8 cursor-default items-center gap-1.5 rounded-lg border border-border/60 bg-background/60 px-2.5 text-[11px] font-medium whitespace-nowrap">
+          <BarChart3 className="size-3.5 shrink-0 text-muted-foreground/75" />
+          {/* Compact (sm–lg): auctions + bids only */}
+          <span className="text-foreground/90">{data.totalAuctions.toLocaleString()}</span>
+          <span className="text-muted-foreground/60">auctions</span>
+          <span className="text-muted-foreground/40">·</span>
+          <span className="text-foreground/90">{data.totalBids.toLocaleString()}</span>
+          <span className="text-muted-foreground/60">bids</span>
+          {/* Extended (xl+): volume + fill rate */}
+          <span className="hidden xl:contents">
+            <span className="text-muted-foreground/40">·</span>
+            <span className="text-foreground/90">{formatMicrocredits(BigInt(data.totalVolume))}</span>
+            <span className="text-muted-foreground/40">·</span>
+            <span className="text-foreground/90">{Math.round(data.avgFillRate * 100)}%</span>
+            <span className="text-muted-foreground/60">fill</span>
+          </span>
+        </span>
+      </TooltipTrigger>
+      <TooltipContent side="bottom" className="flex flex-col items-start gap-1">
+        <Row label="Total auctions"   value={data.totalAuctions.toLocaleString()} />
+        <Row label="Active now"       value={data.activeAuctions.toLocaleString()} />
+        <Row label="Cleared"          value={data.clearedAuctions.toLocaleString()} />
+        <Row label="Total bids"       value={data.totalBids.toLocaleString()} />
+        <Row label="Volume cleared"   value={formatMicrocredits(BigInt(data.totalVolume))} />
+        <Row label="Avg fill rate"    value={`${Math.round(data.avgFillRate * 100)}%`} />
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-6">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium tabular-nums">{value}</span>
+    </div>
+  );
+}
+
 function ChainStatusBadge() {
   const { data, isError } = useIndexerStatus();
 
@@ -234,31 +287,30 @@ function ChainStatusBadge() {
         ? 'Indexer live'
         : `Indexer +${lagBlocks}`;
 
-  const title =
-    level === 'offline'
-      ? 'Indexer offline'
-      : `Indexer status: ${STATUS_LABEL[level]}${lagBlocks != null ? ` • ${lagBlocks} blocks behind` : ''}${chainTip != null ? ` • Block ${Number(chainTip).toLocaleString()}` : ''}`;
-
   return (
-    <span
-      title={title}
-      className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border/60 bg-background/60 px-2 text-[11px] font-medium xl:px-2.5"
-    >
-      <Activity className="size-3.5 shrink-0 text-muted-foreground/75" />
-      <span className={`size-2 shrink-0 rounded-full ${STATUS_DOT[level]}`} aria-hidden="true" />
-
-      {/* Status text: xl+ only */}
-      <span className="hidden text-foreground/90 xl:inline">{text}</span>
-
-      {/* Block height: xl+ only */}
-      {chainTip != null && (
-        <>
-          <span className="hidden text-muted-foreground/45 xl:inline">·</span>
-          <span className="hidden text-muted-foreground/80 xl:inline">
-            #{Number(chainTip).toLocaleString()}
-          </span>
-        </>
-      )}
-    </span>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="inline-flex h-8 cursor-default items-center gap-1.5 rounded-lg border border-border/60 bg-background/60 px-2 text-[11px] font-medium whitespace-nowrap xl:px-2.5">
+          <Activity className="size-3.5 shrink-0 text-muted-foreground/75" />
+          <span className={`size-2 shrink-0 rounded-full ${STATUS_DOT[level]}`} aria-hidden="true" />
+          {/* Status text: xl+ only */}
+          <span className="hidden text-foreground/90 xl:inline">{text}</span>
+          {/* Block height: xl+ only */}
+          {chainTip != null && (
+            <>
+              <span className="hidden text-muted-foreground/45 xl:inline">·</span>
+              <span className="hidden text-muted-foreground/80 xl:inline">
+                #{Number(chainTip).toLocaleString()}
+              </span>
+            </>
+          )}
+        </span>
+      </TooltipTrigger>
+      <TooltipContent side="bottom" className="flex flex-col items-start gap-1">
+        <Row label="Status"      value={STATUS_LABEL[level]} />
+        {lagBlocks != null && <Row label="Lag"    value={`${lagBlocks} blocks`} />}
+        {chainTip  != null && <Row label="Block"  value={`#${Number(chainTip).toLocaleString()}`} />}
+      </TooltipContent>
+    </Tooltip>
   );
 }

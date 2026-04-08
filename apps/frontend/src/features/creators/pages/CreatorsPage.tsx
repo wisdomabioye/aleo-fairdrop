@@ -9,7 +9,7 @@ import { creatorUrl } from '@/config';
 
 export function CreatorsPage() {
   const { data, isLoading } = useQuery({
-    queryKey:  ['top-creators'],
+    queryKey:  ['top-creators', 20],
     queryFn:   () => creatorsService.list(20),
     staleTime: 60_000,
   });

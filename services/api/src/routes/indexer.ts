@@ -33,10 +33,18 @@ indexerRouter.get('/status', async (c) => {
     0,
   );
 
+  // When the RPC call fails, fall back to the max lag stored by the indexer itself.
+  // This keeps lagBlocks stable instead of flipping to null on every failed RPC attempt.
+  const lagBlocks = chainTip != null
+    ? chainTip - maxIndexed
+    : checkpoints.length > 0
+      ? Math.max(...checkpoints.map((cp) => cp.lag))
+      : null;
+
   return json(c, {
     indexedBlock: maxIndexed,
     chainTip,
-    lagBlocks:          chainTip != null ? chainTip - maxIndexed : null,
+    lagBlocks,
     programs:     checkpoints.map((cp) => ({
       programId:       cp.programId,
       lastBlockHeight: cp.lastBlockHeight,

@@ -20,9 +20,11 @@ import { useAuction } from '../hooks/useAuction';
 import { useCurrentPrice } from '../hooks/useCurrentPrice';
 import { AuctionHeader } from '../components/AuctionHeader';
 import { ActionsPanel } from '../components/ActionsPanel';
-import { AuctionInfoTab } from '../components/AuctionInfoTab';
-import { AuctionEarnTab } from '../components/AuctionEarnTab';
-import { AuctionReferralTab } from '../components/AuctionReferralTab';
+import { AuctionInfoTab }       from '../components/AuctionInfoTab';
+import { AuctionEarnTab }       from '../components/AuctionEarnTab';
+import { AuctionReferralTab }   from '../components/AuctionReferralTab';
+import { AuctionAnalyticsTab }  from '../components/AuctionAnalyticsTab';
+import { AuctionSimulator }     from '../simulators/AuctionSimulator';
 import { DefaultPostAuctionPanel } from '../post-auction-panels/DefaultPostAuctionPanel';
 import { GateGuard }               from '@/features/gate/components/GateGuard';
 import { getRegistrySlot } from '../registry';
@@ -97,7 +99,7 @@ function AuctionDetailContent({ id }: { id: string }) {
   }
 
   const slot = getRegistrySlot(auction.type);
-  const { PricePanel, BidForm, ProgressPanel } = slot ?? {};
+  const { PricePanel, BidForm, ProgressPanel, indicatorComponent: Indicator } = slot ?? {};
 
   const isActive =
     auction.status === AuctionStatus.Active || auction.status === AuctionStatus.Clearing;
@@ -152,7 +154,7 @@ function AuctionDetailContent({ id }: { id: string }) {
           ) : null}
 
           <Tabs value={activeTab} onValueChange={(tab) => setSearchParams({ tab }, { replace: true })} className="space-y-3">
-            <TabsList className="grid h-9 w-full grid-cols-3 rounded-xl border border-sky-500/10 bg-gradient-surface p-1 shadow-xs ring-1 ring-white/5">
+            <TabsList className="grid h-9 w-full grid-cols-4 rounded-xl border border-sky-500/10 bg-gradient-surface p-1 shadow-xs ring-1 ring-white/5">
               <TabsTrigger value="info" className="rounded-md text-xs sm:text-sm">
                 Overview
               </TabsTrigger>
@@ -161,6 +163,9 @@ function AuctionDetailContent({ id }: { id: string }) {
               </TabsTrigger>
               <TabsTrigger value="referral" className="rounded-md text-xs sm:text-sm">
                 Referral
+              </TabsTrigger>
+              <TabsTrigger value="analytics" className="rounded-md text-xs sm:text-sm">
+                Analytics
               </TabsTrigger>
             </TabsList>
 
@@ -174,6 +179,10 @@ function AuctionDetailContent({ id }: { id: string }) {
 
             <TabsContent value="referral" className="mt-0">
               <AuctionReferralTab auction={auction} />
+            </TabsContent>
+
+            <TabsContent value="analytics" className="mt-0">
+              <AuctionAnalyticsTab auction={auction} />
             </TabsContent>
           </Tabs>
         </div>
@@ -195,8 +204,10 @@ function AuctionDetailContent({ id }: { id: string }) {
                 />
               ) : null}
 
+              {Indicator ? <Indicator auction={auction} /> : null}
+
               <>
-                {showPricePanel ? <Separator /> : null}
+                {(showPricePanel || Indicator) ? <Separator /> : null}
 
                 {isActive && BidForm && protocolConfig ? (
                   <GateGuard auction={auction}>
@@ -221,6 +232,8 @@ function AuctionDetailContent({ id }: { id: string }) {
               </>
             </CardContent>
           </Card>
+
+          <AuctionSimulator auction={auction} />
 
           <ActionsPanel auction={auction} blockHeight={blockHeight} />
         </div>

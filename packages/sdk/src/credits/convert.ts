@@ -9,7 +9,7 @@ import { CREDITS_DECIMALS, CREDITS_RESERVED_TOKEN_ID, CREDITS_SYMBOL } from './c
 
 /** Microcredits (bigint) → display ALEO (number, up to 6 decimal places). */
 export function microToAleo(microcredits: bigint): number {
-  return Number(microcredits) / 10 ** CREDITS_DECIMALS;
+  return Number(BigInt(microcredits)) / 10 ** CREDITS_DECIMALS;
 }
 
 /**
@@ -42,8 +42,8 @@ export function aleoToMicro(aleo: string | number): bigint | null {
  */
 export function formatMicrocredits(microcredits: bigint, decimals = CREDITS_DECIMALS): string {
   const divisor = BigInt(10 ** decimals);
-  const whole   = microcredits / divisor;
-  const frac    = microcredits % divisor;
+  const whole   = BigInt(microcredits) / divisor;
+  const frac    = BigInt(microcredits) % divisor;
   if (frac === 0n) return `${whole} ${CREDITS_SYMBOL}`;
   const fracStr = frac.toString().padStart(decimals, '0').replace(/0+$/, '');
   return `${whole}.${fracStr} ${CREDITS_SYMBOL}`;

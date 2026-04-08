@@ -2,19 +2,14 @@ import { Link } from 'react-router-dom';
 import { Button, Skeleton } from '@/components';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import {
-  Activity,
-  ArrowRight,
-  BarChart3,
-  Gavel,
-  PlusCircle,
-  ShieldCheck,
-  TrendingUp,
-} from 'lucide-react';
+import { ArrowRight, Gavel, PlusCircle } from 'lucide-react';
 import fairdropLogo from '@/assets/fairdrop.svg';
 import { AuctionStatus } from '@fairdrop/types/domain';
 import { useAuctions } from '@/features/auctions/hooks/useAuctions';
 import { AuctionCard } from '@/features/auctions/components/AuctionCard';
+import { AuctionTypeBreakdown } from '../components/AuctionTypeBreakdown';
+import { TopCreatorsList } from '../components/TopCreatorsList';
+import { useDashboardStats } from '@/shared/hooks/useDashboardStats';
 import { AppRoutes } from '@/config';
 import { cn } from '@/lib/utils';
 
@@ -67,90 +62,6 @@ function Hero() {
           </Button>
         </div>
       </div>
-    </div>
-  );
-}
-
-// ── StatsRow ──────────────────────────────────────────────────────────────────
-
-function StatCard({
-  label,
-  value,
-  hint,
-  icon,
-  loading,
-}: {
-  label: string;
-  value: string | number;
-  hint: string;
-  icon: React.ReactNode;
-  loading?: boolean;
-}) {
-  return (
-    <Card className="border-sky-500/10 bg-gradient-surface shadow-xs ring-1 ring-white/5">
-      <CardContent className="flex items-center gap-3 p-3">
-        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-sky-500/12 bg-sky-500/8 text-sky-600 dark:text-sky-300">
-          {icon}
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground/80">
-            {label}
-          </p>
-          {loading ? (
-            <Skeleton className="mt-1 h-5 w-14 rounded-md" />
-          ) : (
-            <p className="mt-0.5 text-base font-semibold leading-none text-foreground">
-              {value}
-            </p>
-          )}
-          <p className="mt-1 truncate text-xs text-muted-foreground">{hint}</p>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function StatsRow() {
-  const { data: active, isLoading: loadingActive } = useAuctions({
-    status: AuctionStatus.Active,
-    pageSize: 1,
-  });
-  const { data: all, isLoading: loadingAll } = useAuctions({
-    pageSize: 1,
-  });
-
-  return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      <StatCard
-        label="Active"
-        value={loadingActive ? '—' : active?.total ?? 0}
-        icon={<Activity className="size-4" />}
-        loading={loadingActive}
-        hint="Live right now"
-      />
-
-      <StatCard
-        label="Auctions"
-        value={loadingAll ? '—' : all?.total ?? 0}
-        icon={<BarChart3 className="size-4" />}
-        loading={loadingAll}
-        hint="All time"
-      />
-
-      <StatCard
-        label="Formats"
-        value="6"
-        icon={<TrendingUp className="size-4" />}
-        hint="Dutch, sealed, raise, LBP"
-      />
-
-      <StatCard
-        label="Network"
-        value="Aleo"
-        icon={<ShieldCheck className="size-4" />}
-        hint="Privacy-first execution"
-      />
     </div>
   );
 }
@@ -233,13 +144,49 @@ function LiveAuctions() {
   );
 }
 
+// ── AnalyticsRow ──────────────────────────────────────────────────────────────
+
+function AnalyticsRow() {
+  const { data, isLoading } = useDashboardStats(30_000);
+
+  return (
+    <div className="grid gap-4 xl:grid-cols-2">
+      <Card className="border-sky-500/10 bg-gradient-surface shadow-xs ring-1 ring-white/5">
+        <CardContent className="p-4">
+          <p className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Auctions by type
+          </p>
+          {isLoading ? (
+            <div className="space-y-2.5">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-4 rounded-md" />
+              ))}
+            </div>
+          ) : (
+            <AuctionTypeBreakdown breakdown={data?.typeBreakdown ?? {}} />
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="border-sky-500/10 bg-gradient-surface shadow-xs ring-1 ring-white/5">
+        <CardContent className="p-4">
+          <p className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Top creators
+          </p>
+          <TopCreatorsList />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 // ── DashboardPage ─────────────────────────────────────────────────────────────
 
 export function DashboardPage() {
   return (
     <div className="space-y-5 p-4 sm:p-5 lg:p-6">
       <Hero />
-      <StatsRow />
+      <AnalyticsRow />
       <LiveAuctions />
     </div>
   );
