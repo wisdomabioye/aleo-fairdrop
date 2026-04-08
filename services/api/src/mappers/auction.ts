@@ -20,6 +20,20 @@ function bigOrNull(s: string | null): bigint | null {
   return s != null ? BigInt(s) : null;
 }
 
+/**
+ * Derive token decimal count from the on-chain sale_scale (10^decimals).
+ * saleScale = 10^n → count trailing-zero digits via repeated division.
+ * Falls back to 0 if scale is absent or 1 (i.e., 10^0).
+ */
+function decimalsFromScale(scale: string | null): number {
+  if (!scale) return 0;
+  let v = BigInt(scale);
+  if (v <= 1n) return 0;
+  let count = 0;
+  while (v >= 10n && v % 10n === 0n) { v /= 10n; count++; }
+  return count;
+}
+
 function gateMode(n: number): GateMode {
   if (n === 1) return GateMode.Merkle;
   if (n === 2) return GateMode.Credential;
@@ -180,7 +194,7 @@ export function toAuctionView(
     metadata:          toMetadata(metaRow),
     saleTokenId:       row.saleTokenId,
     saleTokenSymbol:   tokenInfo?.symbol   ?? null,
-    saleTokenDecimals: tokenInfo?.decimals ?? null,
+    saleTokenDecimals: tokenInfo?.decimals ?? decimalsFromScale(row.saleScale),
     saleScale:         BigInt(row.saleScale ?? '1'),
     supply:            BigInt(row.supply),
     totalCommitted:    BigInt(row.totalCommitted),

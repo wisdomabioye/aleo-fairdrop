@@ -40,7 +40,7 @@ export function AscendingBidForm({ auction, blockHeight, protocolConfig, onBidSu
   const supply           = BigInt(auction.supply);
   const remaining        = supply > totalCommitted ? supply - totalCommitted : 0n;
   const supplyMet        = remaining === 0n;
-  const decimals         = auction.saleTokenDecimals ?? 0;
+  const decimals         = auction.saleTokenDecimals;
   const saleScale        = BigInt(auction.saleScale);
   const currentPrice     = BigInt(auction.currentPrice ?? 0);
   const minBidAmount     = auction.minBidAmount ?? 0n;

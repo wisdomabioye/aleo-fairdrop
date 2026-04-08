@@ -4,7 +4,7 @@ import type { Db } from '@fairdrop/database';
 import type { DashboardStats } from '@fairdrop/types/api';
 
 export async function getDashboardStats(db: Db): Promise<DashboardStats> {
-  const [[totals], [cleared], [active], [repAgg], typeRows] = await Promise.all([
+  const [[totals], [cleared], [active], [voided], [repAgg], typeRows] = await Promise.all([
     db.select({
       totalAuctions: count(auctions.id),
       totalBids:     sum(auctions.bidCount),
@@ -18,6 +18,10 @@ export async function getDashboardStats(db: Db): Promise<DashboardStats> {
     db.select({ activeAuctions: count(auctions.id) })
       .from(auctions)
       .where(eq(auctions.status, 'live')),
+
+    db.select({ voidedAuctions: count(auctions.id) })
+      .from(auctions)
+      .where(eq(auctions.voided, true)),
 
     db.select({
       avgFillRate: sql<number | null>`AVG(
@@ -39,10 +43,11 @@ export async function getDashboardStats(db: Db): Promise<DashboardStats> {
   );
 
   return {
-    totalAuctions:   totals?.totalAuctions   ?? 0,
-    activeAuctions:  active?.activeAuctions  ?? 0,
+    totalAuctions:   totals?.totalAuctions    ?? 0,
+    activeAuctions:  active?.activeAuctions   ?? 0,
     clearedAuctions: cleared?.clearedAuctions ?? 0,
-    totalBids:       Number(totals?.totalBids   ?? 0),
+    voidedAuctions:  voided?.voidedAuctions   ?? 0,
+    totalBids:       Number(totals?.totalBids ?? '0'),
     totalVolume:     String(cleared?.totalVolume ?? '0'),
     avgFillRate:     Math.round(Number(avgFillRate) * 1000) / 1000,
     typeBreakdown,

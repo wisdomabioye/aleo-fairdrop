@@ -147,7 +147,7 @@ function LiveAuctions() {
 // ── AnalyticsRow ──────────────────────────────────────────────────────────────
 
 function AnalyticsRow() {
-  const { data, isLoading } = useDashboardStats(30_000);
+  const { data, isLoading } = useDashboardStats();
 
   return (
     <div className="grid gap-4 xl:grid-cols-2">

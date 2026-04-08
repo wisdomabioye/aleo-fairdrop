@@ -31,7 +31,7 @@ export function DutchBidForm({ auction, protocolConfig, onBidSuccess }: BidFormP
   const [searchParams] = useSearchParams();
   const { creditRecords, loading: creditsLoading } = useCreditRecords();
 
-  const decimals     = auction.saleTokenDecimals ?? 0;
+  const decimals     = auction.saleTokenDecimals;
   const saleScale    = BigInt(auction.saleScale);
   const currentPrice = BigInt(auction.currentPrice ?? 0);
   const minBidAmount = auction.minBidAmount ?? 0n;

@@ -16,7 +16,7 @@ export function AscendingProgressPanel({ auction }: ProgressPanelProps) {
   const inWindow      = extWindow > 0 && blockHeight >= liveEndBlock - extWindow && blockHeight < liveEndBlock;
 
   const pct      = auction.progressPct;
-  const decimals = auction.saleTokenDecimals as number;
+  const decimals = auction.saleTokenDecimals;
 
   return (
     <div className="space-y-2">

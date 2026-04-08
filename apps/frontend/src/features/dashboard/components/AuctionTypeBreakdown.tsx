@@ -1,14 +1,6 @@
 import { AUCTION_REGISTRY } from '@/features/auctions/registry';
 import { AuctionType } from '@fairdrop/types/domain';
-
-const TYPE_COLOR: Record<AuctionType, string> = {
-  [AuctionType.Dutch]:     '#3b82f6',
-  [AuctionType.Sealed]:    '#a855f7',
-  [AuctionType.Raise]:     '#22c55e',
-  [AuctionType.Ascending]: '#f97316',
-  [AuctionType.Lbp]:       '#f59e0b',
-  [AuctionType.Quadratic]: '#f43f5e',
-};
+import { AUCTION_TYPE_COLOR } from '@/features/auctions/constants/typeColors';
 
 interface Props {
   breakdown: Record<string, number>;
@@ -19,7 +11,7 @@ export function AuctionTypeBreakdown({ breakdown }: Props) {
     type,
     label: AUCTION_REGISTRY[type].label,
     count: breakdown[type] ?? 0,
-    color: TYPE_COLOR[type],
+    color: AUCTION_TYPE_COLOR[type],
   }));
 
   const total = data.reduce((s, d) => s + d.count, 0);

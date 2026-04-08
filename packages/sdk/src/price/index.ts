@@ -139,6 +139,20 @@ export function lbpPriceCurve(
   return points;
 }
 
+// ── Quadratic helpers ─────────────────────────────────────────────────────────
+
+/**
+ * Integer square root (floor) using Newton's method.
+ * Mirrors the on-chain `sqrt` used in Quadratic auction weight calculations.
+ */
+export function isqrt(n: bigint): bigint {
+  if (n <= 0n) return 0n;
+  let x = n;
+  let y = (x + 1n) / 2n;
+  while (y < x) { x = y; y = (x + n / x) / 2n; }
+  return x;
+}
+
 // ── Dutch next-drop helper ────────────────────────────────────────────────────
 
 /**

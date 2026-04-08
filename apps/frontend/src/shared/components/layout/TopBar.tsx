@@ -64,7 +64,7 @@ export function TopBar({ trigger, actions }: TopBarProps) {
   return (
     <>
       {data?.lagBlocks != null && data.lagBlocks > 0 && <StaleBanner lagBlocks={data.lagBlocks} />}
-      <header className="flex h-14 items-center gap-3 border-b border-border bg-background/95 px-4 backdrop-blur-md">
+      <header className="flex h-14 items-center gap-3 overflow-hidden border-b border-border bg-background/95 px-4 backdrop-blur-md">
         {trigger}
 
         {/* Network badge */}
@@ -90,7 +90,7 @@ export function TopBar({ trigger, actions }: TopBarProps) {
 function StaleBanner({ lagBlocks }: { lagBlocks: number }) {
   if (lagBlocks <= 50) return null;
   return (
-    <div className="border-b border-yellow-500/30 bg-yellow-500/10 px-4 py-1.5 text-center text-xs text-yellow-600 dark:text-yellow-400">
+    <div className="w-full overflow-hidden border-b border-yellow-500/30 bg-yellow-500/10 px-4 py-1.5 text-center text-xs text-yellow-600 dark:text-yellow-400">
       Indexer is {lagBlocks} blocks behind chain tip — data may be stale.
     </div>
   );
@@ -126,7 +126,7 @@ function AuctionSearchBar() {
 
   const { data, isFetching } = useQuery({
     queryKey: ['search-auctions-pool'],
-    queryFn: () => auctionsService.list({ sort: 'created', order: 'desc', pageSize: 50 }),
+    queryFn: () => auctionsService.list({ sort: 'created', order: 'desc', pageSize: 20 }),
     enabled: open,
     staleTime: 60_000,
   });
@@ -153,18 +153,18 @@ function AuctionSearchBar() {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
-          className="group flex h-9 min-w-[220px] items-center gap-2 rounded-xl border border-sky-500/12 bg-background/70 px-3 text-sm text-muted-foreground shadow-xs backdrop-blur-sm transition-[border-color,background-color,box-shadow] hover:border-sky-500/20 hover:bg-background/90 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-sky-400/15"
+          className="group flex h-9 items-center gap-2 rounded-xl border border-sky-500/12 bg-background/70 px-3 text-sm text-muted-foreground shadow-xs backdrop-blur-sm transition-[border-color,background-color,box-shadow] hover:border-sky-500/20 hover:bg-background/90 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-sky-400/15"
           aria-label="Search auctions"
         >
           <Search className="size-4 shrink-0 text-sky-500/80 dark:text-sky-400/80" />
-          <span className="hidden flex-1 text-left sm:inline">Search auctions...</span>
-          <kbd className="hidden rounded-md border border-sky-500/10 bg-background/80 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground sm:inline">
+          <span className="hidden flex-1 text-left text-[12px] xl:inline">Search auctions...</span>
+          <kbd className="hidden rounded-md border border-sky-500/10 bg-background/80 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground xl:inline">
             ⌘K
           </kbd>
         </button>
       </PopoverTrigger>
 
-      <PopoverContent className="w-[420px] gap-0 overflow-hidden p-0" align="start" sideOffset={10}>
+      <PopoverContent className="w-[min(420px,calc(100vw-2rem))] gap-0 overflow-hidden p-0" align="start" sideOffset={10}>
         <div className="border-b border-sky-500/10 p-3">
           <div className="relative">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-sky-500/75 dark:text-sky-400/75" />
@@ -232,14 +232,14 @@ function ProtocolStatsBadge() {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span className="hidden sm:inline-flex h-8 cursor-default items-center gap-1.5 rounded-lg border border-border/60 bg-background/60 px-2.5 text-[11px] font-medium whitespace-nowrap">
+        <span className="inline-flex h-8 cursor-default items-center gap-1.5 rounded-lg border border-border/60 bg-background/60 px-2 text-[11px] font-medium whitespace-nowrap lg:px-2.5">
           <BarChart3 className="size-3.5 shrink-0 text-muted-foreground/75" />
-          {/* Compact (sm–lg): auctions + bids only */}
-          <span className="text-foreground/90">{data.totalAuctions.toLocaleString()}</span>
-          <span className="text-muted-foreground/60">auctions</span>
-          <span className="text-muted-foreground/40">·</span>
-          <span className="text-foreground/90">{data.totalBids.toLocaleString()}</span>
-          <span className="text-muted-foreground/60">bids</span>
+          {/* Compact text: lg+ only */}
+          <span className="hidden lg:inline text-foreground/90">{data.totalAuctions.toLocaleString()}</span>
+          <span className="hidden lg:inline text-muted-foreground/60">auctions</span>
+          <span className="hidden lg:inline text-muted-foreground/40">·</span>
+          <span className="hidden lg:inline text-foreground/90">{data.totalBids.toLocaleString()}</span>
+          <span className="hidden lg:inline text-muted-foreground/60">bids</span>
           {/* Extended (xl+): volume + fill rate */}
           <span className="hidden xl:contents">
             <span className="text-muted-foreground/40">·</span>
@@ -254,6 +254,7 @@ function ProtocolStatsBadge() {
         <Row label="Total auctions"   value={data.totalAuctions.toLocaleString()} />
         <Row label="Active now"       value={data.activeAuctions.toLocaleString()} />
         <Row label="Cleared"          value={data.clearedAuctions.toLocaleString()} />
+        <Row label="Voided"           value={data.voidedAuctions.toLocaleString()} />
         <Row label="Total bids"       value={data.totalBids.toLocaleString()} />
         <Row label="Volume cleared"   value={formatMicrocredits(BigInt(data.totalVolume))} />
         <Row label="Avg fill rate"    value={`${Math.round(data.avgFillRate * 100)}%`} />

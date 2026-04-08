@@ -27,6 +27,7 @@ import { SplitJoinTokenPage } from '@/features/token-manager/pages/SplitJoinToke
 import { AdminPage }          from '@/features/admin/pages/AdminPage';
 import { CreatorsPage }       from '@/features/creators/pages/CreatorsPage';
 import { CreatorPage }        from '@/features/creators/pages/CreatorPage';
+import { AnalyticsPage }      from '@/features/analytics/pages/AnalyticsPage';
 
 // ── Placeholder (for routes not yet built) ────────────────────────────────────
 function Placeholder({ name }: { name: string }) {
@@ -41,11 +42,11 @@ function Placeholder({ name }: { name: string }) {
 
 function Layout() {
   return (
-    <SidebarProvider>
+    <SidebarProvider className="h-svh">
       <AppSidebar />
       <SidebarInset>
         <TopBar trigger={<SidebarTrigger />} actions={<ConnectButton />} />
-        <main className="flex-1 overflow-auto">
+        <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
           <div className="mx-auto w-full max-w-5xl px-4 py-4 sm:px-5 lg:px-6 pb-20">
             <ErrorBoundary>
               <Outlet />
@@ -94,6 +95,9 @@ export function App() {
           {/* Creators */}
           <Route path={AppRoutes.creators}           element={<CreatorsPage />} />
           <Route path={AppRoutes.creatorDetail}      element={<CreatorPage />} />
+
+          {/* Analytics */}
+          <Route path={AppRoutes.analytics}          element={<AnalyticsPage />} />
 
           {/* Admin & Guide */}
           <Route path={AppRoutes.admin}              element={<AdminPage />} />

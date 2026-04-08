@@ -7,7 +7,7 @@ import type { AuctionView } from '@fairdrop/types/domain';
 export function RaiseSimulator({ auction }: { auction: AuctionView }) {
   const [contribution, setContribution] = useState('');
 
-  const decimals    = auction.saleTokenDecimals ?? 0;
+  const decimals    = auction.saleTokenDecimals;
   const commitMicro = BigInt(Math.floor(Number(contribution || 0) * 1_000_000));
   const total       = BigInt(auction.totalPayments);
   const supply      = BigInt(auction.supply);

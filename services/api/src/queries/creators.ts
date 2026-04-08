@@ -1,5 +1,5 @@
-import { eq, desc, inArray, gt } from 'drizzle-orm';
-import { creatorReputation } from '@fairdrop/database';
+import { eq, desc, inArray, gt, sql } from 'drizzle-orm';
+import { creatorReputation, auctions }  from '@fairdrop/database';
 import type { Db, CreatorReputationRow } from '@fairdrop/database';
 
 export async function getCreatorReputation(
@@ -27,15 +27,73 @@ export async function getCreatorReputationBatch(
   return new Map(rows.map((r) => [r.address, r]));
 }
 
-/** Top creators ordered by filledAuctions descending. */
+export type CreatorSortKey = 'fillRate' | 'volume' | 'auctionsRun' | 'bidCount';
+
+/**
+ * Top creators with configurable sort.
+ *
+ * - fillRate:   computed (filledAuctions / auctionsRun) — not a stored column
+ * - volume:     CAST to NUMERIC — stored as text, plain ORDER BY is lexicographic
+ * - auctionsRun: direct column
+ * - bidCount:   requires a JOIN to auctions (SUM bid_count per creator)
+ *               JOIN uses ON not USING — subquery exposes 'creator', not 'address'
+ */
 export async function listTopCreators(
   db:    Db,
   limit: number = 20,
+  sort:  CreatorSortKey = 'fillRate',
 ): Promise<CreatorReputationRow[]> {
-  return db
+  const base = db
     .select()
     .from(creatorReputation)
-    .where(gt(creatorReputation.filledAuctions, 0))
+    .where(gt(creatorReputation.auctionsRun, 0));
+
+  if (sort === 'volume') {
+    return base
+      .orderBy(sql`CAST(${creatorReputation.volume} AS NUMERIC) DESC NULLS LAST`)
+      .limit(limit);
+  }
+
+  if (sort === 'auctionsRun') {
+    return base
+      .orderBy(desc(creatorReputation.auctionsRun))
+      .limit(limit);
+  }
+
+  if (sort === 'fillRate') {
+    return base
+      .orderBy(
+        sql`${creatorReputation.filledAuctions}::float / NULLIF(${creatorReputation.auctionsRun}, 0) DESC NULLS LAST`,
+        desc(creatorReputation.auctionsRun),
+      )
+      .limit(limit);
+  }
+
+  // bidCount — LEFT JOIN to auctions, aggregate bid_count per creator.
+  // ON bids.creator = creatorReputation.address (NOT USING — subquery col is 'creator')
+  if (sort === 'bidCount') {
+    const bidCounts = db.$with('bid_counts').as(
+      db.select({
+        creator:   auctions.creator,
+        totalBids: sql<number>`cast(sum(${auctions.bidCount}) as integer)`.as('total_bids'),
+      })
+      .from(auctions)
+      .groupBy(auctions.creator),
+    );
+
+    return db
+      .with(bidCounts)
+      .select({ cr: creatorReputation })
+      .from(creatorReputation)
+      .leftJoin(bidCounts, eq(bidCounts.creator, creatorReputation.address))
+      .where(gt(creatorReputation.auctionsRun, 0))
+      .orderBy(sql`${bidCounts.totalBids} DESC NULLS LAST`)
+      .limit(limit)
+      .then((rows) => rows.map((r) => r.cr));
+  }
+
+  // Fallback — should be unreachable with typed sort param
+  return base
     .orderBy(desc(creatorReputation.filledAuctions), desc(creatorReputation.auctionsRun))
     .limit(limit);
 }

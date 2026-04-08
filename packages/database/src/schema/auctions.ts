@@ -98,4 +98,8 @@ export const auctions = pgTable('auctions', {
   index('auctions_status_idx').on(t.status),
   index('auctions_program_id_idx').on(t.programId),
   index('auctions_metadata_hash_idx').on(t.metadataHash),
+  // Analytics query indexes
+  index('auctions_type_idx').on(t.type),
+  index('auctions_cleared_updated_at_idx').on(t.cleared, t.updatedAt),
+  index('auctions_ended_at_block_voided_idx').on(t.endedAtBlock, t.voided),
 ]);

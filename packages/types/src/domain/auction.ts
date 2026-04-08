@@ -114,7 +114,7 @@ export interface AuctionView {
   // Token
   saleTokenId:       string;
   saleTokenSymbol:   string | null;
-  saleTokenDecimals: number | null;
+  saleTokenDecimals: number;
   /** sale_scale from BaseAuctionConfig — 10^decimals. Pass verbatim to transitions. */
   saleScale:         bigint;
 

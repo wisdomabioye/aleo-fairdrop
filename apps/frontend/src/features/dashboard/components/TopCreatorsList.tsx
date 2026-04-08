@@ -10,8 +10,8 @@ import { creatorUrl, AppRoutes } from '@/config';
 
 export function TopCreatorsList() {
   const { data, isLoading } = useQuery({
-    queryKey: ['top-creators', 5],
-    queryFn:  () => creatorsService.list(5),
+    queryKey: ['top-creators', 5, 'volume'],
+    queryFn:  () => creatorsService.list(5, 'volume'),
     staleTime: 60_000,
   });
 

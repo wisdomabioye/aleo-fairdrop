@@ -37,6 +37,9 @@ export const AppRoutes = {
   // Admin
   admin: '/admin',
 
+  // Analytics
+  analytics: '/analytics',
+
   // Guides
   guide: '/guide',
 } as const;

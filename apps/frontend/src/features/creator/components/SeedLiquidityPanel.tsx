@@ -31,7 +31,7 @@ export function SeedLiquidityPanel({ auction, paymentsWithdrawn, unsoldWithdrawn
   const isCreator = connected && address === auction.creator;
   const isCleared = auction.status === AuctionStatus.Cleared;
 
-  const decimals = auction.saleTokenDecimals ?? 0;
+  const decimals = auction.saleTokenDecimals;
   const symbol   = auction.saleTokenSymbol ?? '';
 
   const revenueLeft = BigInt(auction.creatorRevenue ?? 0) - paymentsWithdrawn;

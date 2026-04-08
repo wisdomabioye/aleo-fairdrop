@@ -23,4 +23,11 @@ export type {
   UserVestingResponse,
 } from './user';
 
-export type { DashboardStats } from './dashboard';
+export type {
+  DashboardStats,
+  VolumePeriod,
+  AuctionTypeMetrics,
+  FillBucket,
+  FillDistribution,
+  AttributeBreakdown,
+} from './analytics';

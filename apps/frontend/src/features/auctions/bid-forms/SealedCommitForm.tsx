@@ -80,7 +80,7 @@ export function SealedCommitForm({ auction, protocolConfig, onBidSuccess }: Prop
   const unspentRecords = useMemo(() => creditRecords.filter((r) => !r.spent), [creditRecords]);
   const selectedRecord = unspentRecords.find((r) => r.id === selectedRecordId) ?? null;
 
-  const decimals     = auction.saleTokenDecimals ?? 0;
+  const decimals     = auction.saleTokenDecimals;
   const qtyRaw       = parseTokenAmount(qtyInput, decimals);
   const qtyHuman     = saleScale > 0n ? qtyRaw / saleScale : 0n;
   // Auto-collateral uses clearing price estimate — the price the reveal check actually uses.

@@ -149,6 +149,11 @@ export function AuctionCard({ auction }: AuctionCardProps) {
             <span className="inline-flex items-center gap-1 truncate">
               By {truncateAddress(auction.creator)}
               <CreatorBadge tier={auction.creatorTier} size="sm" />
+              {auction.bidCount > 0 && (
+                <span className="text-muted-foreground/55">
+                  · {auction.bidCount.toLocaleString()} bid{auction.bidCount !== 1 ? 's' : ''}
+                </span>
+              )}
             </span>
             {showCountdown ? (
               <div className="shrink-0">

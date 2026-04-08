@@ -88,7 +88,7 @@ export function VestingScheduleChart({ auction }: Props) {
       )}
 
       {/* text-muted-foreground sets CSS `color` so fill="currentColor" resolves correctly */}
-      <div className="text-muted-foreground">
+      <div className="min-w-0 overflow-hidden text-muted-foreground">
         <ResponsiveContainer width="100%" height={200}>
           <AreaChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: 8 }}>
             <defs>

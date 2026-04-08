@@ -11,6 +11,7 @@ import { indexerRouter }  from './routes/indexer.js';
 import { configRouter }   from './routes/config.js';
 import { creatorsRouter }   from './routes/creators.js';
 import { dashboardRouter }  from './routes/dashboard.js';
+import { analyticsRouter }  from './routes/analytics.js';
 
 type Variables = { db: Db };
 
@@ -30,6 +31,7 @@ export function createApp(db: Db) {
   app.route('/users',    usersRouter);
   app.route('/creators',   creatorsRouter);
   app.route('/dashboard',  dashboardRouter);
+  app.route('/analytics',  analyticsRouter);
   app.route('/tokens',   tokensRouter);
   app.route('/metadata', metadataRouter);
   app.route('/indexer',  indexerRouter);

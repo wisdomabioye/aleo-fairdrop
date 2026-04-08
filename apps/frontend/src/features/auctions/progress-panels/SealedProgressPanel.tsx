@@ -31,7 +31,7 @@ export function SealedProgressPanel({ auction }: ProgressPanelProps) {
       <div className="flex justify-between text-xs text-muted-foreground">
         <span>
           {isRevealPhase
-            ? `${formatAmount(BigInt(auction.totalCommitted), auction.saleTokenDecimals as number)} ${auction.saleTokenSymbol ?? ''} revealed`
+            ? `${formatAmount(BigInt(auction.totalCommitted), auction.saleTokenDecimals)} ${auction.saleTokenSymbol ?? ''} revealed`
             : phaseLabel}
         </span>
         <span>

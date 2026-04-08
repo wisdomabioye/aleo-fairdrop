@@ -2,7 +2,7 @@ import { ExternalLink } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CopyField } from '@/components';
 import { Badge } from '@/components/ui/badge';
 import { formatMicrocredits } from '@fairdrop/sdk/credits';
-import { formatAmount } from '@fairdrop/sdk/format';
+import { formatAmount, truncateAddress } from '@fairdrop/sdk/format';
 import { AuctionType } from '@fairdrop/types/domain';
 import type { AuctionView, ProtocolConfig } from '@fairdrop/types/domain';
 import { getRegistrySlot } from '../registry';
@@ -72,7 +72,7 @@ export function AuctionInfoTab({ auction, protocolConfig }: AuctionInfoTabProps)
     ? `Cliff ${auction.vestCliffBlocks.toLocaleString()} • Duration ${auction.vestEndBlocks.toLocaleString()}`
     : 'Disabled';
 
-  const tokenDecimals = auction.saleTokenDecimals as number;
+  const tokenDecimals = auction.saleTokenDecimals;
   const slot = getRegistrySlot(auction.type);
   const isSealed = auction.type === AuctionType.Sealed;
   const commitEndBlock = auction.params.type === AuctionType.Sealed ? auction.params.commit_end_block : 0;
@@ -89,7 +89,7 @@ export function AuctionInfoTab({ auction, protocolConfig }: AuctionInfoTabProps)
         <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
           <MetaItem
             label="Sale token"
-            value={auction.saleTokenSymbol ?? auction.saleTokenId}
+            value={auction.saleTokenSymbol ?? truncateAddress(auction.saleTokenId, 4)}
           />
 
           <MetaItem
@@ -136,6 +136,12 @@ export function AuctionInfoTab({ auction, protocolConfig }: AuctionInfoTabProps)
                 label="Start block"
                 value={auction.startBlock.toLocaleString()}
                 valueClassName="font-mono text-[12px] text-foreground/80"
+              />
+
+              <Row
+                label="Bids"
+                value={auction.bidCount.toLocaleString()}
+                valueClassName="text-[12px] tabular-nums text-foreground/80"
               />
               
 

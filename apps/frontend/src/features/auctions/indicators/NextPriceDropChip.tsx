@@ -17,11 +17,9 @@ interface Props {
 export function NextPriceDropChip({ auction }: Props) {
   const { data: currentBlock = 0 } = useBlockHeight();
 
-  if (
-    auction.type   !== AuctionType.Dutch ||
-    auction.status !== AuctionStatus.Active ||
-    auction.params.type !== AuctionType.Dutch
-  ) return null;
+  if (auction.status !== AuctionStatus.Active) return null;
+  // Narrows auction.params to DutchParams for dutchNextDrop
+  if (auction.params.type !== AuctionType.Dutch) return null;
 
   const drop = dutchNextDrop(auction.params, auction.startBlock, currentBlock);
   if (!drop) return null;   // already at floor

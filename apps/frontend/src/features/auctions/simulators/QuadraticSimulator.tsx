@@ -1,16 +1,8 @@
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { formatAmount } from '@fairdrop/sdk/format';
+import { isqrt } from '@fairdrop/sdk/price';
 import type { AuctionView } from '@fairdrop/types/domain';
-
-function isqrt(n: bigint): bigint {
-  if (n < 0n) return 0n;
-  if (n === 0n) return 0n;
-  let x = n;
-  let y = (x + 1n) / 2n;
-  while (y < x) { x = y; y = (x + n / x) / 2n; }
-  return x;
-}
 
 export function QuadraticSimulator({ auction }: { auction: AuctionView }) {
   const [contribution, setContribution] = useState('');
@@ -23,7 +15,7 @@ export function QuadraticSimulator({ auction }: { auction: AuctionView }) {
     );
   }
 
-  const decimals      = auction.saleTokenDecimals ?? 0;
+  const decimals      = auction.saleTokenDecimals;
   const commitMicro   = BigInt(Math.floor(Number(contribution || 0) * 1_000_000));
   const totalWeight   = BigInt(auction.sqrtWeight);
   const myWeight      = isqrt(commitMicro);

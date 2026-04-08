@@ -20,6 +20,7 @@ import {
   Copy,
   Check,
   Scissors,
+  BarChart2,
   type LucideIcon,
 } from 'lucide-react';
 import {
@@ -48,7 +49,8 @@ type NavItem = {
 };
 
 const OVERVIEW: NavItem[] = [
-  { label: 'Dashboard', to: AppRoutes.dashboard, icon: LayoutDashboard, end: true },
+  { label: 'Dashboard', to: AppRoutes.dashboard,  icon: LayoutDashboard, end: true },
+  { label: 'Analytics', to: AppRoutes.analytics,  icon: BarChart2 },
 ];
 
 const AUCTIONS: NavItem[] = [

@@ -3,7 +3,7 @@ import { HTTPException } from 'hono/http-exception';
 import type { Db } from '@fairdrop/database';
 import type { CreatorReputationResponse } from '@fairdrop/types/domain';
 import { computeTier } from '@fairdrop/types/domain';
-import { getCreatorReputation, listTopCreators } from '../queries/creators.js';
+import { getCreatorReputation, listTopCreators, type CreatorSortKey } from '../queries/creators.js';
 import { json } from '../lib/respond.js';
 
 type Variables = { db: Db };
@@ -21,11 +21,17 @@ function toResponse(row: { address: string; auctionsRun: number; filledAuctions:
   };
 }
 
-// GET /creators — top creators by filled auctions
+const VALID_SORT = new Set<CreatorSortKey>(['fillRate', 'volume', 'auctionsRun', 'bidCount']);
+
+// GET /creators?sort=fillRate|volume|auctionsRun|bidCount&limit=N
 creatorsRouter.get('/', async (c) => {
   const db    = c.get('db');
   const limit = Math.min(Number(c.req.query('limit') ?? 20), 100);
-  const rows  = await listTopCreators(db, limit);
+  const rawSort = c.req.query('sort') ?? 'fillRate';
+  const sort: CreatorSortKey = VALID_SORT.has(rawSort as CreatorSortKey)
+    ? (rawSort as CreatorSortKey)
+    : 'fillRate';
+  const rows  = await listTopCreators(db, limit, sort);
   return json(c, { items: rows.map(toResponse) });
 });
 

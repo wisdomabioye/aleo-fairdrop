@@ -57,7 +57,7 @@ export function PriceCurveChart({ auction }: Props) {
 
   return (
     // text-muted-foreground sets CSS `color` so SVG fill="currentColor" resolves correctly
-    <div className="space-y-2 text-muted-foreground">
+    <div className="min-w-0 space-y-2 overflow-hidden text-muted-foreground">
       {isTheoretical && (
         <p className="text-[11px]">
           Theoretical ceiling — assumes no bids placed. Actual price decreases as supply fills.
