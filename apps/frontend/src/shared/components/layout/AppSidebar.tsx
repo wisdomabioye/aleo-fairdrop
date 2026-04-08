@@ -35,6 +35,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
+  useSidebar,
 } from '@/components';
 import fairdropLogo from '@/assets/fairdrop.svg';
 import { truncateAddress } from '@fairdrop/sdk/format';
@@ -79,6 +80,12 @@ const RESOURCES: NavItem[] = [
 ];
 
 function NavGroup({ label, items }: { label: string; items: NavItem[] }) {
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  const handleNavClick = () => {
+    if (isMobile) setOpenMobile(false);
+  };
+
   return (
     <SidebarGroup className="px-2 py-1">
       <SidebarGroupLabel className="px-2 pb-2 text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground/75">
@@ -89,7 +96,7 @@ function NavGroup({ label, items }: { label: string; items: NavItem[] }) {
         <SidebarMenu className="gap-1">
           {items.map(({ label: name, to, icon: Icon, end }) => (
             <SidebarMenuItem key={to}>
-              <NavLink to={to} end={end} className="block w-full">
+              <NavLink to={to} end={end} className="block w-full" onClick={handleNavClick}>
                 {({ isActive }) => (
                   <SidebarMenuButton
                     isActive={isActive}
