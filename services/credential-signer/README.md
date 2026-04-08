@@ -331,3 +331,15 @@ Set `CORS_ORIGIN` to your Fairdrop frontend URL once deployed.
 - Every credential request proves the bidder controls `holderAddress` via a wallet signature before the check function runs. Credentials cannot be requested for an address the requester does not own.
 - Credentials are non-transferable on-chain — each is cryptographically bound to `(holder, auction_id, expiry)`. A credential issued for one address cannot be reused by another.
 - Rate limiting is applied per address: 5 requests per 60-second window.
+
+---
+
+## Further reading
+
+- [Credential gate guide](../../docs/guides/credential-gate/README.md) — how the gate works, two-transaction flow, and when to use credential vs Merkle mode
+- [NFT / token-gate example](../../docs/guides/credential-gate/examples/nft-gate/README.md) — require on-chain token ownership
+- [Webhook delegation example](../../docs/guides/credential-gate/examples/webhook/README.md) — delegate to your own HTTP endpoint
+- [Compliance / KYC example](../../docs/guides/credential-gate/examples/compliance-kyc/README.md) — KYC/AML provider integration
+- [ZK humanity proof guide](../../docs/guides/credential-gate/examples/zk-humanity/README.md) — sybil resistance via ZK proof
+- [Webhook security](../../docs/guides/credential-gate/webhook-security.md) — securing webhook endpoints
+- [credentialUrl convention](../../docs/guides/credential-gate/credential-url.md) — how the frontend discovers your service URL

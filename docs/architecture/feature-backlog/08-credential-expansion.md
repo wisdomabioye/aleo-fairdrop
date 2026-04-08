@@ -144,13 +144,12 @@ Documents the `credentialUrl` field in auction metadata:
 
 1. **Managed credential-signer hosting**: could offer a managed tier where Fairdrop operates
    the credential-signer for simple strategies (allowlist, token-gate). Creators upload a CSV.
-   This is a product decision, not an engineering one — document it as a future option.
-2. **Credential caching**: the frontend `useCredentialRequest` hook does not cache credentials
-   (they expire). Consider caching in `sessionStorage` keyed by `(auctionId, address)` so
-   the bidder doesn't re-request on page refresh within the same session.
+   This is a product decision, not an engineering one — documented as a future option in `credential-url.md`.
+2. ~~**Credential caching**~~ — **resolved**: always fetch, no `sessionStorage` caching. The current
+   `useCredentialRequest` hook already does not cache. This is the correct behaviour.
 3. **Cross-chain NFT gating**: the token-gate example only checks Aleo balances. Cross-chain
    gating (Ethereum NFT, Solana SPL) requires a bridge attestation or a trusted oracle. Out of
-   scope for this plan — mention as a future direction in the ZK humanity example.
+   scope — noted as a future direction in the ZK humanity guide.
 
 ---
 
