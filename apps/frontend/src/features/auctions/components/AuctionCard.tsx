@@ -96,7 +96,7 @@ export function AuctionCard({ auction }: AuctionCardProps) {
                 onError={() => setImageError(true)}
               />
             ) : (
-              <LetterAvatar name={name} className="size-10 shrink-0 rounded-lg" />
+              <LetterAvatar name={name} type={auction.type} className="size-10 shrink-0 rounded-lg" />
             )}
 
             <div className="min-w-0 flex-1">

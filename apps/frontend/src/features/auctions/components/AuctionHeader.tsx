@@ -151,12 +151,13 @@ export function AuctionHeader({ auction, currentPrice }: AuctionHeaderProps) {
           ) : (
             <LetterAvatar
               name={name}
+              type={auction.type}
               size="lg"
               className="size-16 shrink-0 rounded-xl sm:size-18"
             />
           )}
 
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 self-start">
             <div className="flex flex-wrap items-center gap-1.5">
               <h1 className="min-w-0 truncate text-lg font-semibold tracking-tight text-foreground sm:text-xl">
                 {name}

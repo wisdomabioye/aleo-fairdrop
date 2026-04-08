@@ -1,30 +1,20 @@
+import type { CSSProperties } from 'react';
+import type { AuctionType } from '@fairdrop/types/domain';
 import { cn } from '@/lib/utils';
+import { AUCTION_TYPE_COLOR } from '../constants/typeColors';
 
 interface LetterAvatarProps {
-  name:       string;
-  size?:      'sm' | 'lg';
-  className?: string;
+  name:        string;
+  type?:       AuctionType;
+  size?:       'sm' | 'lg';
+  className?:  string;
 }
 
-const PALETTE = [
-  { bg: 'bg-sky-500/15',     text: 'text-sky-300'     },
-  { bg: 'bg-indigo-500/15',  text: 'text-indigo-300'  },
-  { bg: 'bg-violet-500/15',  text: 'text-violet-300'  },
-  { bg: 'bg-rose-500/15',    text: 'text-rose-300'    },
-  { bg: 'bg-orange-500/15',  text: 'text-orange-300'  },
-  { bg: 'bg-emerald-500/15', text: 'text-emerald-300' },
-  { bg: 'bg-amber-500/15',   text: 'text-amber-300'   },
-  { bg: 'bg-pink-500/15',    text: 'text-pink-300'    },
-  { bg: 'bg-teal-500/15',    text: 'text-teal-300'    },
-  { bg: 'bg-cyan-500/15',    text: 'text-cyan-300'    },
-] as const;
-
-function hashName(name: string): number {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) {
-    h = (h * 31 + name.charCodeAt(i)) >>> 0;
-  }
-  return h;
+function hexToRgba(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
 }
 
 function getInitials(name: string): string {
@@ -35,15 +25,21 @@ function getInitials(name: string): string {
   return (parts[0] ?? name.trim()).slice(0, 2).toUpperCase();
 }
 
-export function LetterAvatar({ name, size = 'sm', className }: LetterAvatarProps) {
+export function LetterAvatar({ name, type, size = 'sm', className }: LetterAvatarProps) {
   const initials = getInitials(name);
-  const { bg, text } = PALETTE[hashName(name) % PALETTE.length];
   const sizing = size === 'lg'
     ? 'size-16 rounded-xl text-xl font-bold'
     : 'size-10 rounded-lg text-xs font-bold';
 
+  const style: CSSProperties | undefined = type
+    ? { backgroundColor: hexToRgba(AUCTION_TYPE_COLOR[type], 0.15), color: AUCTION_TYPE_COLOR[type] }
+    : undefined;
+
   return (
-    <div className={cn('flex items-center justify-center', className ?? sizing, bg, text)}>
+    <div
+      className={cn('flex items-center justify-center', className ?? sizing, !type && 'bg-muted text-muted-foreground')}
+      style={style}
+    >
       {initials}
     </div>
   );
