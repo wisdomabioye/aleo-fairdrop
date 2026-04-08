@@ -1,15 +1,11 @@
 import { Link } from 'react-router-dom';
 import { Button, Skeleton } from '@/components';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import { ArrowRight, Gavel, PlusCircle } from 'lucide-react';
 import fairdropLogo from '@/assets/fairdrop.svg';
 import { AuctionStatus } from '@fairdrop/types/domain';
 import { useAuctions } from '@/features/auctions/hooks/useAuctions';
 import { AuctionCard } from '@/features/auctions/components/AuctionCard';
-import { AuctionTypeBreakdown } from '../components/AuctionTypeBreakdown';
-import { TopCreatorsList } from '../components/TopCreatorsList';
-import { useDashboardStats } from '@/shared/hooks/useDashboardStats';
 import { AppRoutes } from '@/config';
 import { cn } from '@/lib/utils';
 
@@ -144,49 +140,12 @@ function LiveAuctions() {
   );
 }
 
-// ── AnalyticsRow ──────────────────────────────────────────────────────────────
-
-function AnalyticsRow() {
-  const { data, isLoading } = useDashboardStats();
-
-  return (
-    <div className="grid gap-4 xl:grid-cols-2">
-      <Card className="border-sky-500/10 bg-gradient-surface shadow-xs ring-1 ring-white/5">
-        <CardContent className="p-4">
-          <p className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Auctions by type
-          </p>
-          {isLoading ? (
-            <div className="space-y-2.5">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <Skeleton key={i} className="h-4 rounded-md" />
-              ))}
-            </div>
-          ) : (
-            <AuctionTypeBreakdown breakdown={data?.typeBreakdown ?? {}} />
-          )}
-        </CardContent>
-      </Card>
-
-      <Card className="border-sky-500/10 bg-gradient-surface shadow-xs ring-1 ring-white/5">
-        <CardContent className="p-4">
-          <p className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Top creators
-          </p>
-          <TopCreatorsList />
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
 // ── DashboardPage ─────────────────────────────────────────────────────────────
 
 export function DashboardPage() {
   return (
     <div className="space-y-5 p-4 sm:p-5 lg:p-6">
       <Hero />
-      <AnalyticsRow />
       <LiveAuctions />
     </div>
   );
