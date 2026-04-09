@@ -80,6 +80,7 @@ import fairdrop_gate_v2.aleo;
 import fairdrop_proof_v2.aleo;
 import fairdrop_ref_v2.aleo;
 import fairdrop_vest_v2.aleo;
+import fairswap_dex_v2.aleo;
 
 // =========================================================================
 // Structs (module-level — moved outside program {} per Leo 4.0)
@@ -92,7 +93,8 @@ struct AuctionKey { creator: address, nonce: u64, program_salt: field }
 struct BidderKey { bidder: address, auction_id: field }
 
 // BHP256 input for multisig-approved treasury withdrawal. Matches multisig doc.
-struct WithdrawalOp { amount: u128, recipient: address, nonce: u64 }
+struct WithdrawalOp  { amount: u128, recipient: address, nonce: u64 }
+struct PauseToggleOp { paused: bool, nonce: u64 }
 
 // Immutable auction parameters — written once at create_auction.
 struct AuctionConfig {
@@ -158,6 +160,77 @@ struct ConfigSnapshot {
     referral_pool_bps: u16,
 }
 
+// Newton-Raphson integer sqrt — 65 unrolled iterations from 2^33.
+// Converges to floor(sqrt(n)) for all n in the u64 value range.
+// Starting estimate 8_589_934_592 = 2^33 is a strict overestimate of sqrt(u64_max).
+fn approx_sqrt(n: u128) -> u128 {
+    let s0:  u128 = 8_589_934_592u128;
+    let s1:  u128 = (s0  + n / s0)  / 2u128;
+    let s2:  u128 = (s1  + n / s1)  / 2u128;
+    let s3:  u128 = (s2  + n / s2)  / 2u128;
+    let s4:  u128 = (s3  + n / s3)  / 2u128;
+    let s5:  u128 = (s4  + n / s4)  / 2u128;
+    let s6:  u128 = (s5  + n / s5)  / 2u128;
+    let s7:  u128 = (s6  + n / s6)  / 2u128;
+    let s8:  u128 = (s7  + n / s7)  / 2u128;
+    let s9:  u128 = (s8  + n / s8)  / 2u128;
+    let s10: u128 = (s9  + n / s9)  / 2u128;
+    let s11: u128 = (s10 + n / s10) / 2u128;
+    let s12: u128 = (s11 + n / s11) / 2u128;
+    let s13: u128 = (s12 + n / s12) / 2u128;
+    let s14: u128 = (s13 + n / s13) / 2u128;
+    let s15: u128 = (s14 + n / s14) / 2u128;
+    let s16: u128 = (s15 + n / s15) / 2u128;
+    let s17: u128 = (s16 + n / s16) / 2u128;
+    let s18: u128 = (s17 + n / s17) / 2u128;
+    let s19: u128 = (s18 + n / s18) / 2u128;
+    let s20: u128 = (s19 + n / s19) / 2u128;
+    let s21: u128 = (s20 + n / s20) / 2u128;
+    let s22: u128 = (s21 + n / s21) / 2u128;
+    let s23: u128 = (s22 + n / s22) / 2u128;
+    let s24: u128 = (s23 + n / s23) / 2u128;
+    let s25: u128 = (s24 + n / s24) / 2u128;
+    let s26: u128 = (s25 + n / s25) / 2u128;
+    let s27: u128 = (s26 + n / s26) / 2u128;
+    let s28: u128 = (s27 + n / s27) / 2u128;
+    let s29: u128 = (s28 + n / s28) / 2u128;
+    let s30: u128 = (s29 + n / s29) / 2u128;
+    let s31: u128 = (s30 + n / s30) / 2u128;
+    let s32: u128 = (s31 + n / s31) / 2u128;
+    let s33: u128 = (s32 + n / s32) / 2u128;
+    let s34: u128 = (s33 + n / s33) / 2u128;
+    let s35: u128 = (s34 + n / s34) / 2u128;
+    let s36: u128 = (s35 + n / s35) / 2u128;
+    let s37: u128 = (s36 + n / s36) / 2u128;
+    let s38: u128 = (s37 + n / s37) / 2u128;
+    let s39: u128 = (s38 + n / s38) / 2u128;
+    let s40: u128 = (s39 + n / s39) / 2u128;
+    let s41: u128 = (s40 + n / s40) / 2u128;
+    let s42: u128 = (s41 + n / s41) / 2u128;
+    let s43: u128 = (s42 + n / s42) / 2u128;
+    let s44: u128 = (s43 + n / s43) / 2u128;
+    let s45: u128 = (s44 + n / s44) / 2u128;
+    let s46: u128 = (s45 + n / s45) / 2u128;
+    let s47: u128 = (s46 + n / s46) / 2u128;
+    let s48: u128 = (s47 + n / s47) / 2u128;
+    let s49: u128 = (s48 + n / s48) / 2u128;
+    let s50: u128 = (s49 + n / s49) / 2u128;
+    let s51: u128 = (s50 + n / s50) / 2u128;
+    let s52: u128 = (s51 + n / s51) / 2u128;
+    let s53: u128 = (s52 + n / s52) / 2u128;
+    let s54: u128 = (s53 + n / s53) / 2u128;
+    let s55: u128 = (s54 + n / s54) / 2u128;
+    let s56: u128 = (s55 + n / s55) / 2u128;
+    let s57: u128 = (s56 + n / s56) / 2u128;
+    let s58: u128 = (s57 + n / s57) / 2u128;
+    let s59: u128 = (s58 + n / s58) / 2u128;
+    let s60: u128 = (s59 + n / s59) / 2u128;
+    let s61: u128 = (s60 + n / s60) / 2u128;
+    let s62: u128 = (s61 + n / s61) / 2u128;
+    let s63: u128 = (s62 + n / s62) / 2u128;
+    return (s63 + n / s63) / 2u128;
+}
+
 program fairdrop_quadratic_v2.aleo {
     // Upgrade governance: 3-of-5 multi-sig must call fairdrop_multisig_v1.aleo::approve_upgrade
     // with contract_key=9field and this program's compiled checksum before deployment.
@@ -176,10 +249,8 @@ program fairdrop_quadratic_v2.aleo {
     // Dutch=1field, Ascending=2field, Sealed=3field, Raise=4field, LBP=5field, Quadratic=6field.
     const PROGRAM_SALT: field = 6field;
 
-    // Starting estimate for approx_sqrt: 2^33 = 8_589_934_592.
-    // This is a strict overestimate of sqrt(u64_max) = sqrt(2^64-1) < 2^32.
-    // Newton-Raphson converges monotonically downward from this starting point.
-    const SQRT_START: u128 = 8_589_934_592u128;
+    // Burn address — all-zeros Aleo address. Used to guard lp_recipient in seed_liquidity.
+    const ZERO_ADDRESS: address = aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc;
 
     // =========================================================================
     // Records
@@ -229,6 +300,9 @@ program fairdrop_quadratic_v2.aleo {
     mapping protocol_treasury: field => u128;
 
     // Replay protection for withdraw_treasury_fees approvals.
+    // Local auction pause. key = 0field; default false (running).
+    // Either this OR fairdrop_config_v2::paused being true halts this auction.
+    mapping paused:       field => bool;
     mapping consumed_ops: field => bool;
 
     // =========================================================================
@@ -314,7 +388,7 @@ program fairdrop_quadratic_v2.aleo {
         let creation_fee: u128 = snapshot.creation_fee;
 
         return (remainder, final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f_burn.run();
             f_creation.run();
             f_cfg.run();
@@ -402,10 +476,8 @@ program fairdrop_quadratic_v2.aleo {
     // 2. place_bid_private — private credits record
     // =========================================================================
     //
-    // contribution_weight = approx_sqrt(payment_amount) computed in transition body.
-    // Newton-Raphson with 64 unrolled iterations from SQRT_START = 2^33.
-    // Starting from an overestimate, the sequence decreases monotonically to
-    // floor(sqrt(payment_amount)) for all payment_amount in u64 range.
+    // contribution_weight = approx_sqrt(payment_amount) — see module-level fn.
+    // Newton-Raphson 65 iterations from 2^33; converges to floor(sqrt(payment_amount)).
 
     fn place_bid_private(
         payment:               credits.aleo::credits,
@@ -419,73 +491,7 @@ program fairdrop_quadratic_v2.aleo {
             auction_id: auction_id,
         });
 
-        // approx_sqrt: 64-iteration Newton-Raphson from SQRT_START.
-        let n: u128   = payment_amount as u128;
-        let s0: u128  = SQRT_START;
-        let s1: u128  = (s0  + n / s0)  / 2u128;
-        let s2: u128  = (s1  + n / s1)  / 2u128;
-        let s3: u128  = (s2  + n / s2)  / 2u128;
-        let s4: u128  = (s3  + n / s3)  / 2u128;
-        let s5: u128  = (s4  + n / s4)  / 2u128;
-        let s6: u128  = (s5  + n / s5)  / 2u128;
-        let s7: u128  = (s6  + n / s6)  / 2u128;
-        let s8: u128  = (s7  + n / s7)  / 2u128;
-        let s9: u128  = (s8  + n / s8)  / 2u128;
-        let s10: u128 = (s9  + n / s9)  / 2u128;
-        let s11: u128 = (s10 + n / s10) / 2u128;
-        let s12: u128 = (s11 + n / s11) / 2u128;
-        let s13: u128 = (s12 + n / s12) / 2u128;
-        let s14: u128 = (s13 + n / s13) / 2u128;
-        let s15: u128 = (s14 + n / s14) / 2u128;
-        let s16: u128 = (s15 + n / s15) / 2u128;
-        let s17: u128 = (s16 + n / s16) / 2u128;
-        let s18: u128 = (s17 + n / s17) / 2u128;
-        let s19: u128 = (s18 + n / s18) / 2u128;
-        let s20: u128 = (s19 + n / s19) / 2u128;
-        let s21: u128 = (s20 + n / s20) / 2u128;
-        let s22: u128 = (s21 + n / s21) / 2u128;
-        let s23: u128 = (s22 + n / s22) / 2u128;
-        let s24: u128 = (s23 + n / s23) / 2u128;
-        let s25: u128 = (s24 + n / s24) / 2u128;
-        let s26: u128 = (s25 + n / s25) / 2u128;
-        let s27: u128 = (s26 + n / s26) / 2u128;
-        let s28: u128 = (s27 + n / s27) / 2u128;
-        let s29: u128 = (s28 + n / s28) / 2u128;
-        let s30: u128 = (s29 + n / s29) / 2u128;
-        let s31: u128 = (s30 + n / s30) / 2u128;
-        let s32: u128 = (s31 + n / s31) / 2u128;
-        let s33: u128 = (s32 + n / s32) / 2u128;
-        let s34: u128 = (s33 + n / s33) / 2u128;
-        let s35: u128 = (s34 + n / s34) / 2u128;
-        let s36: u128 = (s35 + n / s35) / 2u128;
-        let s37: u128 = (s36 + n / s36) / 2u128;
-        let s38: u128 = (s37 + n / s37) / 2u128;
-        let s39: u128 = (s38 + n / s38) / 2u128;
-        let s40: u128 = (s39 + n / s39) / 2u128;
-        let s41: u128 = (s40 + n / s40) / 2u128;
-        let s42: u128 = (s41 + n / s41) / 2u128;
-        let s43: u128 = (s42 + n / s42) / 2u128;
-        let s44: u128 = (s43 + n / s43) / 2u128;
-        let s45: u128 = (s44 + n / s44) / 2u128;
-        let s46: u128 = (s45 + n / s45) / 2u128;
-        let s47: u128 = (s46 + n / s46) / 2u128;
-        let s48: u128 = (s47 + n / s47) / 2u128;
-        let s49: u128 = (s48 + n / s48) / 2u128;
-        let s50: u128 = (s49 + n / s49) / 2u128;
-        let s51: u128 = (s50 + n / s50) / 2u128;
-        let s52: u128 = (s51 + n / s51) / 2u128;
-        let s53: u128 = (s52 + n / s52) / 2u128;
-        let s54: u128 = (s53 + n / s53) / 2u128;
-        let s55: u128 = (s54 + n / s54) / 2u128;
-        let s56: u128 = (s55 + n / s55) / 2u128;
-        let s57: u128 = (s56 + n / s56) / 2u128;
-        let s58: u128 = (s57 + n / s57) / 2u128;
-        let s59: u128 = (s58 + n / s58) / 2u128;
-        let s60: u128 = (s59 + n / s59) / 2u128;
-        let s61: u128 = (s60 + n / s60) / 2u128;
-        let s62: u128 = (s61 + n / s61) / 2u128;
-        let s63: u128 = (s62 + n / s62) / 2u128;
-        let contribution_weight: u128 = (s63 + n / s63) / 2u128;
+        let contribution_weight: u128 = approx_sqrt(payment_amount as u128);
 
         let (change, f_credits): (credits.aleo::credits, Final) =
             credits.aleo::transfer_private_to_public(payment, self.address, payment_amount);
@@ -505,7 +511,7 @@ program fairdrop_quadratic_v2.aleo {
         let payment_amount_u128: u128 = payment_amount as u128;
 
         return (change, bid, receipt, final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f_credits.run();
             f_gate.run();
             f_proof.run();
@@ -567,73 +573,7 @@ program fairdrop_quadratic_v2.aleo {
             auction_id: auction_id,
         });
 
-        // approx_sqrt: 64-iteration Newton-Raphson from SQRT_START.
-        let n: u128   = payment_amount as u128;
-        let s0: u128  = SQRT_START;
-        let s1: u128  = (s0  + n / s0)  / 2u128;
-        let s2: u128  = (s1  + n / s1)  / 2u128;
-        let s3: u128  = (s2  + n / s2)  / 2u128;
-        let s4: u128  = (s3  + n / s3)  / 2u128;
-        let s5: u128  = (s4  + n / s4)  / 2u128;
-        let s6: u128  = (s5  + n / s5)  / 2u128;
-        let s7: u128  = (s6  + n / s6)  / 2u128;
-        let s8: u128  = (s7  + n / s7)  / 2u128;
-        let s9: u128  = (s8  + n / s8)  / 2u128;
-        let s10: u128 = (s9  + n / s9)  / 2u128;
-        let s11: u128 = (s10 + n / s10) / 2u128;
-        let s12: u128 = (s11 + n / s11) / 2u128;
-        let s13: u128 = (s12 + n / s12) / 2u128;
-        let s14: u128 = (s13 + n / s13) / 2u128;
-        let s15: u128 = (s14 + n / s14) / 2u128;
-        let s16: u128 = (s15 + n / s15) / 2u128;
-        let s17: u128 = (s16 + n / s16) / 2u128;
-        let s18: u128 = (s17 + n / s17) / 2u128;
-        let s19: u128 = (s18 + n / s18) / 2u128;
-        let s20: u128 = (s19 + n / s19) / 2u128;
-        let s21: u128 = (s20 + n / s20) / 2u128;
-        let s22: u128 = (s21 + n / s21) / 2u128;
-        let s23: u128 = (s22 + n / s22) / 2u128;
-        let s24: u128 = (s23 + n / s23) / 2u128;
-        let s25: u128 = (s24 + n / s24) / 2u128;
-        let s26: u128 = (s25 + n / s25) / 2u128;
-        let s27: u128 = (s26 + n / s26) / 2u128;
-        let s28: u128 = (s27 + n / s27) / 2u128;
-        let s29: u128 = (s28 + n / s28) / 2u128;
-        let s30: u128 = (s29 + n / s29) / 2u128;
-        let s31: u128 = (s30 + n / s30) / 2u128;
-        let s32: u128 = (s31 + n / s31) / 2u128;
-        let s33: u128 = (s32 + n / s32) / 2u128;
-        let s34: u128 = (s33 + n / s33) / 2u128;
-        let s35: u128 = (s34 + n / s34) / 2u128;
-        let s36: u128 = (s35 + n / s35) / 2u128;
-        let s37: u128 = (s36 + n / s36) / 2u128;
-        let s38: u128 = (s37 + n / s37) / 2u128;
-        let s39: u128 = (s38 + n / s38) / 2u128;
-        let s40: u128 = (s39 + n / s39) / 2u128;
-        let s41: u128 = (s40 + n / s40) / 2u128;
-        let s42: u128 = (s41 + n / s41) / 2u128;
-        let s43: u128 = (s42 + n / s42) / 2u128;
-        let s44: u128 = (s43 + n / s43) / 2u128;
-        let s45: u128 = (s44 + n / s44) / 2u128;
-        let s46: u128 = (s45 + n / s45) / 2u128;
-        let s47: u128 = (s46 + n / s46) / 2u128;
-        let s48: u128 = (s47 + n / s47) / 2u128;
-        let s49: u128 = (s48 + n / s48) / 2u128;
-        let s50: u128 = (s49 + n / s49) / 2u128;
-        let s51: u128 = (s50 + n / s50) / 2u128;
-        let s52: u128 = (s51 + n / s51) / 2u128;
-        let s53: u128 = (s52 + n / s52) / 2u128;
-        let s54: u128 = (s53 + n / s53) / 2u128;
-        let s55: u128 = (s54 + n / s54) / 2u128;
-        let s56: u128 = (s55 + n / s55) / 2u128;
-        let s57: u128 = (s56 + n / s56) / 2u128;
-        let s58: u128 = (s57 + n / s57) / 2u128;
-        let s59: u128 = (s58 + n / s58) / 2u128;
-        let s60: u128 = (s59 + n / s59) / 2u128;
-        let s61: u128 = (s60 + n / s60) / 2u128;
-        let s62: u128 = (s61 + n / s61) / 2u128;
-        let s63: u128 = (s62 + n / s62) / 2u128;
-        let contribution_weight: u128 = (s63 + n / s63) / 2u128;
+        let contribution_weight: u128 = approx_sqrt(payment_amount as u128);
 
         let f_credits: Final =
             credits.aleo::transfer_public_as_signer(self.address, payment_amount);
@@ -653,7 +593,7 @@ program fairdrop_quadratic_v2.aleo {
         let payment_amount_u128: u128 = payment_amount as u128;
 
         return (bid, receipt, final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f_credits.run();
             f_gate.run();
             f_proof.run();
@@ -717,73 +657,7 @@ program fairdrop_quadratic_v2.aleo {
             auction_id: auction_id,
         });
 
-        // approx_sqrt: 64-iteration Newton-Raphson.
-        let n: u128   = payment_amount as u128;
-        let s0: u128  = SQRT_START;
-        let s1: u128  = (s0  + n / s0)  / 2u128;
-        let s2: u128  = (s1  + n / s1)  / 2u128;
-        let s3: u128  = (s2  + n / s2)  / 2u128;
-        let s4: u128  = (s3  + n / s3)  / 2u128;
-        let s5: u128  = (s4  + n / s4)  / 2u128;
-        let s6: u128  = (s5  + n / s5)  / 2u128;
-        let s7: u128  = (s6  + n / s6)  / 2u128;
-        let s8: u128  = (s7  + n / s7)  / 2u128;
-        let s9: u128  = (s8  + n / s8)  / 2u128;
-        let s10: u128 = (s9  + n / s9)  / 2u128;
-        let s11: u128 = (s10 + n / s10) / 2u128;
-        let s12: u128 = (s11 + n / s11) / 2u128;
-        let s13: u128 = (s12 + n / s12) / 2u128;
-        let s14: u128 = (s13 + n / s13) / 2u128;
-        let s15: u128 = (s14 + n / s14) / 2u128;
-        let s16: u128 = (s15 + n / s15) / 2u128;
-        let s17: u128 = (s16 + n / s16) / 2u128;
-        let s18: u128 = (s17 + n / s17) / 2u128;
-        let s19: u128 = (s18 + n / s18) / 2u128;
-        let s20: u128 = (s19 + n / s19) / 2u128;
-        let s21: u128 = (s20 + n / s20) / 2u128;
-        let s22: u128 = (s21 + n / s21) / 2u128;
-        let s23: u128 = (s22 + n / s22) / 2u128;
-        let s24: u128 = (s23 + n / s23) / 2u128;
-        let s25: u128 = (s24 + n / s24) / 2u128;
-        let s26: u128 = (s25 + n / s25) / 2u128;
-        let s27: u128 = (s26 + n / s26) / 2u128;
-        let s28: u128 = (s27 + n / s27) / 2u128;
-        let s29: u128 = (s28 + n / s28) / 2u128;
-        let s30: u128 = (s29 + n / s29) / 2u128;
-        let s31: u128 = (s30 + n / s30) / 2u128;
-        let s32: u128 = (s31 + n / s31) / 2u128;
-        let s33: u128 = (s32 + n / s32) / 2u128;
-        let s34: u128 = (s33 + n / s33) / 2u128;
-        let s35: u128 = (s34 + n / s34) / 2u128;
-        let s36: u128 = (s35 + n / s35) / 2u128;
-        let s37: u128 = (s36 + n / s36) / 2u128;
-        let s38: u128 = (s37 + n / s37) / 2u128;
-        let s39: u128 = (s38 + n / s38) / 2u128;
-        let s40: u128 = (s39 + n / s39) / 2u128;
-        let s41: u128 = (s40 + n / s40) / 2u128;
-        let s42: u128 = (s41 + n / s41) / 2u128;
-        let s43: u128 = (s42 + n / s42) / 2u128;
-        let s44: u128 = (s43 + n / s43) / 2u128;
-        let s45: u128 = (s44 + n / s44) / 2u128;
-        let s46: u128 = (s45 + n / s45) / 2u128;
-        let s47: u128 = (s46 + n / s46) / 2u128;
-        let s48: u128 = (s47 + n / s47) / 2u128;
-        let s49: u128 = (s48 + n / s48) / 2u128;
-        let s50: u128 = (s49 + n / s49) / 2u128;
-        let s51: u128 = (s50 + n / s50) / 2u128;
-        let s52: u128 = (s51 + n / s51) / 2u128;
-        let s53: u128 = (s52 + n / s52) / 2u128;
-        let s54: u128 = (s53 + n / s53) / 2u128;
-        let s55: u128 = (s54 + n / s54) / 2u128;
-        let s56: u128 = (s55 + n / s55) / 2u128;
-        let s57: u128 = (s56 + n / s56) / 2u128;
-        let s58: u128 = (s57 + n / s57) / 2u128;
-        let s59: u128 = (s58 + n / s58) / 2u128;
-        let s60: u128 = (s59 + n / s59) / 2u128;
-        let s61: u128 = (s60 + n / s60) / 2u128;
-        let s62: u128 = (s61 + n / s61) / 2u128;
-        let s63: u128 = (s62 + n / s62) / 2u128;
-        let contribution_weight: u128 = (s63 + n / s63) / 2u128;
+        let contribution_weight: u128 = approx_sqrt(payment_amount as u128);
 
         let (change, f_credits): (credits.aleo::credits, Final) =
             credits.aleo::transfer_private_to_public(payment, self.address, payment_amount);
@@ -810,7 +684,7 @@ program fairdrop_quadratic_v2.aleo {
         let payment_amount_u128: u128 = payment_amount as u128;
 
         return (change, bid, receipt, final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f_credits.run();
             f_gate.run();
             f_proof.run();
@@ -874,73 +748,7 @@ program fairdrop_quadratic_v2.aleo {
             auction_id: auction_id,
         });
 
-        // approx_sqrt: 64-iteration Newton-Raphson.
-        let n: u128   = payment_amount as u128;
-        let s0: u128  = SQRT_START;
-        let s1: u128  = (s0  + n / s0)  / 2u128;
-        let s2: u128  = (s1  + n / s1)  / 2u128;
-        let s3: u128  = (s2  + n / s2)  / 2u128;
-        let s4: u128  = (s3  + n / s3)  / 2u128;
-        let s5: u128  = (s4  + n / s4)  / 2u128;
-        let s6: u128  = (s5  + n / s5)  / 2u128;
-        let s7: u128  = (s6  + n / s6)  / 2u128;
-        let s8: u128  = (s7  + n / s7)  / 2u128;
-        let s9: u128  = (s8  + n / s8)  / 2u128;
-        let s10: u128 = (s9  + n / s9)  / 2u128;
-        let s11: u128 = (s10 + n / s10) / 2u128;
-        let s12: u128 = (s11 + n / s11) / 2u128;
-        let s13: u128 = (s12 + n / s12) / 2u128;
-        let s14: u128 = (s13 + n / s13) / 2u128;
-        let s15: u128 = (s14 + n / s14) / 2u128;
-        let s16: u128 = (s15 + n / s15) / 2u128;
-        let s17: u128 = (s16 + n / s16) / 2u128;
-        let s18: u128 = (s17 + n / s17) / 2u128;
-        let s19: u128 = (s18 + n / s18) / 2u128;
-        let s20: u128 = (s19 + n / s19) / 2u128;
-        let s21: u128 = (s20 + n / s20) / 2u128;
-        let s22: u128 = (s21 + n / s21) / 2u128;
-        let s23: u128 = (s22 + n / s22) / 2u128;
-        let s24: u128 = (s23 + n / s23) / 2u128;
-        let s25: u128 = (s24 + n / s24) / 2u128;
-        let s26: u128 = (s25 + n / s25) / 2u128;
-        let s27: u128 = (s26 + n / s26) / 2u128;
-        let s28: u128 = (s27 + n / s27) / 2u128;
-        let s29: u128 = (s28 + n / s28) / 2u128;
-        let s30: u128 = (s29 + n / s29) / 2u128;
-        let s31: u128 = (s30 + n / s30) / 2u128;
-        let s32: u128 = (s31 + n / s31) / 2u128;
-        let s33: u128 = (s32 + n / s32) / 2u128;
-        let s34: u128 = (s33 + n / s33) / 2u128;
-        let s35: u128 = (s34 + n / s34) / 2u128;
-        let s36: u128 = (s35 + n / s35) / 2u128;
-        let s37: u128 = (s36 + n / s36) / 2u128;
-        let s38: u128 = (s37 + n / s37) / 2u128;
-        let s39: u128 = (s38 + n / s38) / 2u128;
-        let s40: u128 = (s39 + n / s39) / 2u128;
-        let s41: u128 = (s40 + n / s40) / 2u128;
-        let s42: u128 = (s41 + n / s41) / 2u128;
-        let s43: u128 = (s42 + n / s42) / 2u128;
-        let s44: u128 = (s43 + n / s43) / 2u128;
-        let s45: u128 = (s44 + n / s44) / 2u128;
-        let s46: u128 = (s45 + n / s45) / 2u128;
-        let s47: u128 = (s46 + n / s46) / 2u128;
-        let s48: u128 = (s47 + n / s47) / 2u128;
-        let s49: u128 = (s48 + n / s48) / 2u128;
-        let s50: u128 = (s49 + n / s49) / 2u128;
-        let s51: u128 = (s50 + n / s50) / 2u128;
-        let s52: u128 = (s51 + n / s51) / 2u128;
-        let s53: u128 = (s52 + n / s52) / 2u128;
-        let s54: u128 = (s53 + n / s53) / 2u128;
-        let s55: u128 = (s54 + n / s54) / 2u128;
-        let s56: u128 = (s55 + n / s55) / 2u128;
-        let s57: u128 = (s56 + n / s56) / 2u128;
-        let s58: u128 = (s57 + n / s57) / 2u128;
-        let s59: u128 = (s58 + n / s58) / 2u128;
-        let s60: u128 = (s59 + n / s59) / 2u128;
-        let s61: u128 = (s60 + n / s60) / 2u128;
-        let s62: u128 = (s61 + n / s61) / 2u128;
-        let s63: u128 = (s62 + n / s62) / 2u128;
-        let contribution_weight: u128 = (s63 + n / s63) / 2u128;
+        let contribution_weight: u128 = approx_sqrt(payment_amount as u128);
 
         let f_credits: Final =
             credits.aleo::transfer_public_as_signer(self.address, payment_amount);
@@ -967,7 +775,7 @@ program fairdrop_quadratic_v2.aleo {
         let payment_amount_u128: u128 = payment_amount as u128;
 
         return (bid, receipt, final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f_credits.run();
             f_gate.run();
             f_proof.run();
@@ -1039,7 +847,7 @@ program fairdrop_quadratic_v2.aleo {
             fairdrop_proof_v2.aleo::update_reputation(creator, filled, volume);
 
         return final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f_closer.run();
             f_proof.run();
 
@@ -1100,6 +908,16 @@ program fairdrop_quadratic_v2.aleo {
     // =========================================================================
     // 7. push_referral_budget — permissionless; call after cleared close_auction
     // =========================================================================
+    //
+    // Accounting note — escrow_payments is NOT decremented here (by design):
+    //   escrow_payments guards creator withdrawals (withdraw_payments / seed_liquidity)
+    //   and bidder refunds (claim / claim_voided). Both are bounded by creator_revenue
+    //   and bid amounts respectively, and those already exclude protocol_fee entirely.
+    //   ref_budget = protocol_fee * referral_pool_bps / 10000 — carved from protocol_fee.
+    //   creator_revenue = total_payments - protocol_fee, so the creator_revenue ceiling
+    //   in withdraw_payments and seed_liquidity already prevents the creator from touching
+    //   any part of protocol_fee, including ref_budget. Decrementing escrow_payments here
+    //   would be incorrect — it would make the ceiling appear tighter than it really is.
 
     fn push_referral_budget(
         public auction_id: field,
@@ -1172,7 +990,7 @@ program fairdrop_quadratic_v2.aleo {
             );
 
         return (sale_token, final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f_mint.run();
 
             let config: AuctionConfig = auction_configs.get(bid_auction_id);
@@ -1228,7 +1046,7 @@ program fairdrop_quadratic_v2.aleo {
             );
 
         return (vest, final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f_vest.run();
 
             let config: AuctionConfig = auction_configs.get(bid_auction_id);
@@ -1266,7 +1084,7 @@ program fairdrop_quadratic_v2.aleo {
         let f0: Final = credits.aleo::transfer_public(recipient, amount as u64);
 
         return final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f0.run();
 
             let config: AuctionConfig = auction_configs.get(auction_id);
@@ -1313,7 +1131,7 @@ program fairdrop_quadratic_v2.aleo {
             );
 
         return (token, final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f_mint.run();
 
             let config: AuctionConfig = auction_configs.get(auction_id);
@@ -1358,7 +1176,7 @@ program fairdrop_quadratic_v2.aleo {
             );
 
         return (token, final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f_mint.run();
 
             let config: AuctionConfig = auction_configs.get(auction_id);
@@ -1458,5 +1276,130 @@ program fairdrop_quadratic_v2.aleo {
             assert(amount <= treasury);
             protocol_treasury.set(0field, treasury - amount);
         });
+    }
+
+    // =========================================================================
+    // toggle_paused — local auction pause (multisig governance)
+    // =========================================================================
+    //
+    // Pauses or unpauses this auction independently of fairdrop_config_v2::paused.
+    // Either being true blocks create_auction, place_bid, close_auction, claim, etc.
+    // claim_voided remains exempt from both checks — bidder capital must always
+    // be recoverable regardless of pause state.
+    //
+    // Caller must first call fairdrop_multisig_v1.aleo::approve_op with:
+    //   op_hash = BHP256::hash_to_field(PauseToggleOp { paused: is_paused, nonce: op_nonce })
+
+    fn toggle_paused(
+        public is_paused: bool,
+        public op_nonce:  u64,
+    ) -> Final {
+        let op_hash: field = BHP256::hash_to_field(PauseToggleOp {
+            paused: is_paused,
+            nonce:  op_nonce,
+        });
+        return final {
+            assert(fairdrop_multisig_v1.aleo::approved_ops.get_or_use(op_hash, false));
+            assert(!consumed_ops.get_or_use(op_hash, false));
+            consumed_ops.set(op_hash, true);
+            paused.set(0field, is_paused);
+        };
+    }
+
+    // =========================================================================
+    // seed_liquidity — post-auction DEX pool seeding (creator only)
+    // =========================================================================
+    //
+    // After close_auction (cleared), creator seeds fairswap_dex_v2.aleo with
+    // liquidity in a single atomic transaction. No intermediate withdrawals.
+    //
+    // Token flow (all within one final {} — fully atomic):
+    //   f_refund : auction credits.aleo → creator          (mirrors withdraw_payments)
+    //   f_cred   : creator CREDITS_RESERVED_TOKEN_ID → DEX (via transfer_public_as_signer)
+    //   f_sale   : mint unsold sale tokens → DEX            (via mint_public)
+    //   f_cpi    : DEX add_liquidity_cpi — pool create (if new) + reserves + LP mint
+    //
+    // Credits bridge: auction holds credits.aleo; DEX needs CREDITS_RESERVED_TOKEN_ID.
+    // Two simultaneous movements (refund + signer transfer) bridge atomically.
+    // Creator must pre-hold amount_credits of CREDITS_RESERVED_TOKEN_ID.
+    //
+    // Accounting mirrors existing transitions exactly:
+    //   credits    — same checks as withdraw_payments (creator_withdrawn + escrow_payments)
+    //   sale tokens — same checks as withdraw_unsold   (unsold_withdrawn + escrow_sales)
+    //
+    // Pause: NOT exempt — protected by both global and local pause.
+    // D11 param: sale_token_id (caller reads config.sale_token_id off-chain).
+
+    fn seed_liquidity(
+        public auction_id:        field,
+        public sale_token_id:     field,    // D11: config.sale_token_id
+        public amount_sale_token: u128,
+        public amount_credits:    u128,
+        public fee_bps:           u16,
+        public min_lp:            u128,
+        public lp_recipient:      address,
+    ) -> Final {
+        assert(amount_sale_token > 0u128 && amount_credits > 0u128);
+        assert_neq(lp_recipient, ZERO_ADDRESS);
+        let creator: address = self.signer;
+
+        let f_refund: Final =
+            credits.aleo::transfer_public(creator, amount_credits as u64);
+
+        // Two-step: pull signer's CREDITS_RESERVED into this contract's public balance,
+        // then convert to a private record owned by the DEX. transfer_public_to_private
+        // uses self.caller (this contract) as sender, so f_signer_to_auction must run
+        // before f_to_private in final {}.
+        let f_signer_to_auction: Final =
+            token_registry.aleo::transfer_public_as_signer(CREDITS_RESERVED_TOKEN_ID, self.address, amount_credits);
+        let (record_credits, f_to_private): (token_registry.aleo::Token, Final) =
+            token_registry.aleo::transfer_public_to_private(CREDITS_RESERVED_TOKEN_ID, fairswap_dex_v2.aleo, amount_credits, false);
+
+        // Mint unsold sale tokens as a private record owned by the DEX.
+        let (record_sale, f_sale): (token_registry.aleo::Token, Final) =
+            token_registry.aleo::mint_private(sale_token_id, fairswap_dex_v2.aleo, amount_sale_token, false, 4294967295u32);
+
+        let f_cpi: Final = fairswap_dex_v2.aleo::add_liquidity_cpi_private_in(
+            record_credits,
+            record_sale,
+            fee_bps,
+            min_lp,
+            lp_recipient,
+        );
+
+        return final {
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
+
+            let config: AuctionConfig = auction_configs.get(auction_id);
+            let state:  AuctionState  = auction_states.get(auction_id);
+
+            assert(state.cleared);
+            assert(!state.voided);
+            assert_eq(creator,       config.creator);
+            assert_eq(sale_token_id, config.sale_token_id);
+
+            let withdrawn: u128     = creator_withdrawn.get_or_use(auction_id, 0u128);
+            let new_withdrawn: u128 = withdrawn + amount_credits;
+            assert(new_withdrawn <= state.creator_revenue);
+            creator_withdrawn.set(auction_id, new_withdrawn);
+            let escrow: u128 = escrow_payments.get(auction_id);
+            assert(amount_credits <= escrow);
+            escrow_payments.set(auction_id, escrow - amount_credits);
+
+            let unsold: u128       = config.supply - state.total_committed;
+            let unsold_drawn: u128 = unsold_withdrawn.get_or_use(auction_id, 0u128);
+            let new_unsold: u128   = unsold_drawn + amount_sale_token;
+            assert(new_unsold <= unsold);
+            unsold_withdrawn.set(auction_id, new_unsold);
+            let escrow_s: u128 = escrow_sales.get(auction_id);
+            assert(amount_sale_token <= escrow_s);
+            escrow_sales.set(auction_id, escrow_s - amount_sale_token);
+
+            f_refund.run();
+            f_signer_to_auction.run();
+            f_to_private.run();
+            f_sale.run();
+            f_cpi.run();
+        };
     }
 }

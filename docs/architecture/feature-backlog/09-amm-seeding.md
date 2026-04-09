@@ -6,14 +6,28 @@ After `close_auction`, the creator seeds a DEX liquidity pool using their revenu
 supply in **a single transaction**. The auction contract calls `fairswap_dex_v2.aleo` directly
 via CPI — no record scanning, no multi-step sequence, no intermediate withdrawals.
 
-**Status: DEFERRED** — requires `fairswap_dex_v2.aleo` (see below) to be built and deployed,
-and auction contracts to be updated with a `seed_liquidity` transition. Implement after:
-1. All items in `docs/architecture/TODO.md` are completed.
-2. `fairswap_dex_v2.aleo` is deployed and verified on Aleo mainnet.
+**Status: CONTRACT LAYER COMPLETE** — `seed_liquidity` is implemented and tested in all 6
+auction contracts. SDK and frontend integration remain.
+
+Contract work completed:
+1. `fairswap_dex_v2.aleo` written, tested, and DEX `token_registry` arg order corrected.
+2. `add_liquidity_cpi` supports atomic pool creation (`pools.contains()` check).
+3. Upgrade key `12field` reserved in `fairdrop_multisig_v1.aleo`.
+4. `seed_liquidity` added to all 6 auction contracts (raise, dutch, ascending, sealed, lbp, quadratic).
+5. `withdraw_unsold` upper-bound bug fixed in `fairdrop_raise_v2.aleo` and verified correct in all 6.
+6. `ZERO_ADDRESS` constant defined in all 6 auction contracts; `assert_neq(lp_recipient, ZERO_ADDRESS)` guards added.
+7. Unit tests updated across all 6 auction test files (Group 5: `test_seed_liq_*`).
+8. DEX unit tests fixed (missing `fee_bps: u16` param in `add_liquidity*` calls).
+
+Remaining before deployment:
+1. SDK: `buildSeedLiquidity` + `validateSeedLiquidity` pre-flight (see SDK section below).
+2. Frontend: update `useSeedLiquidity` + `SeedLiquidityPanel` to single-step.
+3. `fairswap_dex_v2.aleo` deployed and verified on Aleo testnet/mainnet.
+4. Integration test on devnet: cleared auction → seed_liquidity → pool seeded → LP received.
 
 ---
 
-## Why the current plan was wrong
+## Why the previous plan was wrong
 
 The previous version of this plan modelled auction proceeds as **private records** that must be
 withdrawn before they can be added to a pool. That forced a 3-transaction sequence:
@@ -25,12 +39,39 @@ add_liquidity     → (submit with both records)
 ```
 
 Uniswap's seamlessness exists because balances live in **public mappings** — one contract can
-authorize another to spend them atomically. Aleo has the same primitive: `token_registry.aleo`
-tracks public balances alongside private records. If post-close revenue and unsold supply are
-held as public mapping balances in the auction contract, a single CPI call to the DEX handles
-the entire seeding in one transaction.
+authorize another to spend them atomically. Auction contracts already track revenue and unsold
+supply as public mappings (`escrow_payments`, `creator_withdrawn`, `escrow_sales`,
+`unsold_withdrawn`). A single atomic transaction can consume from those mappings and CPI to the
+DEX in the same `final {}` block.
 
-The fix is a model change, not a missing feature.
+---
+
+## Credits bridge — resolved design decision
+
+Auction contracts hold bidder payments as `credits.aleo` public balance. The DEX only accepts
+`token_registry.aleo` tokens (using `CREDITS_RESERVED_TOKEN_ID` for ALEO). There is no
+program-callable bridge between the two: `wrapped_credits.aleo` only exposes signer-based
+deposit paths (`deposit_credits_public_signer`), which require a human wallet — not a calling
+contract.
+
+**Resolution**: `seed_liquidity` performs two simultaneous credit movements atomically within
+the same `final {}` block:
+
+1. The auction sends `amount_credits` native `credits.aleo` **to the creator** — same path as
+   `withdraw_payments`. The auction's `credits.aleo` public balance decreases.
+2. The creator sends `amount_credits` of `CREDITS_RESERVED_TOKEN_ID` (the token_registry
+   representation of ALEO credits) **to the DEX** — via
+   `token_registry.aleo::transfer_public_as_signer`.
+
+Net effect: auction escrow drains correctly; DEX receives the credits token it understands; LP
+is minted to `lp_recipient`. The implementation does **not** call `wrapped_credits.aleo` or any
+other wrapping contract.
+
+**Pre-condition**: the creator must hold at least `amount_credits` of `CREDITS_RESERVED_TOKEN_ID`
+in their `token_registry` public balance before calling `seed_liquidity`. They can acquire this
+from any standard source: a prior DEX swap that paid out credits, a `remove_liquidity` operation,
+or a direct `token_registry` transfer from another holder. The SDK `buildSeedLiquidity` pre-flight
+check will surface an error if the creator's balance is insufficient.
 
 ---
 
@@ -173,43 +214,128 @@ require 3-of-5 multisig approval.
 
 ## Auction contract changes: `seed_liquidity`
 
-Each of the 6 auction contracts gains a single new transition:
+Each of the 6 auction contracts gains a single new transition. One atomic transaction —
+no intermediate withdrawals, no record scanning.
+
+### Parameters
+
+| Parameter | Type | Description |
+|---|---|---|
+| `auction_id` | `field` | Which auction to seed from |
+| `sale_token_id` | `field` | D11: `config.sale_token_id` — verified in `final {}` |
+| `amount_sale_token` | `u128` | Sale tokens to seed; bounded by unsold quota |
+| `amount_credits` | `u128` | Credits to seed; bounded by `creator_revenue` |
+| `fee_bps` | `u16` | DEX pool fee; used only if pool doesn't exist yet |
+| `min_lp` | `u128` | Minimum LP tokens to receive (slippage guard) |
+| `lp_recipient` | `address` | Receives LP tokens; must not be `ZERO_ADDRESS` |
+
+Transition-body guards (before any CPI):
+- `assert(amount_sale_token > 0u128 && amount_credits > 0u128)`
+- `assert_neq(lp_recipient, ZERO_ADDRESS)` — prevents LP tokens being permanently burned
+
+### CPI calls built in proof context (before `final {}`)
 
 ```leo
-async transition seed_liquidity(
-    auction_id: field,
-    min_lp:     u128,
-) -> Future {
-    return finalize_seed_liquidity(auction_id, min_lp, self.caller);
-}
+// 1. Auction's native credits → creator (mirrors withdraw_payments)
+let f_refund: Final =
+    credits.aleo::transfer_public(creator, amount_credits as u64);
 
-final finalize_seed_liquidity(auction_id: field, min_lp: u128, caller: address) {
-    let config: AuctionConfig = auction_config.get(auction_id);
-    assert_eq(caller, config.creator);
+// 2. Creator's wrapped credits → DEX (requires creator to hold CREDITS_RESERVED_TOKEN_ID)
+let f_cred: Final =
+    token_registry.aleo::transfer_public_as_signer(CREDITS_RESERVED_TOKEN_ID, fairswap_dex_v2.aleo, amount_credits);
 
-    let state: AuctionState = auction_state.get(auction_id);
-    assert(state.cleared);
+// 3. Mint unsold sale tokens to DEX (auction holds SUPPLY_MANAGER_ROLE)
+let f_sale: Final =
+    token_registry.aleo::mint_public(sale_token_id, fairswap_dex_v2.aleo, amount_sale_token, 4294967295u32);
 
-    let revenue: u128 = unclaimed_revenue.get(auction_id);
-    let unsold:  u128 = unsold_supply.get(auction_id);
-    assert(revenue > 0u128 && unsold > 0u128);
-
-    // Single CPI call — no intermediate withdrawals
-    fairswap_dex_v2.aleo/add_liquidity_cpi(
-        config.token_id,
-        credits_token_id,   // ALEO credits ID in token_registry
-        unsold,
-        revenue,
-        min_lp,
-        caller              // LP tokens minted directly to creator
-    );
-
-    unclaimed_revenue.set(auction_id, 0u128);
-    unsold_supply.set(auction_id, 0u128);
-}
+// 4. DEX: atomically create pool (if new) + update reserves + mint LP
+let f_cpi: Final = fairswap_dex_v2.aleo::add_liquidity_cpi(
+    sale_token_id,
+    CREDITS_RESERVED_TOKEN_ID,
+    amount_sale_token,
+    amount_credits,
+    fee_bps,
+    min_lp,
+    lp_recipient,
+);
 ```
 
-No intermediate withdrawals. No record scanning. One finalized transaction.
+### `final {}` logic
+
+```
+// Pause — NOT exempt. Deals with funds; protected by both global and local pause.
+assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false))
+
+// State and identity guards
+config = auction_configs.get(auction_id)
+state  = auction_states.get(auction_id)
+assert(state.cleared && !state.voided)
+assert(creator == config.creator)              // only auction creator
+assert(sale_token_id == config.sale_token_id)  // D11 cross-check
+
+// Credits accounting — identical to withdraw_payments
+withdrawn = creator_withdrawn.get_or_use(auction_id, 0u128)
+assert(withdrawn + amount_credits <= state.creator_revenue)
+creator_withdrawn.set(auction_id, withdrawn + amount_credits)
+escrow = escrow_payments.get(auction_id)
+assert(amount_credits <= escrow)
+escrow_payments.set(auction_id, escrow - amount_credits)
+
+// Sale token accounting — Dutch-style upper bound (correct pattern)
+unsold       = config.supply - state.total_committed
+unsold_drawn = unsold_withdrawn.get_or_use(auction_id, 0u128)
+assert(unsold_drawn + amount_sale_token <= unsold)
+unsold_withdrawn.set(auction_id, unsold_drawn + amount_sale_token)
+escrow_s = escrow_sales.get(auction_id)
+assert(amount_sale_token <= escrow_s)
+escrow_sales.set(auction_id, escrow_s - amount_sale_token)
+
+// Execute all CPIs
+f_refund.run()   // native credits: auction → creator
+f_cred.run()     // wrapped credits: creator → DEX
+f_sale.run()     // mint unsold sale tokens: auction → DEX
+f_cpi.run()      // DEX: pool create (if new) + reserve update + LP mint to lp_recipient
+```
+
+### New contract-level additions (implemented)
+
+Each auction contract received:
+
+1. **Import**: `import fairswap_dex_v2.aleo;`
+2. **`ZERO_ADDRESS` constant**: `const ZERO_ADDRESS: address = aleo1qqq...3ljyzc;` — defined after `PROGRAM_SALT` in each contract.
+3. **`seed_liquidity` transition** — per the design above.
+
+No `DEX_ADDRESS` constant needed. Leo resolves program addresses from the import — `fairswap_dex_v2.aleo`
+is used directly as an `address` value throughout, matching the existing pattern used for `fairdrop_vest_v2.aleo`.
+
+---
+
+## Bug fix: `fairdrop_raise_v2.aleo::withdraw_unsold` — ✓ FIXED
+
+**Problem found during `seed_liquidity` design review — now resolved.**
+
+The original code only checked `amount <= escrow_sales` (which starts at `config.supply`),
+allowing a creator to withdraw the full supply immediately after close — including tokens owed
+to bidders.
+
+**Fix applied** — all 6 auction contracts now use the correct upper-bound pattern:
+
+```leo
+// Correct upper bound: creator only entitled to supply not committed to bidders.
+let unsold: u128        = config.supply - state.total_committed;
+let withdrawn: u128     = unsold_withdrawn.get_or_use(auction_id, 0u128);
+let new_withdrawn: u128 = withdrawn + amount;
+assert(new_withdrawn <= unsold);
+unsold_withdrawn.set(auction_id, new_withdrawn);
+let escrow: u128 = escrow_sales.get(auction_id);
+assert(amount <= escrow);
+escrow_sales.set(auction_id, escrow - amount);
+```
+
+Note: all 6 contracts use `state.total_committed` in `withdraw_unsold` and `seed_liquidity`.
+The earlier plan incorrectly described raise as using `state.effective_supply` — that field
+exists only in quadratic for its internal sqrt-weight accounting; it is not used in the
+unsold ceiling calculation.
 
 ---
 
@@ -225,10 +351,24 @@ Add:
 export function buildSeedLiquidity(input: SeedLiquidityInput): TxSpec;
 
 export interface SeedLiquidityInput {
-  auctionType: AuctionType;
-  auctionId:   string;
-  minLp:       bigint;
+  auctionType:      AuctionType;
+  auctionId:        string;
+  saleTokenId:      string;   // config.sale_token_id — read from chain before calling
+  amountSaleToken:  bigint;   // bounded by: config.supply - state.totalCommitted - unsoldWithdrawn
+  amountCredits:    bigint;   // bounded by: state.creatorRevenue - creatorWithdrawn
+  feeBps:           number;   // ignored if pool already exists
+  minLp:            bigint;   // slippage guard
+  lpRecipient:      string;   // typically creator address
 }
+
+// Pre-flight check (call before buildSeedLiquidity to surface problems early):
+// - Fetches auction state from chain to compute max unsold / max credits
+// - Checks creator holds >= amountCredits CREDITS_RESERVED_TOKEN_ID in token_registry
+// - Returns a structured error if any check fails
+export function validateSeedLiquidity(
+  input: SeedLiquidityInput,
+  creatorAddress: string,
+): Promise<{ valid: boolean; error?: string; maxSaleToken: bigint; maxCredits: bigint }>;
 ```
 
 ### `@fairdrop/sdk/dex` (new entry point)
@@ -317,39 +457,48 @@ function useSeedLiquidity(auctionId: string, auctionType: AuctionType): {
 
 ---
 
-## Pre-implementation checklist
+## Checklist
 
-- [ ] All `TODO.md` items completed
-- [ ] `fairswap_dex_v2.aleo` fully written and audited
-- [ ] LP token registered in `token_registry.aleo` at `create_pool` confirmed working on devnet
-- [ ] Private path CPI interactions (`add_liquidity_private` record outputs) tested
-- [ ] `add_liquidity_cpi` from auction contract tested on devnet
-- [ ] Protocol fee config keys reserved in `fairdrop_config.aleo`
-- [ ] Upgrade key `12field` reserved in multisig
-- [ ] `seed_liquidity` added to all 6 auction contracts and tested
+### Contract layer — complete
+- [x] `fairswap_dex_v2.aleo` written and unit-tested
+- [x] `add_liquidity_cpi` supports atomic pool creation (no prior `create_pool` required)
+- [x] Upgrade key `12field` reserved in `fairdrop_multisig_v1.aleo`
+- [x] Two-level pause added to all 6 auction contracts and DEX
+- [x] `withdraw_unsold` upper-bound verified and fixed in all 6 auction contracts
+- [x] `seed_liquidity` added to all 6 auction contracts
+- [x] `ZERO_ADDRESS` constant added to all 6 auction contracts; `assert_neq(lp_recipient, ZERO_ADDRESS)` guards in place
+- [x] DEX `token_registry` call arg order corrected (8 call sites)
+- [x] Unit tests: Group 5 added to all 6 auction test files (`test_seed_liq_zero_sale/cred/lp`)
+- [x] DEX unit tests fixed (`add_liquidity*` calls now include `fee_bps: u16`)
+
+### SDK + frontend — pending
+- [ ] `buildSeedLiquidity` in `@fairdrop/sdk/transactions` (single `TxSpec`)
+- [ ] `validateSeedLiquidity` pre-flight: verify caller holds ≥ `amount_credits` CREDITS_RESERVED_TOKEN_ID
+- [ ] `useSeedLiquidity` updated to single-step execution + pool preview via `fetchPool`
+- [ ] `SeedLiquidityPanel` updated to single-step status UI
+
+### Deployment — pending
+- [ ] `fairswap_dex_v2.aleo` deployed and verified on testnet
+- [ ] Integration test on devnet: cleared auction → `seed_liquidity` → pool seeded → LP received
 
 ---
 
 ## Implementation steps
 
-1. Write `fairswap_dex_v2.aleo`:
-   - Pool state mapping + canonical key ordering
-   - `create_pool` — LP token registration via `token_registry.aleo` CPI
-   - `add_liquidity` + `add_liquidity_cpi` — Newton-Raphson sqrt, min liquidity lock
-   - `add_liquidity_private` — private record inputs, same `final {}` as public variant
-   - `remove_liquidity` + `remove_liquidity_private`
-   - `swap` — 0.3% fee, TWAP update, protocol fee split when enabled
-   - `swap_private` — private record input/output, same `final {}` reserve logic
-   - `withdraw_protocol_fees` — multisig approved op pattern
-   - `update_fee` — multisig approved op, bounded 0–100 bps
-   - `@checksum` constructor at upgrade key `12field`
-2. Write unit tests for `fairswap_dex_v2.aleo`
-3. Add `seed_liquidity` transition to all 6 auction contracts
-4. Add `@fairdrop/sdk/dex` entry point (all builders + chain reads + AMM math helpers)
-5. Add `buildSeedLiquidity` to `@fairdrop/sdk/transactions`; remove `buildSeedFromAuction`
-6. Update `useSeedLiquidity` — single-step execution, pool preview
-7. Update `SeedLiquidityPanel` — remove multi-step status UI
-8. Run type-check and devnet integration test
+1. ~~Write `fairswap_dex_v2.aleo`~~ ✓ done
+2. ~~Write unit tests for `fairswap_dex_v2.aleo`~~ ✓ done
+3. ~~Audit `withdraw_unsold` in all 6 auction contracts; fix raise's missing upper-bound check~~ ✓ done
+4. ~~Add `seed_liquidity` to all 6 auction contracts~~ ✓ done
+   - ~~`import fairswap_dex_v2.aleo;`~~
+   - ~~`ZERO_ADDRESS` constant, `assert_neq(lp_recipient, ZERO_ADDRESS)` guard~~
+   - ~~`seed_liquidity` transition (per design above)~~
+   - ~~Unit tests (Group 5) added to all 6 test files~~
+5. Add `@fairdrop/sdk/dex` entry point (all builders + chain reads + AMM math helpers)
+6. Add `buildSeedLiquidity` to `@fairdrop/sdk/transactions`; remove `buildSeedFromAuction`
+   - Pre-flight: check creator holds `amount_credits` CREDITS_RESERVED_TOKEN_ID; surface error if not
+7. Update `useSeedLiquidity` — single-step execution, pool preview via `fetchPool`
+8. Update `SeedLiquidityPanel` — remove multi-step status UI
+9. Deploy `fairswap_dex_v2.aleo` to testnet; run devnet integration test
 
 ---
 

@@ -62,6 +62,7 @@ import fairdrop_ref_v2.aleo;
 import fairdrop_vest_v2.aleo;
 import credits.aleo;
 import token_registry.aleo;
+import fairswap_dex_v2.aleo;
 
 // ═════════════════════════════════════════════════════════════════════════════
 // Module-level struct definitions
@@ -79,7 +80,8 @@ struct AuctionKey { creator: address, nonce: u64, program_salt: field }
 struct BidderKey { bidder: address, auction_id: field }
 
 // BHP256 input for multisig-approved treasury withdrawal. Matches multisig doc.
-struct WithdrawalOp { amount: u128, recipient: address, nonce: u64 }
+struct WithdrawalOp  { amount: u128, recipient: address, nonce: u64 }
+struct PauseToggleOp { paused: bool, nonce: u64 }
 
 // Immutable auction parameters. Written once at create_auction; never modified.
 struct AuctionConfig {
@@ -310,6 +312,9 @@ program fairdrop_dutch_v2.aleo {
     // Distinguishes auction_ids from fairdrop_dutch vs other auction programs.
     const PROGRAM_SALT: field = 1field;
 
+    // Burn address — all-zeros Aleo address. Used to guard lp_recipient in seed_liquidity.
+    const ZERO_ADDRESS: address = aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc;
+
     // =========================================================================
     // Records
     // Leo 4.0: records remain inside program {} as part of the on-chain interface.
@@ -359,6 +364,9 @@ program fairdrop_dutch_v2.aleo {
     mapping protocol_treasury: field => u128;
 
     // Replay protection for withdraw_treasury_fees approvals.
+    // Local auction pause. key = 0field; default false (running).
+    // Either this OR fairdrop_config_v2::paused being true halts this auction.
+    mapping paused:       field => bool;
     mapping consumed_ops: field => bool;
 
     // =========================================================================
@@ -457,7 +465,7 @@ program fairdrop_dutch_v2.aleo {
         let creation_fee: u128 = snapshot.creation_fee;
 
         return (remainder, final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f_burn.run();
             f_creation.run();
             f_cfg.run();    // validates params, duration, end_block > start_block
@@ -593,7 +601,7 @@ program fairdrop_dutch_v2.aleo {
             fairdrop_proof_v2.aleo::issue_receipt(auction_id, 0field, bidder_key);
 
         return (change, bid, receipt, final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f_credits.run();
             f_gate.run();
             f_proof.run();
@@ -636,7 +644,7 @@ program fairdrop_dutch_v2.aleo {
             fairdrop_proof_v2.aleo::issue_receipt(auction_id, 0field, bidder_key);
 
         return (bid, receipt, final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f_credits.run();
             f_gate.run();
             f_proof.run();
@@ -687,7 +695,7 @@ program fairdrop_dutch_v2.aleo {
         );
 
         return (change, bid, receipt, final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f_credits.run();
             f_gate.run();
             f_proof.run();
@@ -736,7 +744,7 @@ program fairdrop_dutch_v2.aleo {
         );
 
         return (bid, receipt, final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f_credits.run();
             f_gate.run();
             f_proof.run();
@@ -779,7 +787,7 @@ program fairdrop_dutch_v2.aleo {
             fairdrop_proof_v2.aleo::update_reputation(creator, filled, volume);
 
         return final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f_closer.run();
             f_proof.run();
 
@@ -845,6 +853,16 @@ program fairdrop_dutch_v2.aleo {
     // fund_reserve to enable credit_commission for this auction's bidders.
     // Double-push protection: fund_reserve has a reserve_funded guard.
     // D11: budget must match state.referral_budget.
+    //
+    // Accounting note — escrow_payments is NOT decremented here (by design):
+    //   escrow_payments guards creator withdrawals (withdraw_payments / seed_liquidity)
+    //   and bidder refunds (claim / claim_voided). Both are bounded by creator_revenue
+    //   and bid amounts respectively, and those already exclude protocol_fee entirely.
+    //   ref_budget = protocol_fee * referral_pool_bps / 10000 — carved from protocol_fee.
+    //   creator_revenue = total_payments - protocol_fee, so the creator_revenue ceiling
+    //   in withdraw_payments and seed_liquidity already prevents the creator from touching
+    //   any part of protocol_fee, including ref_budget. Decrementing escrow_payments here
+    //   would be incorrect — it would make the ceiling appear tighter than it really is.
 
     fn push_referral_budget(
         public auction_id: field,
@@ -919,7 +937,7 @@ program fairdrop_dutch_v2.aleo {
             credits.aleo::transfer_public_to_private(owner, refund_amount);
 
         return (sale_token, refund, final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f_mint.run();
             f_refund.run();
 
@@ -987,7 +1005,7 @@ program fairdrop_dutch_v2.aleo {
             credits.aleo::transfer_public_to_private(owner, refund_amount);
 
         return (vest, refund, final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f_vest.run();
             f_refund.run();
 
@@ -1036,7 +1054,7 @@ program fairdrop_dutch_v2.aleo {
         let f0: Final = credits.aleo::transfer_public(recipient, amount as u64);
 
         return final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f0.run();
 
             let config: AuctionConfig = auction_configs.get(auction_id);
@@ -1085,7 +1103,7 @@ program fairdrop_dutch_v2.aleo {
             );
 
         return (token, final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f_mint.run();
 
             let config: AuctionConfig = auction_configs.get(auction_id);
@@ -1137,7 +1155,7 @@ program fairdrop_dutch_v2.aleo {
             );
 
         return (token, final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f_mint.run();
 
             let config: AuctionConfig = auction_configs.get(auction_id);
@@ -1242,5 +1260,130 @@ program fairdrop_dutch_v2.aleo {
             assert(amount <= treasury);
             protocol_treasury.set(0field, treasury - amount);
         });
+    }
+
+    // =========================================================================
+    // toggle_paused — local auction pause (multisig governance)
+    // =========================================================================
+    //
+    // Pauses or unpauses this auction independently of fairdrop_config_v2::paused.
+    // Either being true blocks create_auction, place_bid, close_auction, claim, etc.
+    // claim_voided remains exempt from both checks — bidder capital must always
+    // be recoverable regardless of pause state.
+    //
+    // Caller must first call fairdrop_multisig_v1.aleo::approve_op with:
+    //   op_hash = BHP256::hash_to_field(PauseToggleOp { paused: is_paused, nonce: op_nonce })
+
+    fn toggle_paused(
+        public is_paused: bool,
+        public op_nonce:  u64,
+    ) -> Final {
+        let op_hash: field = BHP256::hash_to_field(PauseToggleOp {
+            paused: is_paused,
+            nonce:  op_nonce,
+        });
+        return final {
+            assert(fairdrop_multisig_v1.aleo::approved_ops.get_or_use(op_hash, false));
+            assert(!consumed_ops.get_or_use(op_hash, false));
+            consumed_ops.set(op_hash, true);
+            paused.set(0field, is_paused);
+        };
+    }
+
+    // =========================================================================
+    // seed_liquidity — post-auction DEX pool seeding (creator only)
+    // =========================================================================
+    //
+    // After close_auction (cleared), creator seeds fairswap_dex_v2.aleo with
+    // liquidity in a single atomic transaction. No intermediate withdrawals.
+    //
+    // Token flow (all within one final {} — fully atomic):
+    //   f_refund : auction credits.aleo → creator          (mirrors withdraw_payments)
+    //   f_cred   : creator CREDITS_RESERVED_TOKEN_ID → DEX (via transfer_public_as_signer)
+    //   f_sale   : mint unsold sale tokens → DEX            (via mint_public)
+    //   f_cpi    : DEX add_liquidity_cpi — pool create (if new) + reserves + LP mint
+    //
+    // Credits bridge: auction holds credits.aleo; DEX needs CREDITS_RESERVED_TOKEN_ID.
+    // Two simultaneous movements (refund + signer transfer) bridge atomically.
+    // Creator must pre-hold amount_credits of CREDITS_RESERVED_TOKEN_ID.
+    //
+    // Accounting mirrors existing transitions exactly:
+    //   credits    — same checks as withdraw_payments (creator_withdrawn + escrow_payments)
+    //   sale tokens — same checks as withdraw_unsold   (unsold_withdrawn + escrow_sales)
+    //
+    // Pause: NOT exempt — protected by both global and local pause.
+    // D11 param: sale_token_id (caller reads config.sale_token_id off-chain).
+
+    fn seed_liquidity(
+        public auction_id:        field,
+        public sale_token_id:     field,    // D11: config.sale_token_id
+        public amount_sale_token: u128,
+        public amount_credits:    u128,
+        public fee_bps:           u16,
+        public min_lp:            u128,
+        public lp_recipient:      address,
+    ) -> Final {
+        assert(amount_sale_token > 0u128 && amount_credits > 0u128);
+        assert_neq(lp_recipient, ZERO_ADDRESS);
+        let creator: address = self.signer;
+
+        let f_refund: Final =
+            credits.aleo::transfer_public(creator, amount_credits as u64);
+
+        // Two-step: pull signer's CREDITS_RESERVED into this contract's public balance,
+        // then convert to a private record owned by the DEX. transfer_public_to_private
+        // uses self.caller (this contract) as sender, so f_signer_to_auction must run
+        // before f_to_private in final {}.
+        let f_signer_to_auction: Final =
+            token_registry.aleo::transfer_public_as_signer(CREDITS_RESERVED_TOKEN_ID, self.address, amount_credits);
+        let (record_credits, f_to_private): (token_registry.aleo::Token, Final) =
+            token_registry.aleo::transfer_public_to_private(CREDITS_RESERVED_TOKEN_ID, fairswap_dex_v2.aleo, amount_credits, false);
+
+        // Mint unsold sale tokens as a private record owned by the DEX.
+        let (record_sale, f_sale): (token_registry.aleo::Token, Final) =
+            token_registry.aleo::mint_private(sale_token_id, fairswap_dex_v2.aleo, amount_sale_token, false, 4294967295u32);
+
+        let f_cpi: Final = fairswap_dex_v2.aleo::add_liquidity_cpi_private_in(
+            record_credits,
+            record_sale,
+            fee_bps,
+            min_lp,
+            lp_recipient,
+        );
+
+        return final {
+            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
+
+            let config: AuctionConfig = auction_configs.get(auction_id);
+            let state:  AuctionState  = auction_states.get(auction_id);
+
+            assert(state.cleared);
+            assert(!state.voided);
+            assert_eq(creator,       config.creator);
+            assert_eq(sale_token_id, config.sale_token_id);
+
+            let withdrawn: u128     = creator_withdrawn.get_or_use(auction_id, 0u128);
+            let new_withdrawn: u128 = withdrawn + amount_credits;
+            assert(new_withdrawn <= state.creator_revenue);
+            creator_withdrawn.set(auction_id, new_withdrawn);
+            let escrow: u128 = escrow_payments.get(auction_id);
+            assert(amount_credits <= escrow);
+            escrow_payments.set(auction_id, escrow - amount_credits);
+
+            let unsold: u128       = config.supply - state.total_committed;
+            let unsold_drawn: u128 = unsold_withdrawn.get_or_use(auction_id, 0u128);
+            let new_unsold: u128   = unsold_drawn + amount_sale_token;
+            assert(new_unsold <= unsold);
+            unsold_withdrawn.set(auction_id, new_unsold);
+            let escrow_s: u128 = escrow_sales.get(auction_id);
+            assert(amount_sale_token <= escrow_s);
+            escrow_sales.set(auction_id, escrow_s - amount_sale_token);
+
+            f_refund.run();
+            f_signer_to_auction.run();
+            f_to_private.run();
+            f_sale.run();
+            f_cpi.run();
+        };
     }
 }

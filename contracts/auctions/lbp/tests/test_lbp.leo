@@ -29,6 +29,9 @@ import credits.aleo;
 //   ✓ withdraw_unsold (nonzero)— mint_private role check: same reason.
 //   ✓ withdraw_payments (1u128)— credits transfer: lbp has 0 public balance.
 //   ✓ withdraw_treasury_fees   — unapproved op guard: approved_ops defaults false → revert.
+//   ✓ seed_liquidity           — zero sale amount:    transition-body assert fires.
+//   ✓ seed_liquidity           — zero credits amount: transition-body assert fires.
+//   ✓ seed_liquidity           — lp_recipient = ZERO_ADDRESS: assert_neq fires.
 //
 // ── Integration-test only (require admin keys, real on-chain state, token roles)
 //   - create_auction: requires exact-amount Token record, assert_config CPI,
@@ -45,6 +48,13 @@ import credits.aleo;
 //     by running the full lifecycle and checking escrow balances reach 0.
 //   - withdraw_treasury_fees happy path: requires prior fairdrop_multisig_v1.aleo::approve_op
 //       to write approved_ops[op_hash] = true. Only testable on real chain state.
+//   - seed_liquidity: requires cleared, non-voided auction; creator as signer;
+//       SUPPLY_MANAGER_ROLE for mint_public; creator must hold amount_credits of
+//       CREDITS_RESERVED_TOKEN_ID in token_registry. Atomic single transaction:
+//       refunds native credits to creator, bridges creator's CREDITS_RESERVED_TOKEN_ID
+//       to DEX, mints unsold sale tokens to DEX, calls add_liquidity_cpi.
+//       LP tokens sent to lp_recipient. Ceilings: creator_revenue (credits),
+//       config.supply - total_committed (sale tokens).
 // ─────────────────────────────────────────────────────────────────────────────
 
 program test_lbp.aleo {
@@ -256,6 +266,57 @@ program test_lbp.aleo {
                 aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc,  // recipient
                 1u64,   // op_nonce — no approved_ops entry for this hash → assert fails
             );
+        return final { f.run(); };
+    }
+
+    // =========================================================================
+    // Group 5: seed_liquidity transition-body assertion tests
+    // =========================================================================
+    // assert(amount_sale_token > 0u128 && amount_credits > 0u128) fires first;
+    // assert_neq(lp_recipient, ZERO_ADDRESS) fires second.
+
+    @test
+    @should_fail
+    fn test_seed_liq_zero_sale() -> Final {
+        let f: Final = fairdrop_lbp_v2.aleo::seed_liquidity(
+            1field,   // auction_id — dummy; assert fires before any CPI
+            1field,   // sale_token_id — dummy; never reached
+            0u128,    // amount_sale_token — ZERO fires transition-body assert
+            100u128,  // amount_credits — valid
+            30u16,    // fee_bps — dummy; never reached
+            0u128,    // min_lp — dummy; never reached
+            aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r, // lp_recipient — valid
+        );
+        return final { f.run(); };
+    }
+
+    @test
+    @should_fail
+    fn test_seed_liq_zero_cred() -> Final {
+        let f: Final = fairdrop_lbp_v2.aleo::seed_liquidity(
+            1field,   // auction_id
+            1field,   // sale_token_id
+            100u128,  // amount_sale_token — valid
+            0u128,    // amount_credits — ZERO fires transition-body assert
+            30u16,    // fee_bps — dummy; never reached
+            0u128,    // min_lp — dummy; never reached
+            aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r, // lp_recipient — valid
+        );
+        return final { f.run(); };
+    }
+
+    @test
+    @should_fail
+    fn test_seed_liq_zero_lp() -> Final {
+        let f: Final = fairdrop_lbp_v2.aleo::seed_liquidity(
+            1field,   // auction_id
+            1field,   // sale_token_id
+            100u128,  // amount_sale_token — valid; passes first assert
+            100u128,  // amount_credits — valid; passes first assert
+            30u16,    // fee_bps — dummy; never reached
+            0u128,    // min_lp — dummy; never reached
+            aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc, // ZERO_ADDRESS → assert_neq fires
+        );
         return final { f.run(); };
     }
 }

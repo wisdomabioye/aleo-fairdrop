@@ -1,7 +1,7 @@
 // fairdrop_multisig_v1.aleo — 3-of-5 multi-sig governance root for the Fairdrop protocol.
 //
 // Responsibility:
-//   - Authorize upgrades for all 11 Fairdrop contracts via the @checksum pattern.
+//   - Authorize upgrades for all 12 Fairdrop contracts via the @checksum pattern.
 //   - Authorize runtime admin operations (config setters, set_allowed_caller
 //     in gate/proof/ref/vest) via the two-phase approve_op pattern.
 //   - Authorize treasury withdrawals from all 6 auction contracts.
@@ -42,7 +42,8 @@
 //   9field  fairdrop_quadratic_v2.aleo
 //  10field  fairdrop_raise_v2.aleo
 //  11field  fairdrop_sealed_v2.aleo
-//  12field+ reserved for future contracts
+//  12field  fairswap_dex_v2.aleo
+//  13field+ reserved for future contracts
 //
 // ── Upgrade governance for this contract ─────────────────────────────────────
 // Uses @checksum pointing to its OWN approved_upgrades mapping (key=0field).
@@ -53,7 +54,7 @@
 // ── Pre-mainnet checklist ─────────────────────────────────────────────────────
 //   [ ] Replace ADMIN_0..4 with real prod key addresses
 //   [ ] Call initialize() as the first transaction after deployment
-//   [ ] Call approve_upgrade for all 11 governed contracts before deploying them
+//   [ ] Call approve_upgrade for all 12 governed contracts before deploying them
 
 program fairdrop_multisig_v1.aleo {
     @checksum(mapping="fairdrop_multisig_v1.aleo::approved_upgrades", key="0field")
@@ -73,18 +74,19 @@ program fairdrop_multisig_v1.aleo {
     // Contract keys for approved_upgrades (must match @checksum key= in each contract)
     // =========================================================================
 
-    const KEY_MULTISIG:  field = 0field;  // self-governance key
-    const KEY_CONFIG:    field = 1field;
-    const KEY_GATE:      field = 2field;
-    const KEY_PROOF:     field = 3field;
-    const KEY_REF:       field = 4field;
-    const KEY_VEST:      field = 5field;
-    const KEY_ASCENDING: field = 6field;
-    const KEY_DUTCH:     field = 7field;
-    const KEY_LBP:       field = 8field;
-    const KEY_QUADRATIC: field = 9field;
-    const KEY_RAISE:     field = 10field;
-    const KEY_SEALED:    field = 11field;
+    const KEY_MULTISIG:      field = 0field;  // self-governance key
+    const KEY_CONFIG:        field = 1field;
+    const KEY_GATE:          field = 2field;
+    const KEY_PROOF:         field = 3field;
+    const KEY_REF:           field = 4field;
+    const KEY_VEST:          field = 5field;
+    const KEY_ASCENDING:     field = 6field;
+    const KEY_DUTCH:         field = 7field;
+    const KEY_LBP:           field = 8field;
+    const KEY_QUADRATIC:     field = 9field;
+    const KEY_RAISE:         field = 10field;
+    const KEY_SEALED:        field = 11field;
+    const KEY_FAIRSWAP_V2:   field = 12field;  // fairswap_dex_v2.aleo
 
     // =========================================================================
     // Mappings

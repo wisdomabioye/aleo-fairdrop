@@ -6,34 +6,46 @@
   "leo": "4.0.0",
   "dependencies": [
     {
+      "name": "fairdrop_multisig_v1.aleo",
+      "location": "local",
+      "path": "../../utilities/multisig"
+    },
+    {
+      "name": "fairdrop_config_v2.aleo",
+      "location": "local",
+      "path": "../../utilities/config"
+    },
+    {
+      "name": "fairdrop_gate_v2.aleo",
+      "location": "local",
+      "path": "../../utilities/gate"
+    },
+    {
+      "name": "fairdrop_proof_v2.aleo",
+      "location": "local",
+      "path": "../../utilities/proof"
+    },
+    {
+      "name": "fairdrop_ref_v2.aleo",
+      "location": "local",
+      "path": "../../utilities/ref"
+    },
+    {
+      "name": "fairdrop_vest_v2.aleo",
+      "location": "local",
+      "path": "../../utilities/vest"
+    },
+    {
+      "name": "fairswap_dex_v2.aleo",
+      "location": "local",
+      "path": "../../dex/fairswap_dex"
+    },
+    {
       "name": "credits.aleo",
       "location": "network"
     },
     {
       "name": "token_registry.aleo",
-      "location": "network"
-    },
-    {
-      "name": "fairdrop_multisig_v1.aleo",
-      "location": "network"
-    },
-    {
-      "name": "fairdrop_config_v2.aleo",
-      "location": "network"
-    },
-    {
-      "name": "fairdrop_gate_v2.aleo",
-      "location": "network"
-    },
-    {
-      "name": "fairdrop_proof_v2.aleo",
-      "location": "network"
-    },
-    {
-      "name": "fairdrop_ref_v2.aleo",
-      "location": "network"    },
-    {
-      "name": "fairdrop_vest_v2.aleo",
       "location": "network"
     }
   ],

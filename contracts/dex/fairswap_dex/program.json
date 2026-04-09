@@ -4,6 +4,21 @@
   "description": "",
   "license": "MIT",
   "leo": "4.0.0",
-  "dependencies": null,
+  "dependencies": [
+    {
+      "name": "token_registry.aleo",
+      "location": "network"
+    },
+    {
+      "name": "fairdrop_multisig_v1.aleo",
+      "location": "local",
+      "path": "../../utilities/multisig"
+    },
+    {
+      "name": "fairdrop_config_v2.aleo",
+      "location": "local",
+      "path": "../../utilities/config"
+    }
+  ],
   "dev_dependencies": null
 }
