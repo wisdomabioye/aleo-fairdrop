@@ -1,0 +1,46 @@
+{
+  "name": "@fairdrop/leo-abigen",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "files": ["dist"],
+  "bin": {
+    "leo-abigen": "./dist/codegen.mjs"
+  },
+  "exports": {
+    ".":          "./src/index.ts",
+    "./adapters": "./src/runtime/adapters.ts",
+    "./codegen":  "./src/codegen/index.ts"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "import": "./dist/index.mjs",
+        "types":  "./dist/index.d.mts"
+      },
+      "./adapters": {
+        "import": "./dist/adapters.mjs",
+        "types":  "./dist/adapters.d.mts"
+      },
+      "./codegen": {
+        "import": "./dist/codegen.mjs",
+        "types":  "./dist/codegen.d.mts"
+      }
+    }
+  },
+  "scripts": {
+    "build":      "tsdown",
+    "type-check": "tsc --noEmit",
+    "test":       "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@fairdrop/types":        "workspace:*",
+    "@provablehq/aleo-types": "*"
+  },
+  "devDependencies": {
+    "tsdown":     "^0.21.7",
+    "typescript": "~5.9.3",
+    "vitest":     "^4.1.2"
+  }
+}
