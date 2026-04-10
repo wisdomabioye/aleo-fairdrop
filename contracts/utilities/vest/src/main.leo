@@ -265,64 +265,64 @@ program fairdrop_vest_v2.aleo {
     // cannot be moved elsewhere. Re-enable once Leo fixes the finalization deduplication bug.
     // Tracked in: docs/leo_bug_finalization_not_found.md | https://github.com/ProvableHQ/leo/issues/29297
     //
-    // fn release(
-    //     vest:          VestedAllocation,
-    //     public amount: u128,
-    // ) -> (token_registry.aleo::Token, VestedAllocation, Final) {
-    //     // Capture all private record fields before final block.
-    //     let total_amount:  u128 = vest.total_amount;
-    //     let released:      u128 = vest.released;
-    //     let cliff_block:   u32  = vest.cliff_block;
-    //     let end_block:     u32  = vest.end_block;
+    fn release(
+        vest:          VestedAllocation,
+        public amount: u128,
+    ) -> (token_registry.aleo::Token, VestedAllocation, Final) {
+        // Capture all private record fields before final block.
+        let total_amount:  u128 = vest.total_amount;
+        let released:      u128 = vest.released;
+        let cliff_block:   u32  = vest.cliff_block;
+        let end_block:     u32  = vest.end_block;
 
-    //     // Mint vested tokens privately to the owner.
-    //     // vest.owner is private (from record) — never reaches finalize.
-    //     // vest.sale_token_id is revealed in finalize (already public auction info).
-    //     let (token, f_mint): (token_registry.aleo::Token, Final) =
-    //         token_registry.aleo::mint_private(
-    //             vest.sale_token_id,
-    //             vest.owner,
-    //             amount,
-    //             false,          // external_authorization_required
-    //             4294967295u32,  // authorized_until — no expiry
-    //         );
+        // Mint vested tokens privately to the owner.
+        // vest.owner is private (from record) — never reaches finalize.
+        // vest.sale_token_id is revealed in finalize (already public auction info).
+        let (token, f_mint): (token_registry.aleo::Token, Final) =
+            token_registry.aleo::mint_private(
+                vest.sale_token_id,
+                vest.owner,
+                amount,
+                false,          // external_authorization_required
+                4294967295u32,  // authorized_until — no expiry
+            );
 
-    //     // Consume the old VestedAllocation, issue updated one with released += amount.
-    //     // Leo reverts on overflow: released + amount > u128::MAX — impossible in practice.
-    //     let updated: VestedAllocation = VestedAllocation {
-    //         owner:         vest.owner,
-    //         sale_token_id: vest.sale_token_id,
-    //         auction_id:    vest.auction_id,
-    //         total_amount:  vest.total_amount,
-    //         released:      vest.released + amount,
-    //         cliff_block:   vest.cliff_block,
-    //         end_block:     vest.end_block,
-    //     };
+        // Consume the old VestedAllocation, issue updated one with released += amount.
+        // Leo reverts on overflow: released + amount > u128::MAX — impossible in practice.
+        let updated: VestedAllocation = VestedAllocation {
+            owner:         vest.owner,
+            sale_token_id: vest.sale_token_id,
+            auction_id:    vest.auction_id,
+            total_amount:  vest.total_amount,
+            released:      vest.released + amount,
+            cliff_block:   vest.cliff_block,
+            end_block:     vest.end_block,
+        };
 
-    //     return (token, updated, final {
-    //         // Execute the mint Final.
-    //         f_mint.run();
+        return (token, updated, final {
+            // Execute the mint Final.
+            f_mint.run();
 
-    //         // G_V5: zero-amount releases are invalid (and wasteful).
-    //         assert(amount > 0u128);
+            // G_V5: zero-amount releases are invalid (and wasteful).
+            assert(amount > 0u128);
 
-    //         // G_V1: cliff must have passed before any tokens can be released.
-    //         assert(block.height >= cliff_block);
+            // G_V1: cliff must have passed before any tokens can be released.
+            assert(block.height >= cliff_block);
 
-    //         // Compute how many blocks have elapsed within the vesting window.
-    //         // Cap at vesting_duration when block.height >= end_block (fully elapsed).
-    //         let vesting_duration: u32 = end_block - cliff_block;  // > 0 (enforced at create_vest)
-    //         let blocks_vested: u32    = block.height >= end_block
-    //             ? vesting_duration                  // fully elapsed: all tokens vested
-    //             : block.height - cliff_block;       // partial: proportional
+            // Compute how many blocks have elapsed within the vesting window.
+            // Cap at vesting_duration when block.height >= end_block (fully elapsed).
+            let vesting_duration: u32 = end_block - cliff_block;  // > 0 (enforced at create_vest)
+            let blocks_vested: u32    = block.height >= end_block
+                ? vesting_duration                  // fully elapsed: all tokens vested
+                : block.height - cliff_block;       // partial: proportional
 
-    //         // Compute vested_so_far via linear interpolation.
-    //         // Safe from u128 overflow for realistic values (see file header overflow note).
-    //         let vested_so_far: u128 = total_amount * (blocks_vested as u128) / (vesting_duration as u128);
+            // Compute vested_so_far via linear interpolation.
+            // Safe from u128 overflow for realistic values (see file header overflow note).
+            let vested_so_far: u128 = total_amount * (blocks_vested as u128) / (vesting_duration as u128);
 
-    //         // G_V9: amount must not exceed available (vested minus already released).
-    //         let available: u128 = vested_so_far - released;
-    //         assert(amount <= available);
-    //     });
-    // }
+            // G_V9: amount must not exceed available (vested minus already released).
+            let available: u128 = vested_so_far - released;
+            assert(amount <= available);
+        });
+    }
 }

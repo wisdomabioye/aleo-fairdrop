@@ -269,26 +269,26 @@ program fairdrop_ref_v2.aleo {
     // Re-enable once Leo fixes the finalization deduplication bug.
     // Tracked in: docs/leo_bug_finalization_not_found.md | https://github.com/ProvableHQ/leo/issues/29297
     //
-    // fn claim_commission(
-    //     code:                  ReferralCode,
-    //     public claimed_amount: u128,
-    // ) -> (credits.aleo::credits, Final) {
-    //     // Capture private record fields before final block.
-    //     let code_id: field = code.code_id;
-    //     let owner: address = code.owner;
+    fn claim_commission(
+        code:                  ReferralCode,
+        public claimed_amount: u128,
+    ) -> (credits.aleo::credits, Final) {
+        // Capture private record fields before final block.
+        let code_id: field = code.code_id;
+        let owner: address = code.owner;
 
-    //     let (credit_record, f_credits): (credits.aleo::credits, Final) =
-    //         credits.aleo::transfer_public_to_private(owner, claimed_amount as u64);
+        let (credit_record, f_credits): (credits.aleo::credits, Final) =
+            credits.aleo::transfer_public_to_private(owner, claimed_amount as u64);
 
-    //     return (credit_record, final {
-    //         // G10: zero-amount credit transfers are invalid.
-    //         assert(claimed_amount > 0u128);
-    //         // D11: validate claimed_amount matches on-chain earned[code_id].
-    //         assert_eq(earned.get_or_use(code_id, 0u128), claimed_amount);
-    //         // Drain earned.
-    //         earned.set(code_id, 0u128);
-    //         // Execute the credits transfer.
-    //         f_credits.run();
-    //     });
-    // }
+        return (credit_record, final {
+            // G10: zero-amount credit transfers are invalid.
+            assert(claimed_amount > 0u128);
+            // D11: validate claimed_amount matches on-chain earned[code_id].
+            assert_eq(earned.get_or_use(code_id, 0u128), claimed_amount);
+            // Drain earned.
+            earned.set(code_id, 0u128);
+            // Execute the credits transfer.
+            f_credits.run();
+        });
+    }
 }

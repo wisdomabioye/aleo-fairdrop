@@ -99,52 +99,57 @@ implemented from the start; users choose based on their needs.
 
 ```leo
 struct PoolState {
-    token_a:      field,   // token_registry token ID
-    token_b:      field,
-    reserve_a:    u128,
-    reserve_b:    u128,
-    lp_supply:    u128,
-    lp_token_id:  field,   // token_registry ID for this pool's LP token
-    fee_bps:      u16,     // default 30 (= 0.3%)
-    price_a_cum:  u128,    // cumulative price for TWAP (token_a per token_b)
-    price_b_cum:  u128,    // cumulative price for TWAP (token_b per token_a)
-    last_block:   u32,
+    token_a:     field,   // canonical lesser token ID (token_a < token_b)
+    token_b:     field,   // canonical greater token ID
+    reserve_a:   u128,    // DEX-held units of token_a
+    reserve_b:   u128,    // DEX-held units of token_b
+    lp_supply:   u128,    // total LP outstanding (includes MIN_LIQUIDITY burned)
+    fee_bps:     u16,     // swap fee; default 30 (= 0.3%); max 100
+    price_a_cum: u128,    // TWAP: Σ (reserve_b/reserve_a)*1e6 * blocks_elapsed
+    price_b_cum: u128,    // TWAP: Σ (reserve_a/reserve_b)*1e6 * blocks_elapsed
+    last_block:  u32,     // block.height at last swap (for TWAP delta)
 }
 
-// key = BHP256::hash_to_field(PoolKey { token_a, token_b })
-// canonical ordering enforced: token_a < token_b by field value
+// key = BHP256::hash_to_field(PoolKey { token_a: ca, token_b: cb }) where ca < cb.
 mapping pools: field => PoolState;
 ```
+
+**No `lp_token_id` field.** LP is not registered in `token_registry.aleo` — see LP tokens section below.
 
 ---
 
 ### LP tokens
 
-LP tokens are registered in `token_registry.aleo` as a standard fungible token at `create_pool`.
-LP positions exist in two forms — public balances (default) and private records — mirroring
-how `token_registry.aleo` handles all other tokens on Aleo.
+LP positions are managed **internally** — NOT through `token_registry.aleo`. No LP token is registered on-chain.
 
-- **Public LP balance** — default; composable with CPI; required for the auction seeding path
-- **Private LP record** — output of `add_liquidity_private`; hides LP position size and holder
+- **Public LP balance** — default: `lp_balances[BHP256(LpBalKey { holder, pool_key })] : u128`.
+  Composable with CPI; read directly by Phase 5 farming contract.
+- **Private LP record** — `LpToken { owner, pool_key, amount }` record returned by `add_liquidity_private`.
+  Hides LP position size and holder.
+- `lp_to_private` / `lp_to_public` transitions convert between the two forms.
 
-LP token ID: `BHP256::hash_to_field(LpTokenKey { pool_key, edition: 1field })`
+**Minimum liquidity lock**: 1000 LP burned to `ZERO_ADDRESS` on initial mint to prevent full pool drain.
+`lp_balances[BHP256(LpBalKey { holder: ZERO_ADDRESS, pool_key })] = 1000` is set once and never decremented.
 
 ---
 
-### Protocol fee (Option B)
+### Protocol fee
 
-Protocol fee is **off by default**. When enabled via `fairdrop_config.aleo` (multisig-governed),
-a portion of each swap fee is diverted from LP reserves into a per-pool accumulator mapping:
+Protocol fee is **off by default**. Enabled/disabled via the `toggle_protocol_fee` transition
+(requires a multisig `ProtocolFeeToggleOp` approved op). The enabled state is stored in the
+DEX's own `protocol_fee_enabled` mapping — NOT in `fairdrop_config.aleo`.
+
+Fee accumulation per (pool, token), not per pool:
 
 ```leo
-// protocol_fees[pool_key] accumulates in token_b units per pool
+// key = BHP256::hash_to_field(ProtocolFeeKey { pool_key, token_id })
+// token_id is the token that was swapped IN (fee accrues in the input token)
 mapping protocol_fees: field => u128;
 ```
 
 - Fee split: 1/6 of the 0.3% swap fee (= 0.05%) goes to `protocol_fees`; the remaining 5/6
   stays in reserves for LPs. Same ratio as Uniswap V2.
-- Governance withdraws via `withdraw_protocol_fees(pool_key, recipient)` — requires a multisig
-  `WithdrawalOp` approved op, matching the same pattern used by all 6 auction contracts.
+- Governance withdraws via `withdraw_protocol_fees(pool_key, token_id, amount, recipient, op_nonce)` — requires a multisig `WithdrawalOp`. Also decrements the pool reserve to keep DEX balance in sync.
 - The `recipient` can be any address — directs fees to treasury, multisig, or another contract.
 
 ---
@@ -153,23 +158,28 @@ mapping protocol_fees: field => u128;
 
 #### Public paths (identity visible, amounts visible)
 
+| Transition | Key parameters | Notes |
+|---|---|---|
+| `create_pool(token_x, token_y, fee_bps)` | token IDs, fee | Permissionless; fails if pool exists; atomic creation also available inside add_liquidity |
+| `add_liquidity(token_a_id, token_b_id, amount_a, amount_b, fee_bps, min_lp, recipient)` | amounts + fee_bps | Atomically creates pool if it doesn't exist; fee_bps ignored if pool already exists |
+| `remove_liquidity(token_a_id, token_b_id, lp_amount, min_a, min_b, recipient)` | LP amount | Burns public LP balance; returns tokens to recipient |
+| `swap(token_in_id, token_out_id, amount_in, min_out, recipient)` | amounts | 0.3% fee; TWAP updated; protocol fee split if enabled |
+| `withdraw_protocol_fees(pool_key, token_id, amount, recipient, op_nonce)` | per-pool-per-token | Multisig `WithdrawalOp`; also decrements pool reserve to keep DEX balance in sync |
+| `update_fee(pool_key, fee_bps, op_nonce)` | — | Multisig `FeeUpdateOp`; bounded 0–100 bps |
+| `toggle_protocol_fee(enabled, op_nonce)` | — | Multisig `ProtocolFeeToggleOp`; sets `protocol_fee_enabled[0field]` |
+| `toggle_paused(paused, op_nonce)` | — | Multisig `PauseToggleOp`; sets `paused[0field]` |
+
+#### Private / CPI paths
+
 | Transition | Inputs | Outputs | Notes |
 |---|---|---|---|
-| `create_pool(token_a, token_b, fee_bps)` | token IDs, fee | — | Permissionless; registers LP token in token_registry; fails if pool exists |
-| `add_liquidity(token_a_id, token_b_id, amount_a, amount_b, min_lp, recipient)` | public balances | public LP balance | Caller must hold token_registry public balances |
-| `add_liquidity_cpi(token_a_id, token_b_id, amount_a, amount_b, min_lp, recipient)` | public balances | public LP balance | CPI-callable only; called by auction `seed_liquidity` |
-| `remove_liquidity(token_a_id, token_b_id, lp_amount, min_a, min_b, recipient)` | public LP balance | public balances | Burns LP; returns tokens to recipient |
-| `swap(token_in_id, token_out_id, amount_in, min_out, recipient)` | public balance | public balance | 0.3% fee; TWAP updated; protocol fee split if enabled |
-| `withdraw_protocol_fees(pool_key, recipient)` | — | public balance | Multisig-governed; drains `protocol_fees[pool_key]` |
-| `update_fee(token_a_id, token_b_id, fee_bps)` | — | — | Multisig approved op; bounded 0–100 bps |
-
-#### Private paths (identity hidden, balance hidden; amounts still inferable from reserve delta)
-
-| Transition | Inputs | Outputs | What's hidden |
-|---|---|---|---|
-| `swap_private(token_in_record, token_out_id, min_out)` | private token record | private token record | Trader identity + wallet balance |
-| `add_liquidity_private(record_a, record_b, min_lp)` | private token records | private LP record | Contributor identity + amounts held |
-| `remove_liquidity_private(lp_record, min_a, min_b)` | private LP record | private token records | LP holder identity + position size |
+| `add_liquidity_private(record_a, record_b, lp_to_mint, min_lp, fee_bps, recipient)` | private Token records | private `LpToken` record | Snapshot pattern: caller computes `lp_to_mint` off-chain; `final {}` verifies ≤ max |
+| `add_liquidity_cpi_private_in(record_a, record_b, fee_bps, min_lp, recipient)` | private Token records | public LP balance | CPI entry for auction `seed_liquidity`; **pause-exempt** for existing pools (new pool creation branch still pause-gated) |
+| `remove_liquidity_private(lp_record, min_a, min_b)` | private `LpToken` record | private Token records | Burns LP record; returns private token records |
+| `lp_to_private(pool_key, amount)` | public LP balance | private `LpToken` record | Converts public LP → private record |
+| `lp_to_public(lp_record)` | private `LpToken` record | public LP balance | Converts private LP record → public balance |
+| `swap_private(token_in_record, token_out_id, min_out)` | private Token record | private Token record | Trader identity + wallet balance hidden |
+| `swap_cpi_private_in(record_in, token_out_id, min_out, recipient)` | private Token record | public token balance | CPI swap entry for callers with private records |
 
 Private transitions share the same `final {}` logic as their public counterparts — reserves
 update identically. The ZK proof proves input record validity and correct AMM math without
@@ -235,25 +245,30 @@ Transition-body guards (before any CPI):
 
 ### CPI calls built in proof context (before `final {}`)
 
+Uses the **in-flight record pattern** — `transfer_public_to_private` produces a Token record
+in the same tx proof, passed directly to `add_liquidity_cpi_private_in`. The record never
+lands on-chain as an unspent output; it is atomically consumed in the same proof.
+
 ```leo
 // 1. Auction's native credits → creator (mirrors withdraw_payments)
 let f_refund: Final =
     credits.aleo::transfer_public(creator, amount_credits as u64);
 
-// 2. Creator's wrapped credits → DEX (requires creator to hold CREDITS_RESERVED_TOKEN_ID)
-let f_cred: Final =
-    token_registry.aleo::transfer_public_as_signer(CREDITS_RESERVED_TOKEN_ID, fairswap_dex_v2.aleo, amount_credits);
+// 2. Creator's public CREDITS_RESERVED_TOKEN_ID → in-flight Token record owned by DEX
+//    (creator must hold >= amount_credits CREDITS_RESERVED_TOKEN_ID in token_registry)
+let (record_cred, f_cred): (token_registry.aleo::Token, Final) =
+    token_registry.aleo::transfer_public_to_private(self.address, amount_credits as u64, false);
 
-// 3. Mint unsold sale tokens to DEX (auction holds SUPPLY_MANAGER_ROLE)
-let f_sale: Final =
-    token_registry.aleo::mint_public(sale_token_id, fairswap_dex_v2.aleo, amount_sale_token, 4294967295u32);
+// 3. Auction mints unsold sale tokens as an in-flight Token record owned by DEX
+//    (auction contract holds SUPPLY_MANAGER_ROLE for sale_token_id)
+let (record_sale, f_sale): (token_registry.aleo::Token, Final) =
+    token_registry.aleo::mint_private(sale_token_id, self.address, amount_sale_token, 4294967295u32);
 
-// 4. DEX: atomically create pool (if new) + update reserves + mint LP
-let f_cpi: Final = fairswap_dex_v2.aleo::add_liquidity_cpi(
-    sale_token_id,
-    CREDITS_RESERVED_TOKEN_ID,
-    amount_sale_token,
-    amount_credits,
+// 4. DEX: atomically create pool (if new) + update reserves + mint LP to lp_recipient
+//    Both records are consumed here — same proof, never on-chain as UTXOs.
+let f_cpi: Final = fairswap_dex_v2.aleo::add_liquidity_cpi_private_in(
+    record_sale,
+    record_cred,
     fee_bps,
     min_lp,
     lp_recipient,
@@ -263,7 +278,9 @@ let f_cpi: Final = fairswap_dex_v2.aleo::add_liquidity_cpi(
 ### `final {}` logic
 
 ```
-// Pause — NOT exempt. Deals with funds; protected by both global and local pause.
+// Pause: seed_liquidity is treated like withdraw_payments — pause-gated.
+// (The DEX's add_liquidity_cpi_private_in is pause-exempt for existing pools,
+// but the auction-side final {} applies the global pause before running CPIs.)
 assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false))
 
 // State and identity guards
@@ -348,7 +365,7 @@ Remove `buildSeedFromAuction` (old 3-TxSpec composite helper).
 Add:
 ```ts
 // Single transaction — replaces the old 3-step sequence entirely.
-export function buildSeedLiquidity(input: SeedLiquidityInput): TxSpec;
+export function buildSeedLiquidity(input: SeedLiquidityInput): TransactionOptions;
 
 export interface SeedLiquidityInput {
   auctionType:      AuctionType;
@@ -375,22 +392,25 @@ export function validateSeedLiquidity(
 
 ```ts
 // Transaction builders — public paths
-export function buildCreatePool(input: CreatePoolInput): TxSpec;
-export function buildAddLiquidity(input: AddLiquidityInput): TxSpec;
-export function buildRemoveLiquidity(input: RemoveLiquidityInput): TxSpec;
-export function buildSwap(input: SwapInput): TxSpec;
-export function buildWithdrawProtocolFees(input: WithdrawProtocolFeesInput): TxSpec;
+export function buildCreatePool(input: CreatePoolInput): TransactionOptions;
+export function buildAddLiquidity(input: AddLiquidityInput): TransactionOptions;
+export function buildRemoveLiquidity(input: RemoveLiquidityInput): TransactionOptions;
+export function buildSwap(input: SwapInput): TransactionOptions;
+export function buildWithdrawProtocolFees(input: WithdrawProtocolFeesInput): TransactionOptions;
 
-// Transaction builders — private paths
-export function buildSwapPrivate(input: SwapPrivateInput): TxSpec;
-export function buildAddLiquidityPrivate(input: AddLiquidityPrivateInput): TxSpec;
-export function buildRemoveLiquidityPrivate(input: RemoveLiquidityPrivateInput): TxSpec;
+// Transaction builders — private / CPI paths
+export function buildSwapPrivate(input: SwapPrivateInput): TransactionOptions;
+export function buildAddLiquidityPrivate(input: AddLiquidityPrivateInput): TransactionOptions;
+export function buildRemoveLiquidityPrivate(input: RemoveLiquidityPrivateInput): TransactionOptions;
+export function buildLpToPrivate(input: LpToPrivateInput): TransactionOptions;
+export function buildLpToPublic(input: LpToPublicInput): TransactionOptions;
 
 // Chain reads
 export function fetchPool(tokenA: string, tokenB: string): Promise<PoolState | null>;
-export function fetchProtocolFees(poolKey: string): Promise<bigint>;
+export function fetchLpBalance(holder: string, poolKey: string): Promise<bigint>;
+export function fetchProtocolFees(poolKey: string, tokenId: string): Promise<bigint>;
 export function computePoolKey(tokenA: string, tokenB: string): string;  // enforces canonical ordering
-export function computeLpTokenId(poolKey: string): string;
+export function computeLpBalKey(holder: string, poolKey: string): string;
 
 // AMM math helpers (client-side, for UI previews)
 export function computeSwapOutput(reserveIn: bigint, reserveOut: bigint, amountIn: bigint, feeBps: number): bigint;
@@ -398,17 +418,17 @@ export function computeAddLiquidityAmounts(reserveA: bigint, reserveB: bigint, l
 export function computeRemoveLiquidityAmounts(reserveA: bigint, reserveB: bigint, lpSupply: bigint, lpAmount: bigint): { amountA: bigint; amountB: bigint };
 
 export interface PoolState {
-  tokenA:      string;
-  tokenB:      string;
-  reserveA:    bigint;
-  reserveB:    bigint;
-  lpSupply:    bigint;
-  lpTokenId:   string;
-  feeBps:      number;
-  priceACum:   bigint;
-  priceBCum:   bigint;
-  lastBlock:   number;
+  tokenA:    string;
+  tokenB:    string;
+  reserveA:  bigint;
+  reserveB:  bigint;
+  lpSupply:  bigint;
+  feeBps:    number;
+  priceACum: bigint;
+  priceBCum: bigint;
+  lastBlock: number;
 }
+// Note: no lpTokenId — LP is tracked internally in lp_balances, not in token_registry.
 ```
 
 ---
@@ -438,22 +458,15 @@ function useSeedLiquidity(auctionId: string, auctionType: AuctionType): {
 
 ## Open decisions
 
-1. **`create_pool` gating**: permissionless (Uniswap V2 model) recommended. `fee_bps` is
-   bounded at 0–100 bps at creation; governance can update fee but cannot destroy pools.
+~~1. **`create_pool` gating**~~ — **Closed**: permissionless. `fee_bps` bounded 0–100 bps; atomic pool creation available in `add_liquidity` and `add_liquidity_cpi_private_in`.
 
-2. **Canonical token ordering**: `token_a < token_b` by field integer value. `computePoolKey`
-   in the SDK enforces this; `add_liquidity_cpi` asserts it in `final {}` to reject misordered
-   calls.
+~~2. **Canonical token ordering**~~ — **Closed**: `token_a < token_b` by field integer value; enforced in transition body via `canonical_pair()`, asserted in `final {}` via `assert_eq(pool.token_a, ca)`.
 
-3. **Protocol fee config key**: confirm which `fairdrop_config.aleo` key stores the
-   fee-enabled flag and treasury address. Suggest reserving two new keys for this.
+~~3. **Protocol fee config key**~~ — **Closed**: fee-enabled flag lives in the DEX's own `protocol_fee_enabled[0field]` mapping, not in `fairdrop_config.aleo`. Toggled via `toggle_protocol_fee` (multisig `ProtocolFeeToggleOp`).
 
-4. **Private path and protocol fee**: `swap_private` reserve update still runs through
-   `final {}` — protocol fee split applies identically. No special casing needed.
+~~4. **Private path and protocol fee**~~ — **Closed**: `swap_private` final {} runs the same fee split logic as `swap`. No special casing.
 
-5. **Minimum liquidity lock**: 1000 LP tokens burned to zero address on first mint. Confirm
-   this constant is appropriate across pools with different token decimals. May need to scale
-   by `10^decimals` for tokens with very small units.
+~~5. **Minimum liquidity lock constant**~~ — **Closed**: 1000 LP (hardcoded `MIN_LIQUIDITY = 1_000u128`). Not scaled by decimals — acceptable for MVP; revisit if pools with sub-unit tokens are created.
 
 ---
 
@@ -461,7 +474,7 @@ function useSeedLiquidity(auctionId: string, auctionType: AuctionType): {
 
 ### Contract layer — complete
 - [x] `fairswap_dex_v2.aleo` written and unit-tested
-- [x] `add_liquidity_cpi` supports atomic pool creation (no prior `create_pool` required)
+- [x] `add_liquidity_cpi_private_in` supports atomic pool creation (no prior `create_pool` required); pause-exempt for existing pools
 - [x] Upgrade key `12field` reserved in `fairdrop_multisig_v1.aleo`
 - [x] Two-level pause added to all 6 auction contracts and DEX
 - [x] `withdraw_unsold` upper-bound verified and fixed in all 6 auction contracts
