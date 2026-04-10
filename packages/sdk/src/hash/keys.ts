@@ -163,6 +163,41 @@ export function computeCredentialMsgHash(
   return hashStruct(`{ holder: ${holder}, auction_id: ${auctionId}, expiry: ${expiry}u32 }`);
 }
 
+// ── fairswap_dex_v2.aleo ─────────────────────────────────────────────────────
+
+/**
+ * Compute the canonical pool key.
+ * Mirrors: BHP256::hash_to_field(PoolKey { token_a: ca, token_b: cb })
+ * where ca < cb (canonical_pair ordering by field integer value).
+ */
+export function computePoolKey(tokenA: string, tokenB: string): string {
+  const [ca, cb] = canonicalPair(tokenA, tokenB);
+  return hashStruct(`{ token_a: ${ca}, token_b: ${cb} }`);
+}
+
+/**
+ * Compute the lp_balances mapping key for a (holder, poolKey) pair.
+ * Mirrors: BHP256::hash_to_field(LpBalKey { holder, pool_key })
+ */
+export function computeLpBalKey(holder: string, poolKey: string): string {
+  return hashStruct(`{ holder: ${holder}, pool_key: ${poolKey} }`);
+}
+
+/**
+ * Compute the protocol_fees mapping key for a (poolKey, tokenId) pair.
+ * Mirrors: BHP256::hash_to_field(ProtocolFeeKey { pool_key, token_id })
+ */
+export function computeProtocolFeeKey(poolKey: string, tokenId: string): string {
+  return hashStruct(`{ pool_key: ${poolKey}, token_id: ${tokenId} }`);
+}
+
+/** Return tokens in canonical (ascending field-integer) order. */
+function canonicalPair(a: string, b: string): [string, string] {
+  const aVal = BigInt(a.replace(/field$/, ''));
+  const bVal = BigInt(b.replace(/field$/, ''));
+  return aVal < bVal ? [a, b] : [b, a];
+}
+
 // ── Utilities ─────────────────────────────────────────────────────────────────
 
 /**

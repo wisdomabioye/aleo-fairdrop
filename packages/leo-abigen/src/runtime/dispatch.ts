@@ -64,7 +64,7 @@ export function deserializeOutput(
     if (p === 'Boolean')   return s === 'true';
     if (p === 'Address')   return s;
     if (p === 'Signature') return s;
-    if (p === 'Field')     return stripSuffix(s);
+    if (p === 'Field')     return ensureFieldSuffix(s);
     const uint = (p as { UInt: string }).UInt;
     if (uint === 'U128' || uint === 'U64') return stripSuffix(s);
     return parseInt(stripSuffix(s), 10);

@@ -94,14 +94,6 @@ export {
 
 export { releaseVested, setVestAllowedCaller } from './vest';
 
-// ── AMM seeding ───────────────────────────────────────────────────────────────
-
-export {
-  buildSeedFromAuction,
-  buildAddLiquidity,
-  type SeedFromAuctionInput,
-} from './dex';
-
 // ── Protocol config (multisig-protected) ─────────────────────────────────────
 
 export {

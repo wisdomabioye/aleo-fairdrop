@@ -1,4 +1,7 @@
 export {
+  computePoolKey,
+  computeLpBalKey,
+  computeProtocolFeeKey,
   computeTokenOwnerKey,
   computeAuctionId,
   computeBidderKey,
