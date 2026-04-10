@@ -358,7 +358,7 @@ Migrate bottom-up: utilities first (no auction dependencies), then auctions, the
 7. **`fairdrop_ascending_v3.aleo`** (1,235 lines) — closest to dutch; straightforward
 8. **`fairdrop_raise_v2.aleo`** (1,406 lines) — no quantity param; `record_bid` signature differs slightly
 9. **`fairdrop_sealed_v2.aleo`** (1,582 lines) — commit-reveal; `commit_bid_*` variants replace `place_bid_*`
-10. **`fairdrop_lbp_v2.aleo`** (1,273 lines) — `max_bid_price` param added to `record_bid` signature
+10. **`fairdrop_lbp_v3.aleo`** (1,273 lines) — `max_bid_price` param added to `record_bid` signature
 11. **`fairdrop_quadratic_v2.aleo`** (1,501 lines) — `contribution_weight` param added; sqrt inline stays in transition body
 
 ### Phase 3 — Test suites (11 files)

@@ -1,4 +1,4 @@
-// fairdrop_lbp_v2.aleo — Privacy-preserving Liquidity Bootstrapping Pool auction.
+// fairdrop_lbp_v3.aleo — Privacy-preserving Liquidity Bootstrapping Pool auction.
 //
 // Mechanism: price is a joint function of time elapsed AND remaining supply.
 // High demand (supply decreasing fast) decelerates the price descent.
@@ -35,7 +35,7 @@
 // Sale tokens   : token_registry.aleo::Token. Burned at create, re-minted at claim.
 //
 // Roles required:
-//   fairdrop_lbp_v2.aleo  — SUPPLY_MANAGER_ROLE on sale token (burn + mint).
+//   fairdrop_lbp_v3.aleo  — SUPPLY_MANAGER_ROLE on sale token (burn + mint).
 //   fairdrop_vest_v2.aleo — SUPPLY_MANAGER_ROLE on sale token (mint at release),
 //                        required only when vest_enabled = true.
 //
@@ -170,7 +170,7 @@ struct ConfigSnapshot {
     referral_pool_bps: u16,
 }
 
-program fairdrop_lbp_v2.aleo {
+program fairdrop_lbp_v3.aleo {
     // Upgrade governance: 3-of-5 multi-sig must call fairdrop_multisig_v1.aleo::approve_upgrade
     // with contract_key=8field and this program's compiled checksum before deployment.
     @checksum(mapping="fairdrop_multisig_v1.aleo::approved_upgrades", key="8field")
@@ -357,7 +357,7 @@ program fairdrop_lbp_v2.aleo {
             assert_eq(config.auction_id, auction_id);
 
             let lbp_role_key: field = BHP256::hash_to_field(TokenOwner {
-                account:  fairdrop_lbp_v2.aleo,
+                account:  fairdrop_lbp_v3.aleo,
                 token_id: config.sale_token_id,
             });
             assert_eq(

@@ -38,7 +38,7 @@ fairdrop_dutch_v3.aleo      ← live. Dutch descending-price auction.
 fairdrop_sealed_v2.aleo     ← build next. Sealed-bid commit-reveal, uniform clearing price.
 fairdrop_raise_v2.aleo      ← fixed-price sealed allocation, pro-rata by payment.
 fairdrop_ascending_v3.aleo  ← ascending-price auction, pay-what-you-bid, early = cheapest.
-fairdrop_lbp_v2.aleo        ← supply-weighted descending price. Bots can't frontrun.
+fairdrop_lbp_v3.aleo        ← supply-weighted descending price. Bots can't frontrun.
 fairdrop_quadratic_v2.aleo  ← pro-rata by sqrt(payment). Anti-whale, ZK-native fairness.
 
      all six import ↓
@@ -55,7 +55,7 @@ fairdrop_dutch_v3.aleo      PROGRAM_SALT = 1field
 fairdrop_ascending_v3.aleo  PROGRAM_SALT = 2field
 fairdrop_sealed_v2.aleo     PROGRAM_SALT = 3field
 fairdrop_raise_v2.aleo      PROGRAM_SALT = 4field
-fairdrop_lbp_v2.aleo        PROGRAM_SALT = 5field
+fairdrop_lbp_v3.aleo        PROGRAM_SALT = 5field
 fairdrop_quadratic_v2.aleo  PROGRAM_SALT = 6field
 ```
 
@@ -343,7 +343,7 @@ sale_scale, payment_token_id, sale_token_id, gate_mode
 
 ---
 
-### 4e. LBP — Liquidity Bootstrap Pool (`fairdrop_lbp_v2.aleo`)
+### 4e. LBP — Liquidity Bootstrap Pool (`fairdrop_lbp_v3.aleo`)
 **Status:** not yet built. Most demanded DeFi launch mechanism on current chains — better on Aleo because frontrunning bots are structurally impossible.
 
 Price is a joint function of time elapsed AND remaining supply. As tokens sell, the price naturally decelerates its descent — high demand slows the price drop. If nobody buys, price drops fast to attract buyers. The mechanism self-corrects toward market-clearing without an oracle.
@@ -952,7 +952,7 @@ PHASE 1e  fairdrop_ref_v2.aleo + fairdrop_vest_v2.aleo
           ─ redeploy all Phase 1 auction contracts importing ref + vest
           ─ OR deploy _v2 variants if not yet deployed without ref/vest
 
-PHASE 2a  fairdrop_lbp_v2.aleo
+PHASE 2a  fairdrop_lbp_v3.aleo
           ─ supply × time price formula, pay-what-you-bid, no uniform clearing
           ─ imports all utility contracts
           ─ validate fixed-point arithmetic (PRECISION = 1e6) against overflow cases
@@ -1080,7 +1080,7 @@ fairdrop_dutch_v3.aleo
 fairdrop_sealed_v2.aleo
 fairdrop_raise_v2.aleo
 fairdrop_ascending_v3.aleo
-fairdrop_lbp_v2.aleo
+fairdrop_lbp_v3.aleo
 fairdrop_quadratic_v2.aleo
 fairdrop_gate_v2.aleo       (for gate registrations)
 fairdrop_proof_v2.aleo      (for reputation updates)

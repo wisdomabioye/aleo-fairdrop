@@ -59,7 +59,7 @@
       "upgradeKey":     "7field"
     },
     "lbp": {
-      "programId":      "fairdrop_lbp_v2.aleo",
+      "programId":      "fairdrop_lbp_v3.aleo",
       "programAddress": null,
       "contractPath":   "contracts/auctions/lbp",
       "salt":           "5field",

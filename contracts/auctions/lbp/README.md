@@ -1,4 +1,4 @@
-# fairdrop_lbp_v2.aleo
+# fairdrop_lbp_v3.aleo
 
 Privacy-preserving Liquidity Bootstrapping Pool auction. Price is a joint function of **remaining supply** and **remaining time** — high demand slows the descent; low demand accelerates it. Self-correcting price discovery without an oracle or liquidity pool.
 

@@ -1,5 +1,5 @@
 /**
- * fairdrop_lbp_v2.aleo — TypeScript types.
+ * fairdrop_lbp_v3.aleo — TypeScript types.
  *
  * Liquidity Bootstrapping Pool: price decays as a function of both remaining
  * supply and remaining time. Earlier participants pay a higher price; the
