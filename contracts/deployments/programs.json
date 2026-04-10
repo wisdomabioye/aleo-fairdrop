@@ -39,7 +39,7 @@
       "upgradeKey":     "4field"
     },
     "vest": {
-      "programId":      "fairdrop_vest_v2.aleo",
+      "programId":      "fairdrop_vest_v3.aleo",
       "programAddress": "aleo10r67ky003vgpcu4kvwnhfvrsaaq2gd62j026sylpjgclxl3q4ugs8y34dp",
       "contractPath":   "contracts/utilities/vest",
       "upgradeKey":     "5field"

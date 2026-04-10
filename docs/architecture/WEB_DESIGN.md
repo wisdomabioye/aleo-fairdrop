@@ -50,7 +50,7 @@ The existing frontend lives at `/home/abioye/aleo-guide/fairdrop/` (single-contr
 | Referral code creation, link generation, commission tracking | Missing | `fairdrop_ref_v3.aleo/create_code`, `claim_commission` |
 | Slash unrevealed commitments (sealed auctions) | Missing | `fairdrop_sealed_v3.aleo/slash_unrevealed` |
 | Close abandoned auction for reward (closer reward) | Missing | any `close_auction` (closer ≠ creator) |
-| Vesting schedule display & token release | Missing | `fairdrop_vest_v2.aleo/release` |
+| Vesting schedule display & token release | Missing | `fairdrop_vest_v3.aleo/release` |
 | Gate verification — Merkle proof submission | Missing | `fairdrop_gate_v3.aleo/verify_merkle` |
 | Gate verification — Credential presentation | Missing | `fairdrop_gate_v3.aleo/verify_credential` |
 | Participation receipt display (auto-issued; no user action) | Missing | `fairdrop_proof_v3.aleo/ParticipationReceipt` records in wallet |
@@ -84,7 +84,7 @@ The existing frontend lives at `/home/abioye/aleo-guide/fairdrop/` (single-contr
 | `BidForm` only handles Dutch (quantity × price) | `BidForm.tsx` | Raise = payment only; Sealed = commit hash; Ascending = qty×price; LBP/Quadratic differ |
 | `claim_commit_voided` missing from Claim flow | `ClaimPage.tsx` | Sealed bidders holding Commitment (not yet revealed) call this, not `claim_voided` |
 | `claim_commission` called wrong (was "withdraw_commission") | WEB_DESIGN v1 | Confirmed: `fairdrop_ref_v3.aleo/claim_commission(code, claimed_amount)` |
-| Vesting release called wrong (was "claim_vested") | WEB_DESIGN v1 | Confirmed: `fairdrop_vest_v2.aleo/release(vest, amount)` |
+| Vesting release called wrong (was "claim_vested") | WEB_DESIGN v1 | Confirmed: `fairdrop_vest_v3.aleo/release(vest, amount)` |
 | `ParticipationReceipt` described as user-mintable | WEB_DESIGN v1 | Auto-issued by CPI at `commit_bid`/`place_bid` — no user action |
 | No `auction_id` URL param format validation | `AuctionDetailPage` | A bad field causes unhandled RPC error |
 | `AleoWorker` singleton never terminated | `AleoWorker.ts` | Memory/thread leak |
@@ -575,7 +575,7 @@ Used in:
 |---|---|
 | Gate → Bid | 1. `verify_merkle` or `verify_credential`; 2. `place_bid` (enabled after step 1 ACCEPTED) |
 | Credit + Claim commission | 1–N. `credit_commission(code_id, bidder_key)` per uncredited bidder (sequential); N+1. `claim_commission(code, amount)` |
-| Wizard authorization | 1. `set_role(auctionProgram, 3)`; 2. (optional) `set_role(fairdrop_vest_v2.aleo, 3)`; 3. `create_auction` |
+| Wizard authorization | 1. `set_role(auctionProgram, 3)`; 2. (optional) `set_role(fairdrop_vest_v3.aleo, 3)`; 3. `create_auction` |
 
 Each step button shows: "Step N of M: [action label]". Prior steps shown as completed (checkmark). Step N+1 button disabled until step N ACCEPTED (polled via TanStack Query).
 
@@ -1269,10 +1269,10 @@ Step 5 — Gate & Vesting
     If enabled: vestCliffBlocks, vestEndBlocks (blocks; show estimated duration)
 
     ── Vest Authorization Check ──
-      Check: token_registry.aleo/roles[BHP256(TokenOwner{fairdrop_vest_v2.aleo, tokenId})]
+      Check: token_registry.aleo/roles[BHP256(TokenOwner{fairdrop_vest_v3.aleo, tokenId})]
       If SUPPLY_MANAGER_ROLE missing:
-        Show: "Authorize fairdrop_vest_v2.aleo to release vested tokens"
-        "Authorize" button → set_role(fairdrop_vest_v2.aleo, 3) → wait → proceed
+        Show: "Authorize fairdrop_vest_v3.aleo to release vested tokens"
+        "Authorize" button → set_role(fairdrop_vest_v3.aleo, 3) → wait → proceed
     ──────────────────────────────
 
 Step 6 — Referral Budget
@@ -1321,9 +1321,9 @@ Step 8 — Review & Submit
 
 ### 10.4 Token Authorization (Inline, Not a Separate Page)
 
-With 6 auction contracts + `fairdrop_vest_v2.aleo`, token authorization cannot be a one-time step. It must be inline in the wizard:
+With 6 auction contracts + `fairdrop_vest_v3.aleo`, token authorization cannot be a one-time step. It must be inline in the wizard:
 - Step 2: check and authorize the selected auction contract using `PROGRAMS[type].programAddress`
-- Step 5: if vest enabled, check and authorize `fairdrop_vest_v2.aleo` using `PROGRAMS.vest.programAddress`
+- Step 5: if vest enabled, check and authorize `fairdrop_vest_v3.aleo` using `PROGRAMS.vest.programAddress`
 - Each authorization is a blocking step — wizard cannot advance until the tx confirms
 - `token_registry.aleo/set_role` takes an `address` (aleo1...) — always use `programAddress`, never the `.aleo` program name
 
@@ -1374,7 +1374,7 @@ For `VestedAllocation` records:
 - Cliff: block N (estimated date)
 - Fully vested: block N (estimated date)
 - Release input: amount (max = vested_so_far - released)
-- "Release" → `fairdrop_vest_v2.aleo/release(vest, amount)`
+- "Release" → `fairdrop_vest_v3.aleo/release(vest, amount)`
 
 Client-side vesting math (mirrors contract):
 ```ts
@@ -1392,7 +1392,7 @@ function computeVested(vest: VestedAllocation, currentBlock: number): bigint {
 
 Keeps its 3-step structure (Register → Mint). The old Step 3 "Authorize" is removed:
 - Authorization for specific auction contracts → handled inline in Create Auction Wizard (Step 2)
-- Authorization for `fairdrop_vest_v2.aleo` → handled inline in Create Auction Wizard (Step 5)
+- Authorization for `fairdrop_vest_v3.aleo` → handled inline in Create Auction Wizard (Step 5)
 
 The Token Launch page adds a single informational callout at the end: "Before creating an auction with this token, you'll need to authorize the auction contract — this is done automatically in the Create Auction wizard."
 
@@ -1531,7 +1531,7 @@ Only functions listed here should be called from the frontend. Confirmed by read
 - `claim_commission(code: ReferralCode, claimed_amount: u128)` → private credits — record owner
 - `fund_reserve`, `record_referral` — CPI only
 
-### fairdrop_vest_v2.aleo
+### fairdrop_vest_v3.aleo
 - `set_allowed_caller(program_addr: address, allowed: bool)` — admin
 - `release(vest: VestedAllocation, amount: u128)` → `(Token, VestedAllocation)` — record owner
 - `create_vest(...)` — CPI only
@@ -1645,7 +1645,7 @@ Only functions listed here should be called from the frontend. Confirmed by read
 
 ### Phase 5 — User Features
 21. Claim page: all record types + `claim_commit_voided` (G7, G12)
-22. Vesting release: `fairdrop_vest_v2.aleo/release` (G7)
+22. Vesting release: `fairdrop_vest_v3.aleo/release` (G7)
 23. Gate page: `verify_merkle`, `verify_credential` (G8)
 24. Participation receipt display (G23)
 25. Creator reputation display (G25)

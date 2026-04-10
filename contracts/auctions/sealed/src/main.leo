@@ -63,7 +63,7 @@ import fairdrop_config_v3.aleo;
 import fairdrop_gate_v3.aleo;
 import fairdrop_proof_v3.aleo;
 import fairdrop_ref_v3.aleo;
-import fairdrop_vest_v2.aleo;
+import fairdrop_vest_v3.aleo;
 import fairswap_dex_v3.aleo;
 
 // =========================================================================
@@ -397,7 +397,7 @@ program fairdrop_sealed_v3.aleo {
             assert(vest_duration_ok);
 
             let vest_role_key: field = BHP256::hash_to_field(TokenOwner {
-                account:  fairdrop_vest_v2.aleo,
+                account:  fairdrop_vest_v3.aleo,
                 token_id: config.sale_token_id,
             });
             let vest_role_ok: bool =
@@ -1202,7 +1202,7 @@ program fairdrop_sealed_v3.aleo {
         public ended_at_block:  u32,
         public cliff_blocks:    u32,
         public vest_end_blocks: u32,
-    ) -> (fairdrop_vest_v2.aleo::VestedAllocation, credits.aleo::credits, Final) {
+    ) -> (fairdrop_vest_v3.aleo::VestedAllocation, credits.aleo::credits, Final) {
         // Capture record fields before final {}.
         let bid_owner:          address = bid.owner;
         let bid_auction_id:     field   = bid.auction_id;
@@ -1213,8 +1213,8 @@ program fairdrop_sealed_v3.aleo {
         let cost: u128         = bid_quantity * clearing_price / sale_scale;
         let refund_amount: u64 = (bid_payment_amount - cost) as u64;
 
-        let (vest, f_vest): (fairdrop_vest_v2.aleo::VestedAllocation, Final) =
-            fairdrop_vest_v2.aleo::create_vest(
+        let (vest, f_vest): (fairdrop_vest_v3.aleo::VestedAllocation, Final) =
+            fairdrop_vest_v3.aleo::create_vest(
                 bid_auction_id,
                 bid_owner,
                 sale_token_id,

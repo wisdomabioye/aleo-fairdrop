@@ -350,7 +350,7 @@ Migrate bottom-up: utilities first (no auction dependencies), then auctions, the
 2. **`fairdrop_proof_v3.aleo`** (198 lines) — 3 transitions; extract `assert_caller_allowed` final fn
 3. **`fairdrop_gate_v3.aleo`** (382 lines) — 4 transitions; similar D12 pattern
 4. **`fairdrop_ref_v3.aleo`** (461 lines) — 4 transitions; extract `assert_caller_allowed`
-5. **`fairdrop_vest_v2.aleo`** (310 lines) — 3 transitions
+5. **`fairdrop_vest_v3.aleo`** (310 lines) — 3 transitions
 
 ### Phase 2 — Auction contracts (6 files, ~8,500 lines total)
 

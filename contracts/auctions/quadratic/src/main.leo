@@ -31,7 +31,7 @@
 //
 // Roles required:
 //   fairdrop_quadratic_v3.aleo — SUPPLY_MANAGER_ROLE on sale token (burn + mint).
-//   fairdrop_vest_v2.aleo      — SUPPLY_MANAGER_ROLE on sale token (mint at release),
+//   fairdrop_vest_v3.aleo      — SUPPLY_MANAGER_ROLE on sale token (mint at release),
 //                             required only when vest_enabled = true.
 //
 // Revenue accounting (set at close_auction, cleared case only):
@@ -79,7 +79,7 @@ import fairdrop_config_v3.aleo;
 import fairdrop_gate_v3.aleo;
 import fairdrop_proof_v3.aleo;
 import fairdrop_ref_v3.aleo;
-import fairdrop_vest_v2.aleo;
+import fairdrop_vest_v3.aleo;
 import fairswap_dex_v3.aleo;
 
 // =========================================================================
@@ -426,7 +426,7 @@ program fairdrop_quadratic_v3.aleo {
             assert(vest_duration_ok);
 
             let vest_role_key: field = BHP256::hash_to_field(TokenOwner {
-                account:  fairdrop_vest_v2.aleo,
+                account:  fairdrop_vest_v3.aleo,
                 token_id: config.sale_token_id,
             });
             let vest_role_ok: bool =
@@ -1024,7 +1024,7 @@ program fairdrop_quadratic_v3.aleo {
         public ended_at_block:      u32,
         public cliff_blocks:        u32,
         public vest_end_blocks:     u32,
-    ) -> (fairdrop_vest_v2.aleo::VestedAllocation, Final) {
+    ) -> (fairdrop_vest_v3.aleo::VestedAllocation, Final) {
         assert(total_sqrt_weight > 0u128);
 
         // Capture record fields before final {}
@@ -1034,8 +1034,8 @@ program fairdrop_quadratic_v3.aleo {
 
         let actual_quantity: u128 = effective_supply * bid_contribution_weight / total_sqrt_weight;
 
-        let (vest, f_vest): (fairdrop_vest_v2.aleo::VestedAllocation, Final) =
-            fairdrop_vest_v2.aleo::create_vest(
+        let (vest, f_vest): (fairdrop_vest_v3.aleo::VestedAllocation, Final) =
+            fairdrop_vest_v3.aleo::create_vest(
                 bid_auction_id,
                 bid_owner,
                 sale_token_id,

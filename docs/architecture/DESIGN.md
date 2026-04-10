@@ -46,7 +46,7 @@ fairdrop_quadratic_v3.aleo  ← pro-rata by sqrt(payment). Anti-whale, ZK-native
 fairdrop_gate_v3.aleo       ← allowlist + ZK credential gating
 fairdrop_proof_v3.aleo      ← participation receipts + creator reputation
 fairdrop_ref_v3.aleo        ← referral codes + commission distribution
-fairdrop_vest_v2.aleo       ← post-claim token vesting
+fairdrop_vest_v3.aleo       ← post-claim token vesting
 ```
 
 **PROGRAM_SALT constants (assigned before any deployment — changing breaks all existing IDs):**
@@ -580,10 +580,10 @@ transition claim_commission(code: ReferralCode)
 
 ---
 
-### 5d. `fairdrop_vest_v2.aleo` — Token Vesting
+### 5d. `fairdrop_vest_v3.aleo` — Token Vesting
 Post-claim token lockup with block-based release. Imported by auction contracts (atomic path at claim when creator enables vesting).
 
-**S3 decision — creator-mandatory:** vesting is set by the creator at `create_auction` via `vest_enabled: bool`, `vest_cliff_blocks: u32`, `vest_end_blocks: u32` in AuctionConfig. When enabled, `claim` CPIs into `fairdrop_vest_v2.aleo/create_vest` instead of returning Token to the bidder. All claimers on a vesting-enabled auction receive `VestedAllocation` records, not Token records. The bidder cannot opt out.
+**S3 decision — creator-mandatory:** vesting is set by the creator at `create_auction` via `vest_enabled: bool`, `vest_cliff_blocks: u32`, `vest_end_blocks: u32` in AuctionConfig. When enabled, `claim` CPIs into `fairdrop_vest_v3.aleo/create_vest` instead of returning Token to the bidder. All claimers on a vesting-enabled auction receive `VestedAllocation` records, not Token records. The bidder cannot opt out.
 
 **Why creator-mandatory, not bidder-optional:** if `claim` returns Token to the bidder, vesting requires a second transaction. The auction contract cannot force this — the bidder already received their token. Creator-mandatory is the correct model for TGE distributions: the creator's responsibility is to set fair vesting terms. Bidder-optional vesting defeats the purpose (whales skip it, creating dump pressure).
 
@@ -602,7 +602,7 @@ transition create_vest(auction_id, token, ended_at_block: u32) → VestedAllocat
   // Receives the minted Token from token_registry CPI, wraps it in VestedAllocation
   // cliff_block = ended_at_block + config.vest_cliff_blocks  (S8 fix — uniform base)
   // end_block   = ended_at_block + config.vest_end_blocks
-  // Requires fairdrop_vest_v2.aleo to hold SUPPLY_MANAGER_ROLE on the sale token
+  // Requires fairdrop_vest_v3.aleo to hold SUPPLY_MANAGER_ROLE on the sale token
 
 transition release(vest, public amount) → (Token, VestedAllocation)
   // Bidder releases vested tokens block-by-block after cliff
@@ -614,7 +614,7 @@ transition release(vest, public amount) → (Token, VestedAllocation)
 
 **S8 fix — consistent vesting base:** absolute `cliff_block` and `end_block` are computed from `state.ended_at_block` (set at `close_auction`), not from `block.height` at claim time. All bidders on the same auction receive identical vesting schedules regardless of when they claim. `ended_at_block` is passed as a public parameter to `create_vest` and validated against `state.ended_at_block` in finalize.
 
-**Role requirement:** `fairdrop_vest_v2.aleo` needs `SUPPLY_MANAGER_ROLE` on the sale token — a separate `set_role` transaction by the token creator. UX friction: this must happen before any auction using vesting can be created. Frontend should check and prompt.
+**Role requirement:** `fairdrop_vest_v3.aleo` needs `SUPPLY_MANAGER_ROLE` on the sale token — a separate `set_role` transaction by the token creator. UX friction: this must happen before any auction using vesting can be created. Frontend should check and prompt.
 
 ---
 
@@ -848,7 +848,7 @@ creator_revenue  = total_payments - protocol_fee
 | G8 | Secondary market reveals quantity publicly | dutch/sealed | Unavoidable tradeoff — document clearly, secondary market is opt-in | Accepted |
 | G9 | No credential issuer ecosystem on Aleo | gate | Fairdrop bootstraps own signing service; multi-issuer by design | Designed |
 | G10 | Single-transaction atomic swap impossible | dutch/sealed | Two-step escrow: `list_bid` → `purchase_bid` → `cancel_listing` (D8) | Designed |
-| G11 | `fairdrop_vest_v2.aleo` needs separate SUPPLY_MANAGER_ROLE grant | vest | Frontend checks and guides creator through `set_role` before create | Open |
+| G11 | `fairdrop_vest_v3.aleo` needs separate SUPPLY_MANAGER_ROLE grant | vest | Frontend checks and guides creator through `set_role` before create | Open |
 | G12 | `fairdrop_sealed_v3.aleo` had no price mechanism defined | sealed | Dutch price at `commit_end_block` as uniform clearing price; computable from config; no `committed_price` field needed | Designed |
 | G13 | `credit_commission` cannot be called at `close_auction` — no iteration in finalize | ref | Make permissionless: callable by anyone after `state.cleared == true` | Designed |
 | G14 | `verify_and_admit` mixes Merkle + credential — dummy inputs waste proving | gate | Split into `verify_merkle` and `verify_credential` separate transitions | Designed |
@@ -944,7 +944,7 @@ PHASE 1d  fairdrop_raise_v3.aleo + fairdrop_ascending_v3.aleo
             pay-what-you-bid, Bid record carries bid_price, no refund at claim
           ─ both import fairdrop_gate_v3.aleo + fairdrop_proof_v3.aleo
 
-PHASE 1e  fairdrop_ref_v3.aleo + fairdrop_vest_v2.aleo
+PHASE 1e  fairdrop_ref_v3.aleo + fairdrop_vest_v3.aleo
           ─ ref: create_code, record_referral, credit_commission (permissionless), claim_commission
             fund_reserve funded from platform fee at close_auction (D13)
           ─ vest: create_vest (CPI from claim when vest_enabled), release
@@ -1011,7 +1011,7 @@ PARALLEL 2b  Indexer v2 — extend to watch ascending, lbp, quadratic, ref, proo
 ## Open Questions
 
 - **`batch_claim` implementation (G7):** multiple fixed-size variants (`batch_claim_2`, `_4`, `_8`) or defer to Phase 2? Fixed-size variants are the only Leo-compatible approach.
-- **`fairdrop_vest_v2.aleo` role UX (G11):** how to make the `set_role` prerequisite invisible to creators? (Frontend prompt + bundled transaction flow?)
+- **`fairdrop_vest_v3.aleo` role UX (G11):** how to make the `set_role` prerequisite invisible to creators? (Frontend prompt + bundled transaction flow?)
 - **Reveal window duration:** what block count is acceptable for user experience? (30 min ≈ 450 blocks at ~4 s/block.)
 - **Slash split ratio:** 80/20 protocol/caller is a placeholder — what ratio maximally incentivizes third-party slashers?
 - **Commission bps range in `fairdrop_ref_v3.aleo`:** should there be a protocol-enforced max to prevent creators from self-referral gaming?

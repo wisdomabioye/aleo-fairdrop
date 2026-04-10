@@ -1,5 +1,5 @@
 /**
- * On-chain mapping reads for fairdrop_vest_v2.aleo.
+ * On-chain mapping reads for fairdrop_vest_v3.aleo.
  *
  * Vesting allocations are stored as private records (VestedAllocation) —
  * there are no public state mappings for individual allocations.

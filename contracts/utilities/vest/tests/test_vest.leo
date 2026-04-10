@@ -1,4 +1,4 @@
-// Tests for fairdrop_vest_v2.aleo
+// Tests for fairdrop_vest_v3.aleo
 // ── Leo 4.0 migration notes ───────────────────────────────────────────────────
 //   @test script → @test fn ... -> Final
 //   f.await()    → return final { f.run(); };
@@ -7,7 +7,7 @@
 //   async constructor → constructor
 //   test_never_passes removed: @test fn are entry points; dummy stub no longer needed.
 // ─────────────────────────────────────────────────────────────────────────────
-import fairdrop_vest_v2.aleo;
+import fairdrop_vest_v3.aleo;
 
 // ── Unit-test coverage scope ─────────────────────────────────────────────────
 //   ✓ set_allowed_caller — unapproved op guard: approved_ops defaults false → revert.
@@ -50,8 +50,8 @@ program test_vest.aleo {
     @test
     @should_fail
     fn test_create_vest_unauth() -> Final {
-        let (vest, f): (fairdrop_vest_v2.aleo::VestedAllocation, Final) =
-            fairdrop_vest_v2.aleo::create_vest(
+        let (vest, f): (fairdrop_vest_v3.aleo::VestedAllocation, Final) =
+            fairdrop_vest_v3.aleo::create_vest(
                 1field,                                                                         // auction_id
                 aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r,               // owner (private param — any address)
                 1field,                                                                         // sale_token_id
@@ -67,8 +67,8 @@ program test_vest.aleo {
     @test
     @should_fail
     fn test_create_vest_unauth_zero() -> Final {
-        let (vest, f): (fairdrop_vest_v2.aleo::VestedAllocation, Final) =
-            fairdrop_vest_v2.aleo::create_vest(
+        let (vest, f): (fairdrop_vest_v3.aleo::VestedAllocation, Final) =
+            fairdrop_vest_v3.aleo::create_vest(
                 2field,
                 aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r,
                 1field,
@@ -84,8 +84,8 @@ program test_vest.aleo {
     @test
     @should_fail
     fn test_create_vest_unauth_bad_dur() -> Final {
-        let (vest, f): (fairdrop_vest_v2.aleo::VestedAllocation, Final) =
-            fairdrop_vest_v2.aleo::create_vest(
+        let (vest, f): (fairdrop_vest_v3.aleo::VestedAllocation, Final) =
+            fairdrop_vest_v3.aleo::create_vest(
                 3field,
                 aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r,
                 1field,
@@ -101,8 +101,8 @@ program test_vest.aleo {
     @test
     @should_fail
     fn test_create_vest_unauth_rev_dur() -> Final {
-        let (vest, f): (fairdrop_vest_v2.aleo::VestedAllocation, Final) =
-            fairdrop_vest_v2.aleo::create_vest(
+        let (vest, f): (fairdrop_vest_v3.aleo::VestedAllocation, Final) =
+            fairdrop_vest_v3.aleo::create_vest(
                 4field,
                 aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r,
                 1field,
@@ -123,7 +123,7 @@ program test_vest.aleo {
     @test
     @should_fail
     fn test_set_caller_unapproved() -> Final {
-        let f: Final = fairdrop_vest_v2.aleo::set_allowed_caller(
+        let f: Final = fairdrop_vest_v3.aleo::set_allowed_caller(
             aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc,  // any program address
             true,
             1u64,  // op_nonce — no approved_ops entry for this hash → assert fails

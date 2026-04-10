@@ -55,7 +55,7 @@ block offset 10,000 all tokens are fully vested.
 
 ### Vest program authorization
 
-If you enable vesting, the vest program (`fairdrop_vest_v2.aleo`) needs mint permission
+If you enable vesting, the vest program (`fairdrop_vest_v3.aleo`) needs mint permission
 for your sale token. The wizard checks this automatically and prompts you to submit an
 authorization transaction if it is missing.
 

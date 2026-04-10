@@ -323,7 +323,7 @@ Each auction contract received:
 3. **`seed_liquidity` transition** — per the design above.
 
 No `DEX_ADDRESS` constant needed. Leo resolves program addresses from the import — `fairswap_dex_v3.aleo`
-is used directly as an `address` value throughout, matching the existing pattern used for `fairdrop_vest_v2.aleo`.
+is used directly as an `address` value throughout, matching the existing pattern used for `fairdrop_vest_v3.aleo`.
 
 ---
 

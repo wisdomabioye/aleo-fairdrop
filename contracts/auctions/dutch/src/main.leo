@@ -10,7 +10,7 @@
 //
 // Roles required:
 //   fairdrop_dutch_v3.aleo — SUPPLY_MANAGER_ROLE on sale token (burn + mint).
-//   fairdrop_vest_v2.aleo  — SUPPLY_MANAGER_ROLE on sale token (mint at release),
+//   fairdrop_vest_v3.aleo  — SUPPLY_MANAGER_ROLE on sale token (mint at release),
 //                         required only when vest_enabled = true.
 //
 // Revenue accounting (set at close_auction):
@@ -59,7 +59,7 @@ import fairdrop_config_v3.aleo;
 import fairdrop_gate_v3.aleo;
 import fairdrop_proof_v3.aleo;
 import fairdrop_ref_v3.aleo;
-import fairdrop_vest_v2.aleo;
+import fairdrop_vest_v3.aleo;
 import credits.aleo;
 import token_registry.aleo;
 import fairswap_dex_v3.aleo;
@@ -509,7 +509,7 @@ program fairdrop_dutch_v3.aleo {
             assert(vest_duration_ok);
 
             let vest_role_key: field = BHP256::hash_to_field(TokenOwner {
-                account:  fairdrop_vest_v2.aleo,
+                account:  fairdrop_vest_v3.aleo,
                 token_id: config.sale_token_id,
             });
             let vest_role_ok: bool =
@@ -968,7 +968,7 @@ program fairdrop_dutch_v3.aleo {
     // =========================================================================
     //
     // Issues a VestedAllocation record instead of an immediate Token.
-    // fairdrop_vest_v2.aleo mints tokens at release time.
+    // fairdrop_vest_v3.aleo mints tokens at release time.
     // D11 params: ended_at_block, cliff_blocks, vest_end_blocks validated in final.
     //
     // Leo 4.0: same capture pattern as claim.
@@ -981,7 +981,7 @@ program fairdrop_dutch_v3.aleo {
         public ended_at_block:  u32,    // D11: state.ended_at_block
         public cliff_blocks:    u32,    // D11: config.vest_cliff_blocks
         public vest_end_blocks: u32,    // D11: config.vest_end_blocks
-    ) -> (fairdrop_vest_v2.aleo::VestedAllocation, credits.aleo::credits, Final) {
+    ) -> (fairdrop_vest_v3.aleo::VestedAllocation, credits.aleo::credits, Final) {
         // Capture private record fields before final block.
         let auction_id: field  = bid.auction_id;
         let owner: address     = bid.owner;
@@ -990,8 +990,8 @@ program fairdrop_dutch_v3.aleo {
         let refund_amount: u64 = (bid.payment_amount - cost) as u64;
 
         // owner is private — passed as private param to create_vest.
-        let (vest, f_vest): (fairdrop_vest_v2.aleo::VestedAllocation, Final) =
-            fairdrop_vest_v2.aleo::create_vest(
+        let (vest, f_vest): (fairdrop_vest_v3.aleo::VestedAllocation, Final) =
+            fairdrop_vest_v3.aleo::create_vest(
                 auction_id,
                 owner,
                 sale_token_id,

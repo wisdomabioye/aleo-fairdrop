@@ -39,7 +39,7 @@ import credits.aleo;
 //     assert_eq enforced in transition body; payment_token_id is hardcoded, not a
 //     parameter). Params grouped: dutch: DutchParams, gate: GateParams,
 //     vest: VestParams, snapshot: ConfigSnapshot. Admin must have granted
-//     SUPPLY_MANAGER_ROLE to fairdrop_dutch_v3.aleo (and fairdrop_vest_v2.aleo if
+//     SUPPLY_MANAGER_ROLE to fairdrop_dutch_v3.aleo (and fairdrop_vest_v3.aleo if
 //     vest_enabled); assert_config CPI requires live fairdrop_config state;
 //     D11 nonce must match creator_nonces[creator] on chain.
 //   - place_bid_private / place_bid_private_ref: require private credits record.

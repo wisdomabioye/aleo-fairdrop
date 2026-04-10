@@ -26,7 +26,7 @@ export enum UtilityTransition {
   // fairdrop_proof_v3.aleo
   IssueReceipt       = 'issue_receipt',
   UpdateReputation   = 'update_reputation',
-  // fairdrop_vest_v2.aleo
+  // fairdrop_vest_v3.aleo
   CreateVest         = 'create_vest',
   Release            = 'release',
   // fairdrop_ref_v3.aleo

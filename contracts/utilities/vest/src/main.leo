@@ -1,8 +1,8 @@
-// fairdrop_vest_v2.aleo — Post-claim token vesting with block-based linear release.
+// fairdrop_vest_v3.aleo — Post-claim token vesting with block-based linear release.
 // Leo 4.0 migration: fn/Final/final/:: — no behavioural changes.
 //
 // Lifecycle:
-//   1. Auction's claim_vested CPI calls fairdrop_vest_v2.aleo::create_vest(...) with
+//   1. Auction's claim_vested CPI calls fairdrop_vest_v3.aleo::create_vest(...) with
 //      vesting parameters derived from the auction's own config + ended_at_block.
 //      The auction contract is responsible for consuming the token budget from its
 //      own escrow_sales (via mint/burn in its own SUPPLY_MANAGER_ROLE context).
@@ -25,8 +25,8 @@
 //   release: permissionless — Aleo cryptographically enforces record ownership.
 //
 // Role requirement:
-//   fairdrop_vest_v2.aleo must hold SUPPLY_MANAGER_ROLE (3) on each sale token used with
-//   vesting. Token creators must call token_registry.aleo::set_role(fairdrop_vest_v2.aleo, 3)
+//   fairdrop_vest_v3.aleo must hold SUPPLY_MANAGER_ROLE (3) on each sale token used with
+//   vesting. Token creators must call token_registry.aleo::set_role(fairdrop_vest_v3.aleo, 3)
 //   before any create_vest call. Verified in finalize_create_vest (early fail).
 //   Also required for the auction contract (burn_private at close, the same role covers
 //   both programs — token creator must authorize both addresses).
@@ -41,7 +41,7 @@
 //   2. Validate ended_at_block == state.ended_at_block in finalize.
 //   3. Validate cliff_blocks == config.vest_cliff_blocks in finalize.
 //   4. Validate vest_end_blocks == config.vest_end_blocks in finalize.
-//   5. CPI fairdrop_vest_v2.aleo::create_vest(auction_id, bid.owner, sale_token_id,
+//   5. CPI fairdrop_vest_v3.aleo::create_vest(auction_id, bid.owner, sale_token_id,
 //        sale_amount, ended_at_block, cliff_blocks, vest_end_blocks).
 //   6. Return VestedAllocation to bidder instead of Token.
 //
@@ -86,7 +86,7 @@ struct AllowedCallerOp { caller: address, allowed: bool, nonce: u64 }
 // Program interface
 // =============================================================================
 
-program fairdrop_vest_v2.aleo {
+program fairdrop_vest_v3.aleo {
     // Upgrade governance: 3-of-5 multi-sig must call fairdrop_multisig_v2.aleo::approve_upgrade
     // with contract_key=5field and this program's compiled checksum before deployment.
     @checksum(mapping="fairdrop_multisig_v2.aleo::approved_upgrades", key="5field")
@@ -97,7 +97,7 @@ program fairdrop_vest_v2.aleo {
     // =========================================================================
 
     // Required role for mint_private at release time.
-    // Token creators must grant this to fairdrop_vest_v2.aleo.
+    // Token creators must grant this to fairdrop_vest_v3.aleo.
     const SUPPLY_MANAGER_ROLE: u8 = 3u8;
 
     // =========================================================================
@@ -175,7 +175,7 @@ program fairdrop_vest_v2.aleo {
     //   D12: allowed_callers[self.caller] must be true.
     //   total_amount > 0: zero-amount vests would mint 0 tokens at release — useless.
     //   vest_end_blocks > cliff_blocks: prevents division-by-zero in release vesting math.
-    //   SUPPLY_MANAGER_ROLE: early fail if fairdrop_vest_v2.aleo lacks minting rights.
+    //   SUPPLY_MANAGER_ROLE: early fail if fairdrop_vest_v3.aleo lacks minting rights.
     //
     // Privacy: owner (bidder) is a private parameter — never reaches finalize.
     // The auction's claim transition passes bid.owner (private record field) directly.
@@ -215,10 +215,10 @@ program fairdrop_vest_v2.aleo {
             // Prevent division-by-zero in release: vesting_duration = end_block - cliff_block.
             // vest_end_blocks > cliff_blocks → end_block > cliff_block always.
             assert(vest_end_blocks > cliff_blocks);
-            // Early fail: verify fairdrop_vest_v2.aleo has SUPPLY_MANAGER_ROLE on sale token.
+            // Early fail: verify fairdrop_vest_v3.aleo has SUPPLY_MANAGER_ROLE on sale token.
             // Ensures release will succeed. Token creator must grant this before create_vest.
             let role_key: field = BHP256::hash_to_field(TokenOwner {
-                account:  fairdrop_vest_v2.aleo,
+                account:  fairdrop_vest_v3.aleo,
                 token_id: sale_token_id,
             });
             let role: u8 = token_registry.aleo::roles.get_or_use(role_key, 0u8);
@@ -257,7 +257,7 @@ program fairdrop_vest_v2.aleo {
 
     // !! COMMENTED OUT — Leo 4.0 compiler bug: "Finalization not found"
     // token_registry.aleo::mint_private returns a Final. When this function is enabled,
-    // any program that imports fairdrop_vest_v2.aleo AND independently calls
+    // any program that imports fairdrop_vest_v3.aleo AND independently calls
     // token_registry.aleo::mint_private (or any other Final-returning CPI) fails to build
     // with "Finalization not found: token_registry.aleo::mint_private".
     // Root cause: Leo compiler panics when the same Final-returning CPI appears in multiple

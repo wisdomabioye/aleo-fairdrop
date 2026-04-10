@@ -7,7 +7,7 @@ Descending-price Dutch auction with **uniform clearing price**. Price decays lin
 1. Creator deposits exact token supply via `burn_private` → `create_auction`.
 2. Bidders lock credits privately (`place_bid_private`) or publicly (`place_bid_public`). Payment is held in escrow; no UTXO remainder is returned (avoids on-chain UTXO dust and prevents UTXO-size leakage).
 3. Anyone calls `close_auction` after `end_block` and receives `closer_reward`.
-4. Bidders call `claim` to receive tokens at the clearing price; excess payment is refunded. If `vest_enabled`, use `claim_vested` + `fairdrop_vest_v2.aleo/release`.
+4. Bidders call `claim` to receive tokens at the clearing price; excess payment is refunded. If `vest_enabled`, use `claim_vested` + `fairdrop_vest_v3.aleo/release`.
 
 ## Key transitions
 

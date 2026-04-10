@@ -31,7 +31,7 @@
       "path": "../../utilities/ref"
     },
     {
-      "name": "fairdrop_vest_v2.aleo",
+      "name": "fairdrop_vest_v3.aleo",
       "location": "local",
       "path": "../../utilities/vest"
     },
