@@ -39,7 +39,7 @@ fairdrop_sealed_v2.aleo     ← build next. Sealed-bid commit-reveal, uniform cl
 fairdrop_raise_v2.aleo      ← fixed-price sealed allocation, pro-rata by payment.
 fairdrop_ascending_v3.aleo  ← ascending-price auction, pay-what-you-bid, early = cheapest.
 fairdrop_lbp_v3.aleo        ← supply-weighted descending price. Bots can't frontrun.
-fairdrop_quadratic_v2.aleo  ← pro-rata by sqrt(payment). Anti-whale, ZK-native fairness.
+fairdrop_quadratic_v3.aleo  ← pro-rata by sqrt(payment). Anti-whale, ZK-native fairness.
 
      all six import ↓
 
@@ -56,7 +56,7 @@ fairdrop_ascending_v3.aleo  PROGRAM_SALT = 2field
 fairdrop_sealed_v2.aleo     PROGRAM_SALT = 3field
 fairdrop_raise_v2.aleo      PROGRAM_SALT = 4field
 fairdrop_lbp_v3.aleo        PROGRAM_SALT = 5field
-fairdrop_quadratic_v2.aleo  PROGRAM_SALT = 6field
+fairdrop_quadratic_v3.aleo  PROGRAM_SALT = 6field
 ```
 
 **Why split:**
@@ -383,7 +383,7 @@ min_bid_amount, max_bid_amount, sale_scale, payment_token_id, sale_token_id, gat
 
 ---
 
-### 4f. Quadratic Allocation (`fairdrop_quadratic_v2.aleo`)
+### 4f. Quadratic Allocation (`fairdrop_quadratic_v3.aleo`)
 **Status:** not yet built. Most technically novel. No other launch platform offers this.
 
 Bidders pay any amount. Allocation is proportional to the square root of payment, not the payment itself. A bidder with 100× your budget receives only 10× your tokens. Sybil attacks are penalized (splitting a payment into N sub-payments produces `N × sqrt(P/N) = sqrt(N×P) × ... ` — actually splitting is advantageous for Sybil! See note below).
@@ -958,7 +958,7 @@ PHASE 2a  fairdrop_lbp_v3.aleo
           ─ validate fixed-point arithmetic (PRECISION = 1e6) against overflow cases
           ─ position: "Balancer LBP without MEV — bots can't see your transaction"
 
-PHASE 2b  fairdrop_quadratic_v2.aleo
+PHASE 2b  fairdrop_quadratic_v3.aleo
           ─ approx_integer_sqrt unrolled 20 iterations for finalize
           ─ QuadraticBid record carries pre-computed contribution_weight
           ─ sqrt_weights mapping, pro-rata by weight at claim
@@ -1081,7 +1081,7 @@ fairdrop_sealed_v2.aleo
 fairdrop_raise_v2.aleo
 fairdrop_ascending_v3.aleo
 fairdrop_lbp_v3.aleo
-fairdrop_quadratic_v2.aleo
+fairdrop_quadratic_v3.aleo
 fairdrop_gate_v2.aleo       (for gate registrations)
 fairdrop_proof_v2.aleo      (for reputation updates)
 fairdrop_ref_v2.aleo        (for referral activity)

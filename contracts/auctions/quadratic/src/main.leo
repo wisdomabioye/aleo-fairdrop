@@ -1,4 +1,4 @@
-// fairdrop_quadratic_v2.aleo — Privacy-preserving quadratic allocation auction.
+// fairdrop_quadratic_v3.aleo — Privacy-preserving quadratic allocation auction.
 //
 // Mechanism: bidders pay any amount ≥ min_bid_amount. Allocation is proportional
 // to the square root of payment, not the payment itself. A bidder with 100× your
@@ -30,7 +30,7 @@
 // Sale tokens   : token_registry.aleo::Token. Burned at create, re-minted at claim.
 //
 // Roles required:
-//   fairdrop_quadratic_v2.aleo — SUPPLY_MANAGER_ROLE on sale token (burn + mint).
+//   fairdrop_quadratic_v3.aleo — SUPPLY_MANAGER_ROLE on sale token (burn + mint).
 //   fairdrop_vest_v2.aleo      — SUPPLY_MANAGER_ROLE on sale token (mint at release),
 //                             required only when vest_enabled = true.
 //
@@ -231,7 +231,7 @@ fn approx_sqrt(n: u128) -> u128 {
     return (s63 + n / s63) / 2u128;
 }
 
-program fairdrop_quadratic_v2.aleo {
+program fairdrop_quadratic_v3.aleo {
     // Upgrade governance: 3-of-5 multi-sig must call fairdrop_multisig_v1.aleo::approve_upgrade
     // with contract_key=9field and this program's compiled checksum before deployment.
     @checksum(mapping="fairdrop_multisig_v1.aleo::approved_upgrades", key="9field")
@@ -413,7 +413,7 @@ program fairdrop_quadratic_v2.aleo {
             assert_eq(config.auction_id, auction_id);
 
             let quad_role_key: field = BHP256::hash_to_field(TokenOwner {
-                account:  fairdrop_quadratic_v2.aleo,
+                account:  fairdrop_quadratic_v3.aleo,
                 token_id: config.sale_token_id,
             });
             assert_eq(

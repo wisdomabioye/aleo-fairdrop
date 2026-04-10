@@ -1,5 +1,5 @@
 /**
- * fairdrop_quadratic_v2.aleo — TypeScript types.
+ * fairdrop_quadratic_v3.aleo — TypeScript types.
  *
  * Quadratic funding auction: allocation weight is √(payment_amount), computed
  * on-chain via 64-iteration Newton-Raphson. Smaller contributors receive

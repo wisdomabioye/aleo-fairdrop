@@ -119,7 +119,7 @@ fn lp_for_add(reserve_a: u128, reserve_b: u128, lp_supply: u128, amount_a: u128,
 }
 
 // Newton-Raphson integer sqrt — 64 unrolled iterations from 2^33.
-// Same approach as fairdrop_quadratic_v2.aleo. Converges to floor(sqrt(n)).
+// Same approach as fairdrop_quadratic_v3.aleo. Converges to floor(sqrt(n)).
 fn sqrt_u128(n: u128) -> u128 {
     let s0:  u128 = 8_589_934_592u128;
     let s1:  u128 = (s0  + n / s0)  / 2u128;

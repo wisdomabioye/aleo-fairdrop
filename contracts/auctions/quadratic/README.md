@@ -1,4 +1,4 @@
-# fairdrop_quadratic_v2.aleo
+# fairdrop_quadratic_v3.aleo
 
 Privacy-preserving quadratic allocation auction. Contribution weight is the **square root of payment** — not the payment itself. A bidder with 100× your budget receives only 10× your tokens. Anti-whale by design.
 
