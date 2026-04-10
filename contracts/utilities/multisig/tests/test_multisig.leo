@@ -32,7 +32,7 @@ program test_multisig.aleo {
     // Second call must revert: ADMIN_0 is already set in the mapping.
     @test
     @should_fail
-    fn test_initialize_double_call_fails() -> Final {
+    fn test_init_double_call_fails() -> Final {
         let f1: Final = fairdrop_multisig_v1.aleo::initialize();
         let f2: Final = fairdrop_multisig_v1.aleo::initialize();
         return final {
@@ -48,8 +48,8 @@ program test_multisig.aleo {
     // Duplicate signers (admin_1 == admin_2) must revert before finalize.
     @test
     @should_fail
-    fn test_approve_upgrade_duplicate_signers_fails() -> Final {
-        let dummy_sig: signature = signature::parse_unchecked("sign1qgp5xkzfk5k2z3zfzgavpdylf9l3kn3yc5h03lnn3c8llk7w5qgwz8m84u3yxw0f2pjfkqq5ph2slkm8xrxdyxf4nt8n28sqcnqyqqqqqqqqqqqpfzzmt");
+    fn test_upgrade_dup_signer_fail() -> Final {
+        let dummy_sig: signature = sign1lv3dh58cv63m5c920urhmhxswu5w0r0ytvvpq3yaejq24jlrncpf2ewx6fp34am27q8899tuelaagzz3e2f6rjfndcjng7h7sgqhyppfy72rn594agtt9tss0xctpczhuqearp2kl2s2yktugsuwgc04q9vkm4gclw8ye8phazd6eqq3l3kyxy0lwm37c9d4f6guy4fsjuz3yg6tlv9;
         let admin: address = aleo12shtwnmf49t5atmad2jnk3e58ahtp749d9trctt9z3wryxyzt5pspp0nd0; // ADMIN_0
         let dummy_checksum: [u8; 32] = [0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
                                         0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
@@ -69,8 +69,8 @@ program test_multisig.aleo {
     // Invalid signature (proof-context verify fails) must revert.
     @test
     @should_fail
-    fn test_approve_upgrade_bad_signature_fails() -> Final {
-        let dummy_sig: signature = signature::parse_unchecked("sign1qgp5xkzfk5k2z3zfzgavpdylf9l3kn3yc5h03lnn3c8llk7w5qgwz8m84u3yxw0f2pjfkqq5ph2slkm8xrxdyxf4nt8n28sqcnqyqqqqqqqqqqqpfzzmt");
+    fn test_upgrade_bad_sig_fails() -> Final {
+        let dummy_sig: signature = sign1lv3dh58cv63m5c920urhmhxswu5w0r0ytvvpq3yaejq24jlrncpf2ewx6fp34am27q8899tuelaagzz3e2f6rjfndcjng7h7sgqhyppfy72rn594agtt9tss0xctpczhuqearp2kl2s2yktugsuwgc04q9vkm4gclw8ye8phazd6eqq3l3kyxy0lwm37c9d4f6guy4fsjuz3yg6tlv9;
         let dummy_checksum: [u8; 32] = [0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
                                         0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
                                         0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
@@ -93,8 +93,8 @@ program test_multisig.aleo {
     // Duplicate signers must revert.
     @test
     @should_fail
-    fn test_approve_op_duplicate_signers_fails() -> Final {
-        let dummy_sig: signature = signature::parse_unchecked("sign1qgp5xkzfk5k2z3zfzgavpdylf9l3kn3yc5h03lnn3c8llk7w5qgwz8m84u3yxw0f2pjfkqq5ph2slkm8xrxdyxf4nt8n28sqcnqyqqqqqqqqqqqpfzzmt");
+    fn test_app_op_dupl_signers_fails() -> Final {
+        let dummy_sig: signature = sign1lv3dh58cv63m5c920urhmhxswu5w0r0ytvvpq3yaejq24jlrncpf2ewx6fp34am27q8899tuelaagzz3e2f6rjfndcjng7h7sgqhyppfy72rn594agtt9tss0xctpczhuqearp2kl2s2yktugsuwgc04q9vkm4gclw8ye8phazd6eqq3l3kyxy0lwm37c9d4f6guy4fsjuz3yg6tlv9;
         let admin: address = aleo12shtwnmf49t5atmad2jnk3e58ahtp749d9trctt9z3wryxyzt5pspp0nd0;
         let f: Final = fairdrop_multisig_v1.aleo::approve_op(
             12345field,    // dummy op_hash
@@ -109,8 +109,8 @@ program test_multisig.aleo {
     // Bad signature must revert.
     @test
     @should_fail
-    fn test_approve_op_bad_signature_fails() -> Final {
-        let dummy_sig: signature = signature::parse_unchecked("sign1qgp5xkzfk5k2z3zfzgavpdylf9l3kn3yc5h03lnn3c8llk7w5qgwz8m84u3yxw0f2pjfkqq5ph2slkm8xrxdyxf4nt8n28sqcnqyqqqqqqqqqqqpfzzmt");
+    fn test_appr_op_bad_sig_fails() -> Final {
+        let dummy_sig: signature = sign1lv3dh58cv63m5c920urhmhxswu5w0r0ytvvpq3yaejq24jlrncpf2ewx6fp34am27q8899tuelaagzz3e2f6rjfndcjng7h7sgqhyppfy72rn594agtt9tss0xctpczhuqearp2kl2s2yktugsuwgc04q9vkm4gclw8ye8phazd6eqq3l3kyxy0lwm37c9d4f6guy4fsjuz3yg6tlv9;
         let f: Final = fairdrop_multisig_v1.aleo::approve_op(
             99999field,
             dummy_sig, aleo12shtwnmf49t5atmad2jnk3e58ahtp749d9trctt9z3wryxyzt5pspp0nd0,
@@ -128,12 +128,12 @@ program test_multisig.aleo {
     // Duplicate signers must revert.
     @test
     @should_fail
-    fn test_update_admin_duplicate_signers_fails() -> Final {
-        let dummy_sig: signature = signature::parse_unchecked("sign1qgp5xkzfk5k2z3zfzgavpdylf9l3kn3yc5h03lnn3c8llk7w5qgwz8m84u3yxw0f2pjfkqq5ph2slkm8xrxdyxf4nt8n28sqcnqyqqqqqqqqqqqpfzzmt");
+    fn test_admin_dup_signers_fails() -> Final {
+        let dummy_sig: signature = sign1lv3dh58cv63m5c920urhmhxswu5w0r0ytvvpq3yaejq24jlrncpf2ewx6fp34am27q8899tuelaagzz3e2f6rjfndcjng7h7sgqhyppfy72rn594agtt9tss0xctpczhuqearp2kl2s2yktugsuwgc04q9vkm4gclw8ye8phazd6eqq3l3kyxy0lwm37c9d4f6guy4fsjuz3yg6tlv9;
         let admin: address = aleo12shtwnmf49t5atmad2jnk3e58ahtp749d9trctt9z3wryxyzt5pspp0nd0;
         let f: Final = fairdrop_multisig_v1.aleo::update_admin(
             aleo16ycrg9g4208lp5y4g5s3gn43xknc5gdsr7wjrpqq9htznj5qk5yqd6px5a, // ADMIN_3 out
-            aleo1qnr4dkkvkgfqph0vzc3y6z2eu975wnpz2925ntjccd5cfqxtyu8sta57j8,  // new key
+            aleo1sn8ns4htf8ryj0dergclrg82fuuztzr67fqc3sakrktcxzc3dqxqm6utkv,  // new key
             dummy_sig, admin,
             dummy_sig, admin, // duplicate
             dummy_sig, aleo1z9y9afh0h6dnyj3f0hvjc4mhayjy06fj42ppcq0rvpmmyky6fuzs449sjr,
@@ -145,11 +145,11 @@ program test_multisig.aleo {
     // Bad signature must revert.
     @test
     @should_fail
-    fn test_update_admin_bad_signature_fails() -> Final {
-        let dummy_sig: signature = signature::parse_unchecked("sign1qgp5xkzfk5k2z3zfzgavpdylf9l3kn3yc5h03lnn3c8llk7w5qgwz8m84u3yxw0f2pjfkqq5ph2slkm8xrxdyxf4nt8n28sqcnqyqqqqqqqqqqqpfzzmt");
+    fn test_admin_bad_sig_fails() -> Final {
+        let dummy_sig: signature = sign1lv3dh58cv63m5c920urhmhxswu5w0r0ytvvpq3yaejq24jlrncpf2ewx6fp34am27q8899tuelaagzz3e2f6rjfndcjng7h7sgqhyppfy72rn594agtt9tss0xctpczhuqearp2kl2s2yktugsuwgc04q9vkm4gclw8ye8phazd6eqq3l3kyxy0lwm37c9d4f6guy4fsjuz3yg6tlv9;
         let f: Final = fairdrop_multisig_v1.aleo::update_admin(
             aleo16ycrg9g4208lp5y4g5s3gn43xknc5gdsr7wjrpqq9htznj5qk5yqd6px5a,
-            aleo1qnr4dkkvkgfqph0vzc3y6z2eu975wnpz2925ntjccd5cfqxtyu8sta57j8,
+            aleo1sn8ns4htf8ryj0dergclrg82fuuztzr67fqc3sakrktcxzc3dqxqm6utkv,
             dummy_sig, aleo12shtwnmf49t5atmad2jnk3e58ahtp749d9trctt9z3wryxyzt5pspp0nd0,
             dummy_sig, aleo1z9y9afh0h6dnyj3f0hvjc4mhayjy06fj42ppcq0rvpmmyky6fuzs449sjr,
             dummy_sig, aleo19x0ctad8llm9y0qssw7eup045c5wxxp6k4al3n0d5r8maulkzu8sh3jwew,

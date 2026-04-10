@@ -122,7 +122,7 @@ program test_vest.aleo {
     // Happy path requires a prior fairdrop_multisig_v1.aleo::approve_op on-chain.
     @test
     @should_fail
-    fn test_set_allowed_caller_unapproved() -> Final {
+    fn test_set_caller_unapproved() -> Final {
         let f: Final = fairdrop_vest_v2.aleo::set_allowed_caller(
             aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc,  // any program address
             true,

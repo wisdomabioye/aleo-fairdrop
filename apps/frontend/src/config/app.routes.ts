@@ -40,6 +40,11 @@ export const AppRoutes = {
   // Analytics
   analytics: '/analytics',
 
+  // DEX / Exchange
+  dex:          '/dex',
+  dexLiquidity: '/dex/liquidity',
+  dexPoolNew:   '/dex/pool/new',
+
   // Guides
   guide: '/guide',
 } as const;
@@ -59,4 +64,13 @@ export function creatorAuctionUrl(id: string): string {
 /** Build a creator profile URL from a wallet address. */
 export function creatorUrl(address: string): string {
   return `/creators/${address}`;
+}
+
+/** Deep link to swap page with pre-selected pair (used from auction pages, token manager). */
+export function dexSwapUrl(tokenInId?: string, tokenOutId?: string): string {
+  const params = new URLSearchParams();
+  if (tokenInId)  params.set('in',  tokenInId);
+  if (tokenOutId) params.set('out', tokenOutId);
+  const qs = params.size ? `?${params}` : '';
+  return `/dex${qs}`;
 }

@@ -41,7 +41,7 @@ program test_gate.aleo {
 
     @test
     @should_fail
-    fn test_set_allowed_caller_unapproved() -> Final {
+    fn test_set_allowed_caller_unaprvd() -> Final {
         let f: Final = fairdrop_gate_v2.aleo::set_allowed_caller(
             aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc,  // any program address
             true,

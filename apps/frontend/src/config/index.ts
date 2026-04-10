@@ -1,1 +1,1 @@
-export { AppRoutes, auctionDetailUrl, creatorAuctionUrl, creatorUrl, type AppRoute } from './app.routes';
+export { AppRoutes, auctionDetailUrl, creatorAuctionUrl, creatorUrl, dexSwapUrl, type AppRoute } from './app.routes';

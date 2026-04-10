@@ -17,7 +17,7 @@ import { AuctionOverviewCard }  from '../components/AuctionOverviewCard';
 import { AuctionSalesCard }     from '../components/AuctionSalesCard';
 import { CreatorRevenueCard }   from '../components/CreatorRevenueCard';
 import { CreatorActionsCard }   from '../components/CreatorActionsCard';
-// import { SeedLiquidityPanel }   from '../components/SeedLiquidityPanel';
+import { SeedLiquidityPanel }   from '../components/SeedLiquidityPanel';
 
 function LoadingSkeleton() {
   return (
@@ -114,11 +114,13 @@ function AuctionManageContent({ id }: { id: string }) {
             unsoldWithdrawn={withdrawn.data?.unsoldWithdrawn ?? 0n}
             onWithdrawDone={() => void withdrawn.refetch()}
           />
-          {/* <SeedLiquidityPanel
-            auction={auction}
-            paymentsWithdrawn={withdrawn.data?.paymentsWithdrawn ?? 0n}
-            unsoldWithdrawn={withdrawn.data?.unsoldWithdrawn ?? 0n}
-          /> */}
+          {isCleared && (
+            <SeedLiquidityPanel
+              auction={auction}
+              paymentsWithdrawn={withdrawn.data?.paymentsWithdrawn ?? 0n}
+              unsoldWithdrawn={withdrawn.data?.unsoldWithdrawn ?? 0n}
+            />
+          )}
         </div>
       </div>
     </div>

@@ -41,7 +41,7 @@ program test_proof.aleo {
 
     @test
     @should_fail
-    fn test_set_allowed_caller_unapproved() -> Final {
+    fn test_set_caller_unapproved() -> Final {
         let f: Final = fairdrop_proof_v2.aleo::set_allowed_caller(
             aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc,
             true,

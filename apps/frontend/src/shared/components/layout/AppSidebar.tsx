@@ -21,9 +21,14 @@ import {
   Check,
   Scissors,
   BarChart2,
+  ArrowLeftRight,
+  Droplets,
   type LucideIcon,
 } from 'lucide-react';
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
   Sidebar,
   SidebarContent,
   SidebarFooter,
@@ -73,6 +78,12 @@ const TOOLS: NavItem[] = [
   { label: 'Token Launch', to: AppRoutes.tokenLaunch, icon: Coins },
   { label: 'Token Manager', to: AppRoutes.tokenManager, icon: Settings2 },
   { label: 'Split & Join', to: AppRoutes.tokenSplitJoin, icon: Scissors },
+];
+
+const EXCHANGE: NavItem[] = [
+  { label: 'Swap',      to: AppRoutes.dex,          icon: ArrowLeftRight, end: true },
+  { label: 'Liquidity', to: AppRoutes.dexLiquidity,  icon: Droplets },
+  { label: 'New Pool',  to: AppRoutes.dexPoolNew,    icon: PlusCircle },
 ];
 
 const RESOURCES: NavItem[] = [
@@ -145,6 +156,110 @@ function NavGroup({ label, items }: { label: string; items: NavItem[] }) {
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
+  );
+}
+
+function sidebarGroupKey(label: string): string {
+  return `sidebar-group-${label.toLowerCase()}`;
+}
+
+function NavGroupCollapsible({
+  label,
+  items,
+  defaultOpen = true,
+}: {
+  label:        string;
+  items:        NavItem[];
+  defaultOpen?: boolean;
+}) {
+  const { isMobile, setOpenMobile } = useSidebar();
+  const storageKey = sidebarGroupKey(label);
+
+  const [open, setOpen] = useState<boolean>(() => {
+    const stored = localStorage.getItem(storageKey);
+    return stored !== null ? stored === 'true' : defaultOpen;
+  });
+
+  const toggle = () =>
+    setOpen((prev) => {
+      localStorage.setItem(storageKey, String(!prev));
+      return !prev;
+    });
+
+  const handleNavClick = () => { if (isMobile) setOpenMobile(false); };
+
+  return (
+    <Collapsible open={open} onOpenChange={toggle}>
+      <SidebarGroup className="px-2 py-1">
+        <CollapsibleTrigger asChild>
+          <button
+            type="button"
+            className="group flex w-full items-center justify-between px-2 pb-2"
+          >
+            <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground/75 transition-colors group-hover:text-muted-foreground">
+              {label}
+            </span>
+            <ChevronRight
+              className={cn(
+                'size-3 text-muted-foreground/50 transition-transform duration-200',
+                open ? 'rotate-90' : 'rotate-0',
+              )}
+            />
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <SidebarGroupContent>
+            <SidebarMenu className="gap-1">
+              {items.map(({ label: name, to, icon: Icon, end }) => (
+                <SidebarMenuItem key={to}>
+                  <NavLink to={to} end={end} className="block w-full" onClick={handleNavClick}>
+                    {({ isActive }) => (
+                      <SidebarMenuButton
+                        isActive={isActive}
+                        className={cn(
+                          'group relative h-11 w-full rounded-xl border border-transparent px-2.5 transition-[border-color,background-color,box-shadow,transform] duration-200',
+                          'hover:border-sky-500/10 hover:bg-sidebar-accent/45 hover:shadow-xs',
+                          isActive &&
+                            'border-sky-500/12 bg-gradient-to-r from-sky-500/14 via-sky-400/8 to-transparent text-sidebar-foreground shadow-xs ring-1 ring-white/5'
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            'absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-sky-400 transition-opacity',
+                            isActive ? 'opacity-100' : 'opacity-0'
+                          )}
+                        />
+                        <span
+                          className={cn(
+                            'flex size-7 shrink-0 items-center justify-center rounded-lg border transition-[border-color,background-color,color]',
+                            isActive
+                              ? 'border-sky-500/14 bg-sky-500/10 text-sky-300'
+                              : 'border-sidebar-border/60 bg-sidebar-accent/25 text-sidebar-foreground/70 group-hover:border-sky-500/10 group-hover:bg-sky-500/6'
+                          )}
+                        >
+                          <Icon className="size-4 shrink-0" />
+                        </span>
+                        <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                          {name}
+                        </span>
+                        <ChevronRight
+                          className={cn(
+                            'size-4 shrink-0 text-muted-foreground/60 transition-all duration-200',
+                            isActive
+                              ? 'translate-x-0 text-sky-300/90 opacity-100'
+                              : 'translate-x-[-2px] opacity-0 group-hover:translate-x-0 group-hover:opacity-100'
+                          )}
+                        />
+                      </SidebarMenuButton>
+                    )}
+                  </NavLink>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </CollapsibleContent>
+      </SidebarGroup>
+    </Collapsible>
   );
 }
 
@@ -240,13 +355,15 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="gap-1 px-1 pb-2">
-        <NavGroup label="Overview" items={OVERVIEW} />
+        <NavGroupCollapsible label="Overview"  items={OVERVIEW}  defaultOpen />
         <SidebarSeparator className="mx-3 bg-sky-500/8" />
-        <NavGroup label="Auctions" items={AUCTIONS} />
+        <NavGroupCollapsible label="Auctions"  items={AUCTIONS}  defaultOpen />
         <SidebarSeparator className="mx-3 bg-sky-500/8" />
-        <NavGroup label="Finance" items={FINANCE} />
+        <NavGroupCollapsible label="Finance"   items={FINANCE}   defaultOpen />
         <SidebarSeparator className="mx-3 bg-sky-500/8" />
-        <NavGroup label="Tools" items={TOOLS} />
+        <NavGroupCollapsible label="Exchange"  items={EXCHANGE}  defaultOpen />
+        <SidebarSeparator className="mx-3 bg-sky-500/8" />
+        <NavGroupCollapsible label="Tools"     items={TOOLS}     defaultOpen />
       </SidebarContent>
 
       <SidebarFooter className="space-y-2 px-3 pb-4">

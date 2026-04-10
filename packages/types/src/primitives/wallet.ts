@@ -106,6 +106,23 @@ export interface WalletSealedCommitment {
 }
 
 /**
+ * Runtime-parsed LpToken record from fairswap_dex_v2.aleo.
+ * Produced by useLpTokenRecords after parsing the U128 amount to bigint.
+ */
+export interface WalletLpRecord {
+  /** Raw record plaintext — used as unique key AND as transition input. */
+  id:       string;
+  /** Pool key (field string with "field" suffix — matches LpToken.pool_key). */
+  poolKey:  string;
+  /** LP token balance (parsed from U128 string via BigInt(record.amount)). */
+  amount:   bigint;
+  /** Whether this record has already been spent. */
+  spent:    boolean;
+  /** Original record plaintext string — pass as transition input. */
+  _record:  string;
+}
+
+/**
  * Runtime-parsed private credits record from credits.aleo.
  * Produced by useCreditRecords.
  */

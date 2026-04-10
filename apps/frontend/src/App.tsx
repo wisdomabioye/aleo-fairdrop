@@ -29,6 +29,9 @@ import { CreatorsPage }       from '@/features/creators/pages/CreatorsPage';
 import { CreatorPage }        from '@/features/creators/pages/CreatorPage';
 import { AnalyticsPage }      from '@/features/analytics/pages/AnalyticsPage';
 import { GuidePage }          from '@/features/guide/pages/GuidePage';
+import { SwapPage }           from '@/features/dex/pages/SwapPage';
+import { LiquidityPage }      from '@/features/dex/pages/LiquidityPage';
+import { CreatePoolPage }     from '@/features/dex/pages/CreatePoolPage';
 
 // ── Placeholder (for routes not yet built) ────────────────────────────────────
 function Placeholder({ name }: { name: string }) {
@@ -92,6 +95,11 @@ export function App() {
           <Route path={AppRoutes.tokenLaunch}        element={<TokenLaunchPage />} />
           <Route path={AppRoutes.tokenManager}       element={<TokenManagerPage />} />
           <Route path={AppRoutes.tokenSplitJoin}     element={<SplitJoinTokenPage />} />
+
+          {/* DEX / Exchange */}
+          <Route path={AppRoutes.dex}                element={<SwapPage />} />
+          <Route path={AppRoutes.dexLiquidity}       element={<LiquidityPage />} />
+          <Route path={AppRoutes.dexPoolNew}         element={<CreatePoolPage />} />
 
           {/* Creators */}
           <Route path={AppRoutes.creators}           element={<CreatorsPage />} />
