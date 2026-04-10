@@ -1,6 +1,6 @@
 # credential-signer
 
-A self-hosted HTTP service that issues gate credentials for `fairdrop_gate_v2.aleo` auctions with `gate_mode = 2` (credential gate).
+A self-hosted HTTP service that issues gate credentials for `fairdrop_gate_v3.aleo` auctions with `gate_mode = 2` (credential gate).
 
 **You host this service. You control who gets credentials.** Fairdrop collects the credential from your service and submits it on-chain — it never touches your private key or decides who is allowed.
 

@@ -1,4 +1,4 @@
-// Tests for fairdrop_gate_v2.aleo
+// Tests for fairdrop_gate_v3.aleo
 // ── Leo 4.0 migration notes ───────────────────────────────────────────────────
 //   @test script → @test fn ... -> Final
 //   f.await()    → return final { f.run(); };
@@ -7,7 +7,7 @@
 //   async constructor → constructor
 //   test_never_passes removed: @test fn are entry points; dummy stub no longer needed.
 // ─────────────────────────────────────────────────────────────────────────────
-import fairdrop_gate_v2.aleo;
+import fairdrop_gate_v3.aleo;
 
 // ── Unit-test coverage scope ─────────────────────────────────────────────────
 //   ✓ set_allowed_caller — unapproved op guard: approved_ops defaults false → revert.
@@ -42,7 +42,7 @@ program test_gate.aleo {
     @test
     @should_fail
     fn test_set_allowed_caller_unaprvd() -> Final {
-        let f: Final = fairdrop_gate_v2.aleo::set_allowed_caller(
+        let f: Final = fairdrop_gate_v3.aleo::set_allowed_caller(
             aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc,  // any program address
             true,
             1u64,  // op_nonce — no approved_ops entry for this hash → assert fails
@@ -63,14 +63,14 @@ program test_gate.aleo {
     // Primary open-auction pass test.
     @test
     fn test_admission_open_default() -> Final {
-        let f: Final = fairdrop_gate_v2.aleo::check_admission(1field);
+        let f: Final = fairdrop_gate_v3.aleo::check_admission(1field);
         return final { f.run(); };
     }
 
     // Different auction_id — same GATE_OPEN default.
     @test
     fn test_admission_open_any_id() -> Final {
-        let f: Final = fairdrop_gate_v2.aleo::check_admission(999field);
+        let f: Final = fairdrop_gate_v3.aleo::check_admission(999field);
         return final { f.run(); };
     }
 
@@ -78,14 +78,14 @@ program test_gate.aleo {
     // in the gate contract (gate_registered keys are arbitrary auction IDs).
     @test
     fn test_admission_open_zero_id() -> Final {
-        let f: Final = fairdrop_gate_v2.aleo::check_admission(0field);
+        let f: Final = fairdrop_gate_v3.aleo::check_admission(0field);
         return final { f.run(); };
     }
 
     // Large auction_id (near field boundary) — still unregistered, still passes.
     @test
     fn test_admission_open_large_id() -> Final {
-        let f: Final = fairdrop_gate_v2.aleo::check_admission(
+        let f: Final = fairdrop_gate_v3.aleo::check_admission(
             8444461749428370424248824938781546531375899335154063827935233455917409239040field
         );
         return final { f.run(); };
@@ -105,7 +105,7 @@ program test_gate.aleo {
     @test
     @should_fail
     fn test_merkle_open_auction() -> Final {
-        let f: Final = fairdrop_gate_v2.aleo::verify_merkle(
+        let f: Final = fairdrop_gate_v3.aleo::verify_merkle(
             1field,       // unregistered auction_id
             [0field; 20], // proof values irrelevant — mode guard fires first
             0u32,         // path_bits
@@ -117,7 +117,7 @@ program test_gate.aleo {
     @test
     @should_fail
     fn test_merkle_open_zero_id() -> Final {
-        let f: Final = fairdrop_gate_v2.aleo::verify_merkle(
+        let f: Final = fairdrop_gate_v3.aleo::verify_merkle(
             0field,
             [0field; 20],
             0u32,
@@ -129,7 +129,7 @@ program test_gate.aleo {
     @test
     @should_fail
     fn test_merkle_open_all_right() -> Final {
-        let f: Final = fairdrop_gate_v2.aleo::verify_merkle(
+        let f: Final = fairdrop_gate_v3.aleo::verify_merkle(
             2field,
             [0field; 20],
             4294967295u32, // 0xFFFFFFFF — all right-child bits
@@ -153,7 +153,7 @@ program test_gate.aleo {
     @test
     @should_fail
     fn test_register_unauth_open() -> Final {
-        let f: Final = fairdrop_gate_v2.aleo::register_gate(
+        let f: Final = fairdrop_gate_v3.aleo::register_gate(
             42field,  // auction_id
             0u8,      // gate_mode = GATE_OPEN
             0field,   // root (unused for GATE_OPEN)
@@ -166,7 +166,7 @@ program test_gate.aleo {
     @test
     @should_fail
     fn test_register_unauth_merkle() -> Final {
-        let f: Final = fairdrop_gate_v2.aleo::register_gate(
+        let f: Final = fairdrop_gate_v3.aleo::register_gate(
             43field,
             1u8,      // gate_mode = GATE_MERKLE
             1field,   // non-zero root
@@ -179,7 +179,7 @@ program test_gate.aleo {
     @test
     @should_fail
     fn test_register_unauth_cred() -> Final {
-        let f: Final = fairdrop_gate_v2.aleo::register_gate(
+        let f: Final = fairdrop_gate_v3.aleo::register_gate(
             44field,
             2u8,      // gate_mode = GATE_CREDENTIAL
             0field,

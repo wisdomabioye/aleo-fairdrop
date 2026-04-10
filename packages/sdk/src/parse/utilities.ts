@@ -9,12 +9,12 @@ import type { GateConfig, ReferralConfig, ReferralRecord, CreatorReputation } fr
 import { asField, asAddress, asU128, asU64 } from '@fairdrop/types/primitives';
 import { parseStruct, parseField, parseAddress, parseU16, parseU128, parseBool } from './leo';
 
-// ── fairdrop_gate_v2.aleo ─────────────────────────────────────────────────────
+// ── fairdrop_gate_v3.aleo ─────────────────────────────────────────────────────
 
 /**
  * Assemble a GateConfig from three separately-stored mapping values.
  * gate_modes, allowlists, and credential_issuers are individual mappings
- * in fairdrop_gate_v2.aleo — there is no single struct to parseStruct over.
+ * in fairdrop_gate_v3.aleo — there is no single struct to parseStruct over.
  */
 export function assembleGateConfig(
   gateMode:   string | null,

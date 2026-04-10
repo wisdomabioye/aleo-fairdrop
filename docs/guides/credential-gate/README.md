@@ -1,6 +1,6 @@
 # Credential Gate Guide
 
-`fairdrop_gate_v2.aleo` supports three gate modes. This guide covers **mode 2 — credential gate**.
+`fairdrop_gate_v3.aleo` supports three gate modes. This guide covers **mode 2 — credential gate**.
 
 | Mode | Value | What it means |
 |---|---|---|
@@ -21,7 +21,7 @@ The credential gate is a **general-purpose boolean gate**. Any external conditio
    → on-chain: checks sig, checks expiry < current block, marks bidder as verified
 
 2. place_bid_*(auctionId, ...)
-   → fairdrop_gate_v2.aleo::check_admission(auctionId)
+   → fairdrop_gate_v3.aleo::check_admission(auctionId)
    → requires verified[BHP256(bidder, auctionId)] = true
 ```
 
@@ -67,7 +67,7 @@ Bidder                  credential-signer (yours)
   │      expiry,                 │
   │      issuer }                │
   │                              │
-  │  submit verify_credential ──────────────> fairdrop_gate_v2.aleo
+  │  submit verify_credential ──────────────> fairdrop_gate_v3.aleo
 ```
 
 **Layer 1 — wallet ownership** (always enforced): the bidder signs the challenge string

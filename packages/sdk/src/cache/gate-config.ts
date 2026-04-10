@@ -1,5 +1,5 @@
 /**
- * localStorage cache for GateConfig from fairdrop_gate_v2.aleo.
+ * localStorage cache for GateConfig from fairdrop_gate_v3.aleo.
  *
  * Gate config is registered once per auction at create_auction time and never
  * updated on-chain. No TTL needed.

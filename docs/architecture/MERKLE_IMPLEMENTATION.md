@@ -1,6 +1,6 @@
 # Merkle Gate — End-to-End Implementation
 
-Complete implementation guide for the Merkle allowlist gate (`gate_mode = 1`) and credential gate (`gate_mode = 2`) in `fairdrop_gate_v2.aleo`.
+Complete implementation guide for the Merkle allowlist gate (`gate_mode = 1`) and credential gate (`gate_mode = 2`) in `fairdrop_gate_v3.aleo`.
 
 ---
 
@@ -21,7 +21,7 @@ Complete implementation guide for the Merkle allowlist gate (`gate_mode = 1`) an
 
 ## 1. On-chain spec
 
-### Gate contract structs (`fairdrop_gate_v2.aleo`)
+### Gate contract structs (`fairdrop_gate_v3.aleo`)
 
 ```leo
 struct LeafHash    { addr: address }
@@ -137,7 +137,7 @@ All Merkle and credential hash functions call `hashStruct` with the correctly-or
 import { hashStruct }  from './_bhp';
 import { ZERO_ADDRESS } from '../constants';
 
-const DEPTH = 20;  // matches fairdrop_gate_v2.aleo — max 2^20 addresses
+const DEPTH = 20;  // matches fairdrop_gate_v3.aleo — max 2^20 addresses
 
 // ── Internal hash helpers ─────────────────────────────────────────────────────
 

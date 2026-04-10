@@ -1,7 +1,7 @@
 /**
  * BHP256 sparse Merkle tree builder for the Fairdrop allowlist gate.
  *
- * Mirrors the 20-level tree used by fairdrop_gate_v2.aleo verify_merkle.
+ * Mirrors the 20-level tree used by fairdrop_gate_v3.aleo verify_merkle.
  * Uses sparse computation — only occupied nodes and their ancestors are hashed,
  * with precomputed empty-subtree constants filling the gaps.
  * Cost: O(N × DEPTH) not O(2^DEPTH).
@@ -10,7 +10,7 @@
 import { hashStruct }  from './_bhp';
 import { ZERO_ADDRESS } from '../constants';
 
-const DEPTH = 20; // matches fairdrop_gate_v2.aleo — max 2^20 addresses
+const DEPTH = 20; // matches fairdrop_gate_v3.aleo — max 2^20 addresses
 
 // ── Internal hash helpers ─────────────────────────────────────────────────────
 

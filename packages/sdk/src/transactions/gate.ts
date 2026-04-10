@@ -1,5 +1,5 @@
 /**
- * Transaction builders for fairdrop_gate_v2.aleo.
+ * Transaction builders for fairdrop_gate_v3.aleo.
  *
  * User-callable transitions:
  *   verify_merkle    — bidder proves Merkle allowlist membership before bidding.

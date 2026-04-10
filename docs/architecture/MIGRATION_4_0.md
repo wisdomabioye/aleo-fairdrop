@@ -144,7 +144,7 @@ Key points:
 ```leo
 fn place_bid_public(...) -> (..., Final) {
     let f_credits: Final = credits.aleo::transfer_public_as_signer(...);
-    let f_gate: Final    = fairdrop_gate_v2.aleo::check_admission(...);
+    let f_gate: Final    = fairdrop_gate_v3.aleo::check_admission(...);
     let (receipt, f_proof): (..., Final) = fairdrop_proof_v2.aleo::issue_receipt(...);
     // ...build Bid record...
     return (bid, receipt, final {
@@ -262,7 +262,7 @@ fn place_bid_public(
     };
     let f_credits: Final =
         credits.aleo::transfer_public_as_signer(self.address, payment_amount);
-    let f_gate: Final = fairdrop_gate_v2.aleo::check_admission(auction_id);
+    let f_gate: Final = fairdrop_gate_v3.aleo::check_admission(auction_id);
     let (receipt, f_proof): (fairdrop_proof_v2.aleo::ParticipationReceipt, Final) =
         fairdrop_proof_v2.aleo::issue_receipt(auction_id, 0field, bidder_key);
     return (bid, receipt, final {
@@ -348,7 +348,7 @@ Migrate bottom-up: utilities first (no auction dependencies), then auctions, the
 
 1. **`fairdrop_config_v3.aleo`** (300 lines) — simplest; no CPI calls; no `final fn` opportunities
 2. **`fairdrop_proof_v2.aleo`** (198 lines) — 3 transitions; extract `assert_caller_allowed` final fn
-3. **`fairdrop_gate_v2.aleo`** (382 lines) — 4 transitions; similar D12 pattern
+3. **`fairdrop_gate_v3.aleo`** (382 lines) — 4 transitions; similar D12 pattern
 4. **`fairdrop_ref_v2.aleo`** (461 lines) — 4 transitions; extract `assert_caller_allowed`
 5. **`fairdrop_vest_v2.aleo`** (310 lines) — 3 transitions
 

@@ -95,7 +95,7 @@ async function check(address: string): Promise<boolean> {
 
 ## What does NOT change
 
-- The `fairdrop_gate_v2.aleo` contract — no changes
+- The `fairdrop_gate_v3.aleo` contract — no changes
 - The credential-signer service — no changes, use `CHECK_STRATEGY=webhook` or `custom`
 - The on-chain verification flow — `verify_credential` → `place_bid_*` is unchanged
 

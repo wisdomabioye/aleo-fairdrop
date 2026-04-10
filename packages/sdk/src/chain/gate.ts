@@ -1,5 +1,5 @@
 /**
- * On-chain mapping reads for fairdrop_gate_v2.aleo.
+ * On-chain mapping reads for fairdrop_gate_v3.aleo.
  */
 
 import type { GateConfig } from '@fairdrop/types/contracts/utilities';

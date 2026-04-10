@@ -2,7 +2,7 @@
 
 ## Summary
 
-The credential gate (`fairdrop_gate_v2.aleo`, mode 2) is already fully built. The `credential-signer`
+The credential gate (`fairdrop_gate_v3.aleo`, mode 2) is already fully built. The `credential-signer`
 service already supports four strategies (`allowlist`, `webhook`, `token-gate`, `custom`). The gate
 is a **general-purpose boolean gate** — any external condition (NFT ownership, ZK humanity proof,
 KYC/AML check, bridge attestation) maps to a single yes/no credential. The infrastructure is done;

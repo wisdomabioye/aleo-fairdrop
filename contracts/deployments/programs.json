@@ -21,7 +21,7 @@
       "upgradeKey":     "1field"
     },
     "gate": {
-      "programId":      "fairdrop_gate_v2.aleo",
+      "programId":      "fairdrop_gate_v3.aleo",
       "programAddress": "aleo1e4vwv078d7fhra9lp07633zdpn0ln3fedt8lseal0dh9fdr5vvqqeae9hv",
       "contractPath":   "contracts/utilities/gate",
       "upgradeKey":     "2field"

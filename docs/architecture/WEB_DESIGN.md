@@ -51,8 +51,8 @@ The existing frontend lives at `/home/abioye/aleo-guide/fairdrop/` (single-contr
 | Slash unrevealed commitments (sealed auctions) | Missing | `fairdrop_sealed_v3.aleo/slash_unrevealed` |
 | Close abandoned auction for reward (closer reward) | Missing | any `close_auction` (closer ≠ creator) |
 | Vesting schedule display & token release | Missing | `fairdrop_vest_v2.aleo/release` |
-| Gate verification — Merkle proof submission | Missing | `fairdrop_gate_v2.aleo/verify_merkle` |
-| Gate verification — Credential presentation | Missing | `fairdrop_gate_v2.aleo/verify_credential` |
+| Gate verification — Merkle proof submission | Missing | `fairdrop_gate_v3.aleo/verify_merkle` |
+| Gate verification — Credential presentation | Missing | `fairdrop_gate_v3.aleo/verify_credential` |
 | Participation receipt display (auto-issued; no user action) | Missing | `fairdrop_proof_v2.aleo/ParticipationReceipt` records in wallet |
 | Creator reputation display | Missing | `fairdrop_proof_v2.aleo/reputation` mapping |
 | BidForm for: Raise, Sealed (commit/reveal), Ascending, LBP, Quadratic | Missing | respective auction programs |
@@ -1428,14 +1428,14 @@ Per-auction gate verification. Reached from auction detail bid panel when gate �
 
 ### 14.1 Merkle Gate
 
-Bidder calls `fairdrop_gate_v2.aleo/verify_merkle(auction_id, proof: [field; 20], path_bits: u32)`.
+Bidder calls `fairdrop_gate_v3.aleo/verify_merkle(auction_id, proof: [field; 20], path_bits: u32)`.
 
 - Explain: "This auction restricts bidding to an allowlist"
 - Show: "Check if your address is included" (off-chain lookup if creator provides tool)
 - Input: 20-element proof array + `path_bits` u32 (computed off-chain per gate spec in contract comments)
 - "Verify & Enable Bidding" → tx → on success `verified[key] = true` → bid panel unlocks
 
-Merkle spec (from `fairdrop_gate_v2.aleo`):
+Merkle spec (from `fairdrop_gate_v3.aleo`):
 - Depth 20 → max 1,048,576 addresses
 - Leaf: `BHP256(LeafHash { addr })`, empty sentinel: `BHP256(LeafHash { ZERO_ADDRESS })`
 - Node: `BHP256(MerkleNode { left, right })`
@@ -1443,7 +1443,7 @@ Merkle spec (from `fairdrop_gate_v2.aleo`):
 
 ### 14.2 Credential Gate
 
-Bidder calls `fairdrop_gate_v2.aleo/verify_credential(auction_id, issuer, sig, expiry)`.
+Bidder calls `fairdrop_gate_v3.aleo/verify_credential(auction_id, issuer, sig, expiry)`.
 
 - Explain: "This auction requires a credential from the issuer"
 - Show issuer address (from `credential_issuers[auction_id]` mapping)
@@ -1542,7 +1542,7 @@ Only functions listed here should be called from the frontend. Confirmed by read
 - `update_reputation(...)` — CPI only
 - `ParticipationReceipt` records are auto-issued at bid/commit time; user receives them via wallet
 
-### fairdrop_gate_v2.aleo
+### fairdrop_gate_v3.aleo
 - `set_allowed_caller(program_addr: address, allowed: bool)` — admin
 - `verify_merkle(auction_id: field, proof: [field; 20], path_bits: u32)` — bidder
 - `verify_credential(auction_id: field, issuer: address, sig: signature, expiry: u32)` — bidder

@@ -16,7 +16,7 @@
       "path": "../../utilities/config"
     },
     {
-      "name": "fairdrop_gate_v2.aleo",
+      "name": "fairdrop_gate_v3.aleo",
       "location": "local",
       "path": "../../utilities/gate"
     },

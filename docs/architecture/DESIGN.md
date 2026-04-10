@@ -43,7 +43,7 @@ fairdrop_quadratic_v3.aleo  ← pro-rata by sqrt(payment). Anti-whale, ZK-native
 
      all six import ↓
 
-fairdrop_gate_v2.aleo       ← allowlist + ZK credential gating
+fairdrop_gate_v3.aleo       ← allowlist + ZK credential gating
 fairdrop_proof_v2.aleo      ← participation receipts + creator reputation
 fairdrop_ref_v2.aleo        ← referral codes + commission distribution
 fairdrop_vest_v2.aleo       ← post-claim token vesting
@@ -439,7 +439,7 @@ sale_scale, payment_token_id, sale_token_id, gate_mode, vest_enabled
 
 ## 5. Companion Contracts
 
-### 5a. `fairdrop_gate_v2.aleo` — Access Control
+### 5a. `fairdrop_gate_v3.aleo` — Access Control
 Handles all auction gating. Imported by all auction contracts.
 
 ```
@@ -522,7 +522,7 @@ transition update_reputation(creator, filled: bool, volume: u128)
 
 **M2 fix — no double-hash:** `commitment_hash` already hides quantity, nonce, bidder. No extra hash with undefined salt.
 
-**Caller authentication:** same `allowed_callers` pattern as `fairdrop_gate_v2.aleo`. Only registered auction programs can call state-mutating transitions.
+**Caller authentication:** same `allowed_callers` pattern as `fairdrop_gate_v3.aleo`. Only registered auction programs can call state-mutating transitions.
 
 **Unique auction_ids (G23 fix):** `participated` uses bare `BHP256(self.signer, auction_id)`. Dutch and Sealed auction IDs are already globally distinct via `PROGRAM_SALT` — no key namespacing needed.
 
@@ -918,13 +918,13 @@ CRITICAL DEPLOYMENT RULE (C2): Auction contracts import utility contracts at dep
 Imports cannot be added after deployment. Build ALL utility contracts first.
 Deploy auction contracts ONCE, correctly, with all imports in place.
 
-PHASE 1a  fairdrop_gate_v2.aleo + fairdrop_proof_v2.aleo
+PHASE 1a  fairdrop_gate_v3.aleo + fairdrop_proof_v2.aleo
           ─ gate: verify_merkle, verify_credential, register_gate (gate_mode 0/1/2)
           ─ proof: issue_receipt (commitment_hash, not blinded), update_reputation
           ─ deploy both before writing any auction contract code
 
 PHASE 1b  fairdrop_dutch_v3.aleo — NEW deployment (not an update to live v4)
-          ─ imports fairdrop_gate_v2.aleo + fairdrop_proof_v2.aleo from day one
+          ─ imports fairdrop_gate_v3.aleo + fairdrop_proof_v2.aleo from day one
           ─ protocol fee + closer reward in close_auction
           ─ cancel_auction + claim_voided transitions (G4)
           ─ optional gating via gate_mode config field (M1)
@@ -932,7 +932,7 @@ PHASE 1b  fairdrop_dutch_v3.aleo — NEW deployment (not an update to live v4)
 
 PHASE 1c  fairdrop_sealed_v3.aleo
           ─ commit_bid, reveal_bid, slash_unrevealed, close, claim, claim_voided
-          ─ imports fairdrop_gate_v2.aleo + fairdrop_proof_v2.aleo
+          ─ imports fairdrop_gate_v3.aleo + fairdrop_proof_v2.aleo
           ─ AuctionConfig: commit_end_block, reveal_end_block, start_price, floor_price, decay fields
           ─ clearing_price = Dutch price at commit_end_block (D10)
           ─ new mappings: pending_commits, bid_committed
@@ -942,7 +942,7 @@ PHASE 1d  fairdrop_raise_v3.aleo + fairdrop_ascending_v3.aleo
           ─ raise: bid_private + bid_public, RaiseBid record, pro-rata allocation
           ─ ascending: same structure as Dutch but price formula inverted
             pay-what-you-bid, Bid record carries bid_price, no refund at claim
-          ─ both import fairdrop_gate_v2.aleo + fairdrop_proof_v2.aleo
+          ─ both import fairdrop_gate_v3.aleo + fairdrop_proof_v2.aleo
 
 PHASE 1e  fairdrop_ref_v2.aleo + fairdrop_vest_v2.aleo
           ─ ref: create_code, record_referral, credit_commission (permissionless), claim_commission
@@ -1082,7 +1082,7 @@ fairdrop_raise_v3.aleo
 fairdrop_ascending_v3.aleo
 fairdrop_lbp_v3.aleo
 fairdrop_quadratic_v3.aleo
-fairdrop_gate_v2.aleo       (for gate registrations)
+fairdrop_gate_v3.aleo       (for gate registrations)
 fairdrop_proof_v2.aleo      (for reputation updates)
 fairdrop_ref_v2.aleo        (for referral activity)
 ```
@@ -1363,7 +1363,7 @@ CredentialMessage = { holder: address, auction_id: field, expiry: u32 }
 message_hash = BHP256::hash_to_field(CredentialMessage)
 sig = signing_key.sign(message_hash)
 ```
-`signing_key` must match `credential_issuers[auction_id]` registered in `fairdrop_gate_v2.aleo` at auction creation. Each auction can designate any address as its issuer — Fairdrop's service is the default, but creators can run their own.
+`signing_key` must match `credential_issuers[auction_id]` registered in `fairdrop_gate_v3.aleo` at auction creation. Each auction can designate any address as its issuer — Fairdrop's service is the default, but creators can run their own.
 
 **Security requirements:**
 - Signing key stored in cloud KMS (AWS KMS, GCP Cloud KMS) or HSM — never on disk

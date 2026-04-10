@@ -32,7 +32,7 @@
 // ── Contract key assignments for approved_upgrades ───────────────────────────
 //   0field  fairdrop_multisig_v1.aleo (self — governs its own upgrades)
 //   1field  fairdrop_config_v3.aleo
-//   2field  fairdrop_gate_v2.aleo
+//   2field  fairdrop_gate_v3.aleo
 //   3field  fairdrop_proof_v2.aleo
 //   4field  fairdrop_ref_v2.aleo
 //   5field  fairdrop_vest_v2.aleo

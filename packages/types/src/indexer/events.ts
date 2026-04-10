@@ -33,7 +33,7 @@ export enum UtilityTransition {
   RecordReferral     = 'record_referral',
   FundReserve        = 'fund_reserve',
   CreditCommission   = 'credit_commission',
-  // fairdrop_gate_v2.aleo
+  // fairdrop_gate_v3.aleo
   RegisterGate       = 'register_gate',
   CheckAdmission     = 'check_admission',
 }

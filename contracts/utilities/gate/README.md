@@ -1,4 +1,4 @@
-# fairdrop_gate_v2.aleo
+# fairdrop_gate_v3.aleo
 
 Admission control for all Fairdrop auctions. Supports three gate modes:
 

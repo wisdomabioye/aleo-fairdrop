@@ -135,7 +135,7 @@ export function computeUpdateAdminOpHash(
   );
 }
 
-// ── fairdrop_gate_v2.aleo ─────────────────────────────────────────────────────
+// ── fairdrop_gate_v3.aleo ─────────────────────────────────────────────────────
 
 /**
  * Build the challenge string a bidder must sign with their Aleo wallet to prove

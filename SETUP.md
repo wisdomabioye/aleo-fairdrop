@@ -143,7 +143,7 @@ Navigate to `/admin` — you can get there via the user menu in the top-right co
 From the admin panel, approve each auction contract as a caller in each utility contract. Every auction program must be registered in:
 
 - `fairdrop_config_v3.aleo`
-- `fairdrop_gate_v2.aleo`
+- `fairdrop_gate_v3.aleo`
 - `fairdrop_proof_v2.aleo`
 - `fairdrop_ref_v2.aleo`
 - `fairdrop_vest_v2.aleo`

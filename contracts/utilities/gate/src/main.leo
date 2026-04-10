@@ -1,4 +1,4 @@
-// fairdrop_gate_v2.aleo — Access control for all Fairdrop auctions.
+// fairdrop_gate_v3.aleo — Access control for all Fairdrop auctions.
 // Leo 4.0 migration: fn/Final/final/:: — no behavioural changes.
 //
 // Three gate modes:
@@ -65,7 +65,7 @@ struct CredentialMessage {
 // Program interface
 // =============================================================================
 
-program fairdrop_gate_v2.aleo {
+program fairdrop_gate_v3.aleo {
     // Upgrade governance: 3-of-5 multi-sig must call fairdrop_multisig_v1.aleo::approve_upgrade
     // with contract_key=2field and this program's compiled checksum before deployment.
     @checksum(mapping="fairdrop_multisig_v1.aleo::approved_upgrades", key="2field")

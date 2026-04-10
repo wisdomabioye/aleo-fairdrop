@@ -36,7 +36,7 @@ import fairdrop_multisig_v1.aleo;
 // ═════════════════════════════════════════════════════════════════════════════
 
 // Bidder key input for participated mapping hash.
-// Same field layout as fairdrop_gate_v2.aleo BidderKey — consistent hash values.
+// Same field layout as fairdrop_gate_v3.aleo BidderKey — consistent hash values.
 struct BidderKey { bidder: address, auction_id: field }
 
 // Creator reputation aggregate. Default values used via get_or_use.
