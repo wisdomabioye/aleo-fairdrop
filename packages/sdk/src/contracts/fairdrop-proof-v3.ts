@@ -61,7 +61,7 @@ export interface UpdateReputationArgs {
 
 // ── Client interface ────────────────────────────────────────────────────────
 
-export interface FairdropProofV2 {
+export interface FairdropProofV3 {
   // Transitions
   setAllowedCaller: TransitionHandle<SetAllowedCallerArgs>;
   issueReceipt: TransitionHandle<IssueReceiptArgs>;
@@ -82,6 +82,6 @@ export interface FairdropProofV2 {
 
 // ── Factory ──────────────────────────────────────────────────────────────────
 
-export function createFairdropProofV2(config?: Parameters<typeof createAbigen>[1]): FairdropProofV2 {
-  return createAbigen(_abi, config ?? {}) as unknown as FairdropProofV2;
+export function createFairdropProofV3(config?: Parameters<typeof createAbigen>[1]): FairdropProofV3 {
+  return createAbigen(_abi, config ?? {}) as unknown as FairdropProofV3;
 }

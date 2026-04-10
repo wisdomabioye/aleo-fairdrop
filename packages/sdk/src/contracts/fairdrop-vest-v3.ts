@@ -64,7 +64,7 @@ export interface ReleaseArgs {
 
 // ── Client interface ────────────────────────────────────────────────────────
 
-export interface FairdropVestV2 {
+export interface FairdropVestV3 {
   // Transitions
   setAllowedCaller: TransitionHandle<SetAllowedCallerArgs>;
   createVest: TransitionHandle<CreateVestArgs>;
@@ -83,6 +83,6 @@ export interface FairdropVestV2 {
 
 // ── Factory ──────────────────────────────────────────────────────────────────
 
-export function createFairdropVestV2(config?: Parameters<typeof createAbigen>[1]): FairdropVestV2 {
-  return createAbigen(_abi, config ?? {}) as unknown as FairdropVestV2;
+export function createFairdropVestV3(config?: Parameters<typeof createAbigen>[1]): FairdropVestV3 {
+  return createAbigen(_abi, config ?? {}) as unknown as FairdropVestV3;
 }

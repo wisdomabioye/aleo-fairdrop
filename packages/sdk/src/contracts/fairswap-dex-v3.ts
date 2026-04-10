@@ -159,7 +159,7 @@ export interface TogglePausedArgs {
 
 // ── Client interface ────────────────────────────────────────────────────────
 
-export interface FairswapDexV2 {
+export interface FairswapDexV3 {
   // Transitions
   createPool: TransitionHandle<CreatePoolArgs>;
   addLiquidity: TransitionHandle<AddLiquidityArgs>;
@@ -194,6 +194,6 @@ export interface FairswapDexV2 {
 
 // ── Factory ──────────────────────────────────────────────────────────────────
 
-export function createFairswapDexV2(config?: Parameters<typeof createAbigen>[1]): FairswapDexV2 {
-  return createAbigen(_abi, config ?? {}) as unknown as FairswapDexV2;
+export function createFairswapDexV3(config?: Parameters<typeof createAbigen>[1]): FairswapDexV3 {
+  return createAbigen(_abi, config ?? {}) as unknown as FairswapDexV3;
 }

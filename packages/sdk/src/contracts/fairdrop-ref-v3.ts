@@ -83,7 +83,7 @@ export interface ClaimCommissionArgs {
 
 // ── Client interface ────────────────────────────────────────────────────────
 
-export interface FairdropRefV2 {
+export interface FairdropRefV3 {
   // Transitions
   setAllowedCaller: TransitionHandle<SetAllowedCallerArgs>;
   createCode: TransitionHandle<CreateCodeArgs>;
@@ -113,6 +113,6 @@ export interface FairdropRefV2 {
 
 // ── Factory ──────────────────────────────────────────────────────────────────
 
-export function createFairdropRefV2(config?: Parameters<typeof createAbigen>[1]): FairdropRefV2 {
-  return createAbigen(_abi, config ?? {}) as unknown as FairdropRefV2;
+export function createFairdropRefV3(config?: Parameters<typeof createAbigen>[1]): FairdropRefV3 {
+  return createAbigen(_abi, config ?? {}) as unknown as FairdropRefV3;
 }

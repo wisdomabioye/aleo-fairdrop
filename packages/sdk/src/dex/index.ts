@@ -67,8 +67,8 @@ export {
 
 // ── Generated client + record scanner ────────────────────────────────────────
 export {
-  createFairswapDexV2,
+  createFairswapDexV3,
   scanLpTokenRecords,
-  type FairswapDexV2,
+  type FairswapDexV3,
   type LpTokenRecord,
-} from '../contracts/fairswap-dex-v2';
+} from '../contracts/fairswap-dex-v3';

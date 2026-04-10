@@ -65,7 +65,7 @@ export interface AssertRefBpsArgs {
 
 // ── Client interface ────────────────────────────────────────────────────────
 
-export interface FairdropConfigV2 {
+export interface FairdropConfigV3 {
   // Transitions
   setFeeBps: TransitionHandle<SetFeeBpsArgs>;
   setCreationFee: TransitionHandle<SetCreationFeeArgs>;
@@ -92,6 +92,6 @@ export interface FairdropConfigV2 {
 
 // ── Factory ──────────────────────────────────────────────────────────────────
 
-export function createFairdropConfigV2(config?: Parameters<typeof createAbigen>[1]): FairdropConfigV2 {
-  return createAbigen(_abi, config ?? {}) as unknown as FairdropConfigV2;
+export function createFairdropConfigV3(config?: Parameters<typeof createAbigen>[1]): FairdropConfigV3 {
+  return createAbigen(_abi, config ?? {}) as unknown as FairdropConfigV3;
 }

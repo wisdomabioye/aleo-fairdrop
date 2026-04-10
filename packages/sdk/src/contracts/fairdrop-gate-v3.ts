@@ -41,7 +41,7 @@ export interface CheckAdmissionArgs {
 
 // ── Client interface ────────────────────────────────────────────────────────
 
-export interface FairdropGateV2 {
+export interface FairdropGateV3 {
   // Transitions
   setAllowedCaller: TransitionHandle<SetAllowedCallerArgs>;
   registerGate: TransitionHandle<RegisterGateArgs>;
@@ -61,6 +61,6 @@ export interface FairdropGateV2 {
 
 // ── Factory ──────────────────────────────────────────────────────────────────
 
-export function createFairdropGateV2(config?: Parameters<typeof createAbigen>[1]): FairdropGateV2 {
-  return createAbigen(_abi, config ?? {}) as unknown as FairdropGateV2;
+export function createFairdropGateV3(config?: Parameters<typeof createAbigen>[1]): FairdropGateV3 {
+  return createAbigen(_abi, config ?? {}) as unknown as FairdropGateV3;
 }

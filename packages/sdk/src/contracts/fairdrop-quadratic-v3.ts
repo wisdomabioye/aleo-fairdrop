@@ -218,7 +218,7 @@ export interface SeedLiquidityArgs {
 
 // ── Client interface ────────────────────────────────────────────────────────
 
-export interface FairdropQuadraticV2 {
+export interface FairdropQuadraticV3 {
   // Transitions
   createAuction: TransitionHandle<CreateAuctionArgs>;
   placeBidPrivate: TransitionHandle<PlaceBidPrivateArgs>;
@@ -265,6 +265,6 @@ export interface FairdropQuadraticV2 {
 
 // ── Factory ──────────────────────────────────────────────────────────────────
 
-export function createFairdropQuadraticV2(config?: Parameters<typeof createAbigen>[1]): FairdropQuadraticV2 {
-  return createAbigen(_abi, config ?? {}) as unknown as FairdropQuadraticV2;
+export function createFairdropQuadraticV3(config?: Parameters<typeof createAbigen>[1]): FairdropQuadraticV3 {
+  return createAbigen(_abi, config ?? {}) as unknown as FairdropQuadraticV3;
 }

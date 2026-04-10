@@ -290,7 +290,7 @@ export interface SeedLiquidityArgs {
 
 // ── Client interface ────────────────────────────────────────────────────────
 
-export interface FairdropSealedV2 {
+export interface FairdropSealedV3 {
   // Transitions
   createAuction: TransitionHandle<CreateAuctionArgs>;
   commitBidPrivate: TransitionHandle<CommitBidPrivateArgs>;
@@ -342,6 +342,6 @@ export interface FairdropSealedV2 {
 
 // ── Factory ──────────────────────────────────────────────────────────────────
 
-export function createFairdropSealedV2(config?: Parameters<typeof createAbigen>[1]): FairdropSealedV2 {
-  return createAbigen(_abi, config ?? {}) as unknown as FairdropSealedV2;
+export function createFairdropSealedV3(config?: Parameters<typeof createAbigen>[1]): FairdropSealedV3 {
+  return createAbigen(_abi, config ?? {}) as unknown as FairdropSealedV3;
 }
