@@ -148,7 +148,7 @@ fn place_bid_public(...) -> (..., Final) {
     let (receipt, f_proof): (..., Final) = fairdrop_proof_v2.aleo::issue_receipt(...);
     // ...build Bid record...
     return (bid, receipt, final {
-        assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
+        assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false));
         f_credits.run();
         f_gate.run();
         f_proof.run();
@@ -266,7 +266,7 @@ fn place_bid_public(
     let (receipt, f_proof): (fairdrop_proof_v2.aleo::ParticipationReceipt, Final) =
         fairdrop_proof_v2.aleo::issue_receipt(auction_id, 0field, bidder_key);
     return (bid, receipt, final {
-        assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
+        assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false));
         f_credits.run(); f_gate.run(); f_proof.run();
         record_bid(auction_id, bidder_key, quantity, payment_amount as u128);
     });
@@ -305,7 +305,7 @@ Then each entry point `final {}` block is just:
 fn place_bid_private(...) -> (..., Final) {
     // ...build bid record, CPIs...
     return (..., final {
-        assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
+        assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false));
         f_credits.run(); f_gate.run(); f_proof.run();
         record_bid(auction_id, bidder_key, quantity, payment_amount as u128);
     });
@@ -314,7 +314,7 @@ fn place_bid_private(...) -> (..., Final) {
 fn place_bid_private_ref(...) -> (..., Final) {
     // identical except also f_ref.run() before record_bid
     return (..., final {
-        assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false));
+        assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false));
         f_credits.run(); f_gate.run(); f_proof.run(); f_ref.run();
         record_bid(auction_id, bidder_key, quantity, payment_amount as u128);
     });
@@ -346,7 +346,7 @@ Migrate bottom-up: utilities first (no auction dependencies), then auctions, the
 
 ### Phase 1 — Utility contracts (5 files, ~1,650 lines total)
 
-1. **`fairdrop_config_v2.aleo`** (300 lines) — simplest; no CPI calls; no `final fn` opportunities
+1. **`fairdrop_config_v3.aleo`** (300 lines) — simplest; no CPI calls; no `final fn` opportunities
 2. **`fairdrop_proof_v2.aleo`** (198 lines) — 3 transitions; extract `assert_caller_allowed` final fn
 3. **`fairdrop_gate_v2.aleo`** (382 lines) — 4 transitions; similar D12 pattern
 4. **`fairdrop_ref_v2.aleo`** (461 lines) — 4 transitions; extract `assert_caller_allowed`

@@ -281,7 +281,7 @@ let f_cpi: Final = fairswap_dex_v3.aleo::add_liquidity_cpi_private_in(
 // Pause: seed_liquidity is treated like withdraw_payments — pause-gated.
 // (The DEX's add_liquidity_cpi_private_in is pause-exempt for existing pools,
 // but the auction-side final {} applies the global pause before running CPIs.)
-assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false))
+assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false))
 
 // State and identity guards
 config = auction_configs.get(auction_id)

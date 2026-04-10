@@ -1,4 +1,4 @@
-// fairdrop_config_v2.aleo — Protocol configuration root contract.
+// fairdrop_config_v3.aleo — Protocol configuration root contract.
 // Leo 4.0 migration: fn/Final/final/:: — no behavioural changes.
 //
 // Root dependency of the entire Fairdrop protocol. Deployed first.
@@ -34,7 +34,7 @@
 
 import fairdrop_multisig_v1.aleo;
 
-program fairdrop_config_v2.aleo {
+program fairdrop_config_v3.aleo {
     // Upgrade governance: 3-of-5 multi-sig must call fairdrop_multisig_v1.aleo::approve_upgrade
     // with contract_key=1field and this program's compiled checksum before deployment.
     @checksum(mapping="fairdrop_multisig_v1.aleo::approved_upgrades", key="1field")

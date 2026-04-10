@@ -59,7 +59,7 @@
 
 import fairdrop_multisig_v1.aleo;
 import token_registry.aleo;
-import fairdrop_config_v2.aleo;
+import fairdrop_config_v3.aleo;
 
 // =============================================================================
 // Module-level structs
@@ -292,7 +292,7 @@ program fairswap_dex_v3.aleo {
     mapping protocol_fee_enabled: field => bool;
 
     // Local DEX pause. key = 0field; default false (running).
-    // Either this OR fairdrop_config_v2::paused being true halts the DEX.
+    // Either this OR fairdrop_config_v3::paused being true halts the DEX.
     mapping paused: field => bool;
 
     // Replay protection for multisig-governed calls.
@@ -321,7 +321,7 @@ program fairswap_dex_v3.aleo {
         let pool_key: field = BHP256::hash_to_field(PoolKey { token_a: ca, token_b: cb });
 
         return final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             assert(!pools.contains(pool_key));
             pools.set(pool_key, PoolState {
                 token_a:     ca,
@@ -378,7 +378,7 @@ program fairswap_dex_v3.aleo {
             token_registry.aleo::transfer_public_as_signer(token_b_id, self.address, amount_b);
 
         return final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f_a.run();
             f_b.run();
 
@@ -491,7 +491,7 @@ program fairswap_dex_v3.aleo {
         let lp_record: LpToken = LpToken { owner: recipient, pool_key: pool_key, amount: lp_to_mint };
 
         return (lp_record, final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f_dep_a.run();
             f_dep_b.run();
 
@@ -612,7 +612,7 @@ program fairswap_dex_v3.aleo {
             // a governance pause should prevent new markets from being opened while
             // still allowing already-registered pools to receive their auction proceeds.
             if !pools.contains(pool_key) {
-                assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
+                assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
                 assert(fee_bps <= MAX_FEE_BPS);
                 pools.set(pool_key, PoolState {
                     token_a:     ca,
@@ -711,7 +711,7 @@ program fairswap_dex_v3.aleo {
             token_registry.aleo::transfer_public(token_b_id, recipient, min_b);
 
         return final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
 
             let pool: PoolState = pools.get(pool_key);
             assert_eq(pool.token_a, ca);
@@ -788,7 +788,7 @@ program fairswap_dex_v3.aleo {
             token_registry.aleo::transfer_public_to_private(token_b_id, recipient, amount_b, false);
 
         return (out_a, out_b, final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
 
             let pool: PoolState = pools.get(pool_key);
             assert_eq(pool.token_a, ca);
@@ -852,7 +852,7 @@ program fairswap_dex_v3.aleo {
             token_registry.aleo::transfer_public(token_out_id, recipient, min_out);
 
         return final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f_in.run();
 
             let pool: PoolState = pools.get(pool_key);
@@ -937,7 +937,7 @@ program fairswap_dex_v3.aleo {
             token_registry.aleo::transfer_public(token_out_id, recipient, min_out);
 
         return final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f_deposit.run();
 
             let pool: PoolState = pools.get(pool_key);
@@ -1015,7 +1015,7 @@ program fairswap_dex_v3.aleo {
             token_registry.aleo::transfer_public_to_private(token_out_id, recipient, amount_out, false);
 
         return (out_record, final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f_dep.run();
 
             let pool: PoolState = pools.get(pool_key);
@@ -1076,7 +1076,7 @@ program fairswap_dex_v3.aleo {
         let caller: address = self.signer;
         let lp: LpToken = LpToken { owner: caller, pool_key: pool_key, amount: amount };
         return (lp, final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             let key: field = BHP256::hash_to_field(LpBalKey { holder: caller, pool_key: pool_key });
             let bal: u128  = lp_balances.get_or_use(key, 0u128);
             assert(bal >= amount);
@@ -1103,7 +1103,7 @@ program fairswap_dex_v3.aleo {
         let pool_key: field = lp.pool_key;
         assert(amount > 0u128);
         return final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             let key: field = BHP256::hash_to_field(LpBalKey { holder: recipient, pool_key: pool_key });
             lp_balances.set(key, lp_balances.get_or_use(key, 0u128) + amount);
         };
@@ -1249,9 +1249,9 @@ program fairswap_dex_v3.aleo {
     // 15. toggle_paused — local DEX pause (multisig governance)
     // =========================================================================
     //
-    // Pauses or unpauses the DEX independently of fairdrop_config_v2::paused.
+    // Pauses or unpauses the DEX independently of fairdrop_config_v3::paused.
     // Either being true halts swap/liquidity operations.
-    // fairdrop_config_v2::paused remains the global protocol kill switch and
+    // fairdrop_config_v3::paused remains the global protocol kill switch and
     // cannot be overridden by setting local paused = false.
 
     fn toggle_paused(

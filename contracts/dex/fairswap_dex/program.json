@@ -15,7 +15,7 @@
       "path": "../../utilities/multisig"
     },
     {
-      "name": "fairdrop_config_v2.aleo",
+      "name": "fairdrop_config_v3.aleo",
       "location": "local",
       "path": "../../utilities/config"
     }

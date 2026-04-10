@@ -201,7 +201,7 @@ Scope the pause check to only the pool-creation branch — this preserves the in
 ```leo
 if !pools.contains(pool_key) {
     // Block new pool creation while paused, even from auction CPIs.
-    assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
+    assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
     assert(fee_bps <= MAX_FEE_BPS);
     // ... pool initialization ...
 }
@@ -574,7 +574,7 @@ After Issue 11, canonical ordering is enforced in the transition body (proof con
 
 Every user-facing, state-modifying transition checks:
 ```leo
-assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
+assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
 ```
 `lp_to_private` and `lp_to_public` both lack this. During a governance pause (e.g., incident response), LP positions can still be converted between public and private representations. Neither function touches pool reserves, but the inconsistency means the pause invariant ("no user-visible DEX state changes during pause") is violated for LP accounting.
 
@@ -588,7 +588,7 @@ Add the standard pause assert as the first line of each `final {}` block:
 fn lp_to_private(...) -> (LpToken, Final) {
     ...
     return (lp, final {
-        assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
+        assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
         ...
     });
 }
@@ -596,7 +596,7 @@ fn lp_to_private(...) -> (LpToken, Final) {
 fn lp_to_public(...) -> Final {
     ...
     return final {
-        assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
+        assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
         ...
     };
 }

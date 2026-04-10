@@ -3,7 +3,7 @@
  *
  * Resolution order:
  *   1. In-process TTL cache (5 min)
- *   2. DB row (written by indexer from fairdrop_config_v2.aleo mappings)
+ *   2. DB row (written by indexer from fairdrop_config_v3.aleo mappings)
  *   3. Contract defaults (when admin hasn't called any set_* yet)
  *
  * No chain reads from the API. The indexer owns the DB row.
@@ -19,7 +19,7 @@ import { json } from '../lib/respond.js';
 
 type Variables = { db: Db };
 
-// Contract defaults — active before any set_* call (mirrors fairdrop_config_v2.aleo constants).
+// Contract defaults — active before any set_* call (mirrors fairdrop_config_v3.aleo constants).
 const CONTRACT_DEFAULTS: ProtocolConfig = {
   feeBps:             250,
   creationFee:        '10000',

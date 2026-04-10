@@ -15,7 +15,7 @@
       "upgradeKey":     "0field"
     },
     "config": {
-      "programId":      "fairdrop_config_v2.aleo",
+      "programId":      "fairdrop_config_v3.aleo",
       "programAddress": "aleo1337ysdtfvpx6h4we0crz8xuygl0ue7sc9vzqwy6grewmntqe3vyq00ep0g",
       "contractPath":   "contracts/utilities/config",
       "upgradeKey":     "1field"

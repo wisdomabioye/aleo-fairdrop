@@ -75,7 +75,7 @@
 import fairdrop_multisig_v1.aleo;
 import credits.aleo;
 import token_registry.aleo;
-import fairdrop_config_v2.aleo;
+import fairdrop_config_v3.aleo;
 import fairdrop_gate_v2.aleo;
 import fairdrop_proof_v2.aleo;
 import fairdrop_ref_v2.aleo;
@@ -301,7 +301,7 @@ program fairdrop_quadratic_v3.aleo {
 
     // Replay protection for withdraw_treasury_fees approvals.
     // Local auction pause. key = 0field; default false (running).
-    // Either this OR fairdrop_config_v2::paused being true halts this auction.
+    // Either this OR fairdrop_config_v3::paused being true halts this auction.
     mapping paused:       field => bool;
     mapping consumed_ops: field => bool;
 
@@ -345,7 +345,7 @@ program fairdrop_quadratic_v3.aleo {
         let f_creation: Final =
             credits.aleo::transfer_public_as_signer(self.address, snapshot.creation_fee as u64);
 
-        let f_cfg: Final = fairdrop_config_v2.aleo::assert_config(
+        let f_cfg: Final = fairdrop_config_v3.aleo::assert_config(
             snapshot.fee_bps,
             snapshot.creation_fee,
             snapshot.closer_reward,
@@ -388,7 +388,7 @@ program fairdrop_quadratic_v3.aleo {
         let creation_fee: u128 = snapshot.creation_fee;
 
         return (remainder, final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f_burn.run();
             f_creation.run();
             f_cfg.run();
@@ -511,7 +511,7 @@ program fairdrop_quadratic_v3.aleo {
         let payment_amount_u128: u128 = payment_amount as u128;
 
         return (change, bid, receipt, final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f_credits.run();
             f_gate.run();
             f_proof.run();
@@ -593,7 +593,7 @@ program fairdrop_quadratic_v3.aleo {
         let payment_amount_u128: u128 = payment_amount as u128;
 
         return (bid, receipt, final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f_credits.run();
             f_gate.run();
             f_proof.run();
@@ -684,7 +684,7 @@ program fairdrop_quadratic_v3.aleo {
         let payment_amount_u128: u128 = payment_amount as u128;
 
         return (change, bid, receipt, final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f_credits.run();
             f_gate.run();
             f_proof.run();
@@ -775,7 +775,7 @@ program fairdrop_quadratic_v3.aleo {
         let payment_amount_u128: u128 = payment_amount as u128;
 
         return (bid, receipt, final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f_credits.run();
             f_gate.run();
             f_proof.run();
@@ -847,7 +847,7 @@ program fairdrop_quadratic_v3.aleo {
             fairdrop_proof_v2.aleo::update_reputation(creator, filled, volume);
 
         return final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f_closer.run();
             f_proof.run();
 
@@ -990,7 +990,7 @@ program fairdrop_quadratic_v3.aleo {
             );
 
         return (sale_token, final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f_mint.run();
 
             let config: AuctionConfig = auction_configs.get(bid_auction_id);
@@ -1046,7 +1046,7 @@ program fairdrop_quadratic_v3.aleo {
             );
 
         return (vest, final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f_vest.run();
 
             let config: AuctionConfig = auction_configs.get(bid_auction_id);
@@ -1084,7 +1084,7 @@ program fairdrop_quadratic_v3.aleo {
         let f0: Final = credits.aleo::transfer_public(recipient, amount as u64);
 
         return final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f0.run();
 
             let config: AuctionConfig = auction_configs.get(auction_id);
@@ -1131,7 +1131,7 @@ program fairdrop_quadratic_v3.aleo {
             );
 
         return (token, final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f_mint.run();
 
             let config: AuctionConfig = auction_configs.get(auction_id);
@@ -1176,7 +1176,7 @@ program fairdrop_quadratic_v3.aleo {
             );
 
         return (token, final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
             f_mint.run();
 
             let config: AuctionConfig = auction_configs.get(auction_id);
@@ -1282,7 +1282,7 @@ program fairdrop_quadratic_v3.aleo {
     // toggle_paused — local auction pause (multisig governance)
     // =========================================================================
     //
-    // Pauses or unpauses this auction independently of fairdrop_config_v2::paused.
+    // Pauses or unpauses this auction independently of fairdrop_config_v3::paused.
     // Either being true blocks create_auction, place_bid, close_auction, claim, etc.
     // claim_voided remains exempt from both checks — bidder capital must always
     // be recoverable regardless of pause state.
@@ -1368,7 +1368,7 @@ program fairdrop_quadratic_v3.aleo {
         );
 
         return final {
-            assert(!fairdrop_config_v2.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
+            assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
 
             let config: AuctionConfig = auction_configs.get(auction_id);
             let state:  AuctionState  = auction_states.get(auction_id);

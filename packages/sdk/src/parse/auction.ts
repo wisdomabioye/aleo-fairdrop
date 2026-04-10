@@ -177,7 +177,7 @@ export function buildAuctionParams(row: ParamsRow): AuctionParams {
   }
 }
 
-/** Parse a ProtocolConfig struct from fairdrop_config_v2.aleo. */
+/** Parse a ProtocolConfig struct from fairdrop_config_v3.aleo. */
 export function parseProtocolConfig(raw: string): ProtocolConfig {
   const p = parseStruct(raw);
   return {

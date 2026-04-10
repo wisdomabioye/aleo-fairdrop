@@ -62,7 +62,7 @@ The existing frontend lives at `/home/abioye/aleo-guide/fairdrop/` (single-contr
 | Search connecting to services/api | Missing | `GET /auctions?q=` |
 | Pagination for auction listing (API-driven) | Direct-chain N+50 RPC calls | `GET /auctions` |
 | `credit_commission` permissionless step (call before `claim_commission`) | Missing | `fairdrop_ref_v2.aleo/credit_commission` |
-| Admin panel for `set_allowed_caller` + `fairdrop_config_v2.aleo` management | Missing | all utility contracts |
+| Admin panel for `set_allowed_caller` + `fairdrop_config_v3.aleo` management | Missing | all utility contracts |
 
 ### 2.4 Scalability Issues
 
@@ -304,7 +304,7 @@ features/auctions/
 │   ├── useAuction.ts
 │   ├── useAuctionFilters.ts
 │   ├── useCurrentPrice.ts
-│   └── useProtocolConfig.ts       # reads fairdrop_config_v2.aleo mappings
+│   └── useProtocolConfig.ts       # reads fairdrop_config_v3.aleo mappings
 └── pages/
     ├── AuctionListPage.tsx
     ├── AuctionDetailPage.tsx
@@ -425,7 +425,7 @@ function useAuction(id: string) {
   })
 }
 
-// Protocol config — fairdrop_config_v2.aleo mappings; cached 60s
+// Protocol config — fairdrop_config_v3.aleo mappings; cached 60s
 function useProtocolConfig() {
   return useQuery({
     queryKey: ['protocolConfig'],
@@ -718,7 +718,7 @@ TanStack Query is an **in-memory cache** — it resets on every page reload. For
 |---|---|---|
 | **Immutable** — no on-chain setter exists | `auction_configs`, `auction_index` entries, token metadata, gate config per auction | localStorage, **no expiry ever** |
 | **Write-once then immutable** | `fairdrop_ref/registrations[code_id]`, `fairdrop_proof/participated[key]` | localStorage, no expiry |
-| **Admin-only, changes rarely** | All `fairdrop_config_v2.aleo` params (`fee_bps`, `creation_fee`, etc.) | API-served with 5-min server TTL; TanStack Query `staleTime: 5min` client-side. Always re-fetch before `create_auction`. |
+| **Admin-only, changes rarely** | All `fairdrop_config_v3.aleo` params (`fee_bps`, `creation_fee`, etc.) | API-served with 5-min server TTL; TanStack Query `staleTime: 5min` client-side. Always re-fetch before `create_auction`. |
 | **Changes per auction activity** | `auction_states`, `earned[code_id]`, `referral_reserve`, `reputation` | TanStack Query only — no persistence |
 | **Real-time** | Block height | TanStack Query only — 5s staleTime |
 
@@ -1288,7 +1288,7 @@ Step 7 — Metadata
 Step 8 — Review & Submit
   Summary table of all params
   ── Fee Breakdown ──
-    Creation fee: N ALEO (N µcredits) — from fairdrop_config_v2.aleo/creation_fee
+    Creation fee: N ALEO (N µcredits) — from fairdrop_config_v3.aleo/creation_fee
     Paid from: credit record selector (useCredicRecords)
     "This anti-spam fee is non-refundable"
   ── Protocol fee at close (estimated) ──
@@ -1465,9 +1465,9 @@ Expiry block shown below the input at all times using `estimateDate(expiry, curr
 
 ## 15. Admin Panel
 
-Route: `/admin`. Only accessible when connected wallet === `protocol_admin` from `fairdrop_config_v2.aleo/protocol_admin` mapping.
+Route: `/admin`. Only accessible when connected wallet === `protocol_admin` from `fairdrop_config_v3.aleo/protocol_admin` mapping.
 
-### 15.1 fairdrop_config_v2.aleo
+### 15.1 fairdrop_config_v3.aleo
 
 Display current value + edit input for each param:
 
@@ -1510,7 +1510,7 @@ This is a critical Phase 1 deployment step — no auction can succeed until all 
 
 Only functions listed here should be called from the frontend. Confirmed by reading Leo source.
 
-### fairdrop_config_v2.aleo (admin only)
+### fairdrop_config_v3.aleo (admin only)
 - `set_fee_bps(new_value: u16)`
 - `set_protocol_admin(new_admin: address)` ← irreversible immediate transfer
 - `set_creation_fee(new_value: u128)`

@@ -1,5 +1,5 @@
 /**
- * On-chain reads for fairdrop_config_v2.aleo.
+ * On-chain reads for fairdrop_config_v3.aleo.
  *
  * Protocol configuration is set by governance and rarely changes.
  * Auction contracts snapshot it at create_auction time (D16 pattern).
@@ -13,7 +13,7 @@ import { parseProtocolConfig } from '../parse/auction';
 const CONFIG_PROGRAM = PROGRAMS.config.programId;
 
 /**
- * Fetch the current protocol config from fairdrop_config_v2.aleo.
+ * Fetch the current protocol config from fairdrop_config_v3.aleo.
  * Reads config[0field]. Returns null if not yet initialized.
  */
 export async function fetchProtocolConfig(): Promise<ProtocolConfig | null> {

@@ -65,7 +65,7 @@ program test_ref.aleo {
     // create_code — bps cap enforcement (fairdrop_config CPI)
     // -------------------------------------------------------------------------
     // create_code is permissionless. The only unit-testable guard is the
-    // commission_bps cap, enforced by fairdrop_config_v2.aleo::assert_ref_bps in
+    // commission_bps cap, enforced by fairdrop_config_v3.aleo::assert_ref_bps in
     // finalize. Default max_referral_bps = 2000u16 (config get_or_use default).
     //
     // code_id = BHP256(CodeKey { referrer: self.signer, auction_id }).

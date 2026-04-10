@@ -188,7 +188,7 @@
 
 - [ ] `/admin` route — only render if `wallet.address === protocolConfig.protocolAdmin`; otherwise redirect
 - [ ] `features/admin/pages/AdminPage.tsx`:
-  - [ ] `fairdrop_config_v2.aleo` param editor: display current value + input + hard cap per param; setter transition per row (9 params, see §15.1)
+  - [ ] `fairdrop_config_v3.aleo` param editor: display current value + input + hard cap per param; setter transition per row (9 params, see §15.1)
   - [ ] Pause toggle: red, labeled "Emergency Pause — halts all auction activity" / "Resume Protocol"
   - [ ] Admin transfer (`set_protocol_admin`): prominent red warning box; require new address typed twice before submit
   - [ ] `set_allowed_caller` matrix: 4×6 grid (utility contracts × auction programs); ✓/✗ read from `allowed_callers[programAddr]` on each utility; "Authorize" / "Revoke" per cell; "Authorize All Missing" batch button

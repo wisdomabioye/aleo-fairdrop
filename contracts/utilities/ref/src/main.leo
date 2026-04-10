@@ -27,7 +27,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import fairdrop_multisig_v1.aleo;
-import fairdrop_config_v2.aleo;
+import fairdrop_config_v3.aleo;
 import credits.aleo;
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -120,7 +120,7 @@ program fairdrop_ref_v2.aleo {
     // =========================================================================
     // code_id = BHP256(CodeKey { referrer: self.signer, auction_id }).
     // Re-registration permanently rejected.
-    // commission_bps validated against fairdrop_config_v2.aleo::assert_ref_bps.
+    // commission_bps validated against fairdrop_config_v3.aleo::assert_ref_bps.
 
     fn create_code(
         public auction_id:     field,
@@ -137,7 +137,7 @@ program fairdrop_ref_v2.aleo {
             commission_bps: commission_bps,
         };
         // Validate commission_bps against protocol max_referral_bps.
-        let f_config: Final = fairdrop_config_v2.aleo::assert_ref_bps(commission_bps);
+        let f_config: Final = fairdrop_config_v3.aleo::assert_ref_bps(commission_bps);
         return (code, final {
             f_config.run();
             assert(!code_registered.get_or_use(code_id, false));
