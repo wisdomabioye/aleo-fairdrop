@@ -45,7 +45,7 @@ fairdrop_quadratic_v3.aleo  ← pro-rata by sqrt(payment). Anti-whale, ZK-native
 
 fairdrop_gate_v3.aleo       ← allowlist + ZK credential gating
 fairdrop_proof_v3.aleo      ← participation receipts + creator reputation
-fairdrop_ref_v2.aleo        ← referral codes + commission distribution
+fairdrop_ref_v3.aleo        ← referral codes + commission distribution
 fairdrop_vest_v2.aleo       ← post-claim token vesting
 ```
 
@@ -530,7 +530,7 @@ transition update_reputation(creator, filled: bool, volume: u128)
 
 ---
 
-### 5c. `fairdrop_ref_v2.aleo` — Referral Commissions
+### 5c. `fairdrop_ref_v3.aleo` — Referral Commissions
 Handles referral code creation, tracking, and commission distribution. Imported by auction contracts.
 
 ```
@@ -776,7 +776,7 @@ bid_committed: field => bool    // BHP256(bidder, auction_id) → has committed
 ---
 
 ### D13: Referral commissions funded from protocol fee, not creator revenue
-**Decision:** at `close_auction`, the auction contract carves a `referral_budget` from the collected platform fee and calls `fairdrop_ref_v2.aleo/fund_reserve(auction_id, referral_budget)` via CPI. `credit_commission` draws from `referral_reserve[auction_id]`, bounded by `referral_budget`. Creator revenue and bidder refund escrow are never touched by referral payouts.
+**Decision:** at `close_auction`, the auction contract carves a `referral_budget` from the collected platform fee and calls `fairdrop_ref_v3.aleo/fund_reserve(auction_id, referral_budget)` via CPI. `credit_commission` draws from `referral_reserve[auction_id]`, bounded by `referral_budget`. Creator revenue and bidder refund escrow are never touched by referral payouts.
 
 **Why:** creator revenue and bidder refunds must be solvent by construction. Mixing referral payouts into `escrow_payments` creates accounting complexity and potential insolvency. The platform fee is collected upfront at close — it is the natural source for protocol-funded incentives (referrals, slasher rewards, closer reward). This also naturally caps total referral payouts to `min(platform_fee, configured_budget)`.
 
@@ -944,7 +944,7 @@ PHASE 1d  fairdrop_raise_v3.aleo + fairdrop_ascending_v3.aleo
             pay-what-you-bid, Bid record carries bid_price, no refund at claim
           ─ both import fairdrop_gate_v3.aleo + fairdrop_proof_v3.aleo
 
-PHASE 1e  fairdrop_ref_v2.aleo + fairdrop_vest_v2.aleo
+PHASE 1e  fairdrop_ref_v3.aleo + fairdrop_vest_v2.aleo
           ─ ref: create_code, record_referral, credit_commission (permissionless), claim_commission
             fund_reserve funded from platform fee at close_auction (D13)
           ─ vest: create_vest (CPI from claim when vest_enabled), release
@@ -1014,7 +1014,7 @@ PARALLEL 2b  Indexer v2 — extend to watch ascending, lbp, quadratic, ref, proo
 - **`fairdrop_vest_v2.aleo` role UX (G11):** how to make the `set_role` prerequisite invisible to creators? (Frontend prompt + bundled transaction flow?)
 - **Reveal window duration:** what block count is acceptable for user experience? (30 min ≈ 450 blocks at ~4 s/block.)
 - **Slash split ratio:** 80/20 protocol/caller is a placeholder — what ratio maximally incentivizes third-party slashers?
-- **Commission bps range in `fairdrop_ref_v2.aleo`:** should there be a protocol-enforced max to prevent creators from self-referral gaming?
+- **Commission bps range in `fairdrop_ref_v3.aleo`:** should there be a protocol-enforced max to prevent creators from self-referral gaming?
 - **`fairdrop_raise_v3.aleo` supply-not-met handling:** full refund, or clear at floor_price if any payment came in?
 - **Phase 1e deployment strategy:** redeploy `fairdrop_dutch_v2` etc. importing `ref` + `vest`, or ship Dutch/Sealed/Raise without ref/vest first and add them in a version bump? (Version bump is simpler operationally but splits the user base.)
 - **G32 — pro-rata `escrow_sales` deduction:** when adding `allocation_factor` in Phase 1c, the `finalize_claim` deduction must change from `bid.quantity` to `actual_quantity`. Must be explicitly verified during implementation.
@@ -1084,7 +1084,7 @@ fairdrop_lbp_v3.aleo
 fairdrop_quadratic_v3.aleo
 fairdrop_gate_v3.aleo       (for gate registrations)
 fairdrop_proof_v3.aleo      (for reputation updates)
-fairdrop_ref_v2.aleo        (for referral activity)
+fairdrop_ref_v3.aleo        (for referral activity)
 ```
 
 **Events to capture per transition:**

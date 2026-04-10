@@ -84,7 +84,7 @@ import token_registry.aleo;
 import fairdrop_config_v3.aleo;
 import fairdrop_gate_v3.aleo;
 import fairdrop_proof_v3.aleo;
-import fairdrop_ref_v2.aleo;
+import fairdrop_ref_v3.aleo;
 import fairdrop_vest_v2.aleo;
 import fairswap_dex_v3.aleo;
 
@@ -636,7 +636,7 @@ program fairdrop_raise_v3.aleo {
         let (receipt, f_proof): (fairdrop_proof_v3.aleo::ParticipationReceipt, Final) =
             fairdrop_proof_v3.aleo::issue_receipt(auction_id, 0field, bidder_key);
 
-        let f_ref: Final = fairdrop_ref_v2.aleo::record_referral(
+        let f_ref: Final = fairdrop_ref_v3.aleo::record_referral(
             code_id,
             auction_id,
             bidder_key,
@@ -728,7 +728,7 @@ program fairdrop_raise_v3.aleo {
         let (receipt, f_proof): (fairdrop_proof_v3.aleo::ParticipationReceipt, Final) =
             fairdrop_proof_v3.aleo::issue_receipt(auction_id, 0field, bidder_key);
 
-        let f_ref: Final = fairdrop_ref_v2.aleo::record_referral(
+        let f_ref: Final = fairdrop_ref_v3.aleo::record_referral(
             code_id,
             auction_id,
             bidder_key,
@@ -924,9 +924,9 @@ program fairdrop_raise_v3.aleo {
         public budget:     u128,   // D11: state.referral_budget
     ) -> Final {
         let f_credits: Final =
-            credits.aleo::transfer_public(fairdrop_ref_v2.aleo, budget as u64);
+            credits.aleo::transfer_public(fairdrop_ref_v3.aleo, budget as u64);
 
-        let f_ref: Final = fairdrop_ref_v2.aleo::fund_reserve(auction_id, budget);
+        let f_ref: Final = fairdrop_ref_v3.aleo::fund_reserve(auction_id, budget);
 
         return final {
             f_credits.run();

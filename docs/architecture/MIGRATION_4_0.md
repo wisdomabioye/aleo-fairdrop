@@ -336,7 +336,7 @@ fn place_bid_private_ref(...) -> (..., Final) {
 | Burn-backed mint budget decrement | `claim`, `withdraw_unsold` | `decrement_escrow_sales` |
 | Payment escrow decrement | `withdraw_payments`, `claim_voided` | `decrement_escrow_payments` |
 | Proof D12 check | `fairdrop_proof_v3.aleo` transitions 2+3 | `assert_caller_allowed` |
-| Ref D12 check | `fairdrop_ref_v2.aleo` transitions | `assert_caller_allowed` |
+| Ref D12 check | `fairdrop_ref_v3.aleo` transitions | `assert_caller_allowed` |
 
 ---
 
@@ -349,7 +349,7 @@ Migrate bottom-up: utilities first (no auction dependencies), then auctions, the
 1. **`fairdrop_config_v3.aleo`** (300 lines) — simplest; no CPI calls; no `final fn` opportunities
 2. **`fairdrop_proof_v3.aleo`** (198 lines) — 3 transitions; extract `assert_caller_allowed` final fn
 3. **`fairdrop_gate_v3.aleo`** (382 lines) — 4 transitions; similar D12 pattern
-4. **`fairdrop_ref_v2.aleo`** (461 lines) — 4 transitions; extract `assert_caller_allowed`
+4. **`fairdrop_ref_v3.aleo`** (461 lines) — 4 transitions; extract `assert_caller_allowed`
 5. **`fairdrop_vest_v2.aleo`** (310 lines) — 3 transitions
 
 ### Phase 2 — Auction contracts (6 files, ~8,500 lines total)

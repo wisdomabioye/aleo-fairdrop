@@ -33,7 +33,7 @@
       "upgradeKey":     "3field"
     },
     "ref": {
-      "programId":      "fairdrop_ref_v2.aleo",
+      "programId":      "fairdrop_ref_v3.aleo",
       "programAddress": "aleo13xddttavncqn2edx2r6d8ny03wnuc6dmpc9pfr8ytc3m0s06mgyquf7x6t",
       "contractPath":   "contracts/utilities/ref",
       "upgradeKey":     "4field"

@@ -1,5 +1,5 @@
 /**
- * On-chain mapping reads for fairdrop_ref_v2.aleo.
+ * On-chain mapping reads for fairdrop_ref_v3.aleo.
  */
 
 import type { ReferralConfig, ReferralRecord } from '@fairdrop/types/contracts/utilities';

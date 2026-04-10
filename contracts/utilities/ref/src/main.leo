@@ -1,4 +1,4 @@
-// fairdrop_ref_v2.aleo — Referral code creation, tracking, and commission distribution.
+// fairdrop_ref_v3.aleo — Referral code creation, tracking, and commission distribution.
 // Leo 4.0 migration: fn/Final/final/:: — no behavioural changes.
 //
 // Lifecycle:
@@ -59,7 +59,7 @@ struct AllowedCallerOp { caller: address, allowed: bool, nonce: u64 }
 // Program interface
 // =============================================================================
 
-program fairdrop_ref_v2.aleo {
+program fairdrop_ref_v3.aleo {
     // Upgrade governance: 3-of-5 multi-sig must call fairdrop_multisig_v2.aleo::approve_upgrade
     // with contract_key=4field and this program's compiled checksum before deployment.
     @checksum(mapping="fairdrop_multisig_v2.aleo::approved_upgrades", key="4field")
@@ -260,7 +260,7 @@ program fairdrop_ref_v2.aleo {
 
     // !! COMMENTED OUT — Leo 4.0 compiler bug: "Finalization not found"
     // credits.aleo::transfer_public_to_private returns a Final. When this function is enabled,
-    // any program that imports fairdrop_ref_v2.aleo AND independently calls
+    // any program that imports fairdrop_ref_v3.aleo AND independently calls
     // credits.aleo::transfer_public_to_private (or any other Final-returning CPI) fails to build
     // with "Finalization not found: credits.aleo::transfer_public_to_private".
     // Root cause: Leo compiler panics when the same Final-returning CPI appears in multiple

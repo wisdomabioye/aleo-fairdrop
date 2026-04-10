@@ -1,5 +1,5 @@
 {
-  "program": "fairdrop_ref_v2.aleo",
+  "program": "fairdrop_ref_v3.aleo",
   "version": "0.1.0",
   "description": "Referral code creation, tracking, and commission distribution.",
   "license": "MIT",

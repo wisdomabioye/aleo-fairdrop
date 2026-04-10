@@ -10,7 +10,7 @@
 //     without redeploying any auction contract.
 //   - Provide assert_config() for auction contracts to validate their snapshotted
 //     params at create_auction time (D16 in DESIGN.md).
-//   - Provide assert_ref_bps() for fairdrop_ref_v2.aleo to enforce the referral cap
+//   - Provide assert_ref_bps() for fairdrop_ref_v3.aleo to enforce the referral cap
 //     at create_code time.
 //   - Provide check_not_paused() as a CPI guard for all auction finalize functions.
 //
@@ -257,7 +257,7 @@ program fairdrop_config_v3.aleo {
     }
 
     // =========================================================================
-    // 3. assert_ref_bps — CPI called by fairdrop_ref_v2.aleo at create_code
+    // 3. assert_ref_bps — CPI called by fairdrop_ref_v3.aleo at create_code
     // =========================================================================
 
     fn assert_ref_bps(public commission_bps: u16) -> Final {

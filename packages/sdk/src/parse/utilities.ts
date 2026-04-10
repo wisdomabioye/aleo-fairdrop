@@ -28,7 +28,7 @@ export function assembleGateConfig(
   };
 }
 
-// ── fairdrop_ref_v2.aleo ──────────────────────────────────────────────────────
+// ── fairdrop_ref_v3.aleo ──────────────────────────────────────────────────────
 
 /** Parse a ReferralConfig struct from registrations[codeId]. */
 export function parseReferralConfig(raw: string): ReferralConfig {

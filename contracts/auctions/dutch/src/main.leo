@@ -58,7 +58,7 @@ import fairdrop_multisig_v2.aleo;
 import fairdrop_config_v3.aleo;
 import fairdrop_gate_v3.aleo;
 import fairdrop_proof_v3.aleo;
-import fairdrop_ref_v2.aleo;
+import fairdrop_ref_v3.aleo;
 import fairdrop_vest_v2.aleo;
 import credits.aleo;
 import token_registry.aleo;
@@ -656,7 +656,7 @@ program fairdrop_dutch_v3.aleo {
     // 4. place_bid_private_ref — private credits + referral attribution
     // =========================================================================
     //
-    // Same as place_bid_private, plus record_referral CPI to fairdrop_ref_v2.aleo.
+    // Same as place_bid_private, plus record_referral CPI to fairdrop_ref_v3.aleo.
     // Separate entry point required — Leo cannot conditionally call a CPI Final.
     //
     // Leo 4.0: only difference from place_bid_private in the final block is
@@ -687,7 +687,7 @@ program fairdrop_dutch_v3.aleo {
             fairdrop_proof_v3.aleo::issue_receipt(auction_id, 0field, bidder_key);
 
         // Attribute this bid to the referral code.
-        let f_ref: Final = fairdrop_ref_v2.aleo::record_referral(
+        let f_ref: Final = fairdrop_ref_v3.aleo::record_referral(
             code_id,
             auction_id,
             bidder_key,
@@ -736,7 +736,7 @@ program fairdrop_dutch_v3.aleo {
         let (receipt, f_proof): (fairdrop_proof_v3.aleo::ParticipationReceipt, Final) =
             fairdrop_proof_v3.aleo::issue_receipt(auction_id, 0field, bidder_key);
 
-        let f_ref: Final = fairdrop_ref_v2.aleo::record_referral(
+        let f_ref: Final = fairdrop_ref_v3.aleo::record_referral(
             code_id,
             auction_id,
             bidder_key,
@@ -849,7 +849,7 @@ program fairdrop_dutch_v3.aleo {
     // 7. push_referral_budget — permissionless; call after close_auction
     // =========================================================================
     //
-    // Transfers referral_budget credits to fairdrop_ref_v2.aleo and calls
+    // Transfers referral_budget credits to fairdrop_ref_v3.aleo and calls
     // fund_reserve to enable credit_commission for this auction's bidders.
     // Double-push protection: fund_reserve has a reserve_funded guard.
     // D11: budget must match state.referral_budget.
@@ -869,9 +869,9 @@ program fairdrop_dutch_v3.aleo {
         public budget:     u128,   // D11: state.referral_budget
     ) -> Final {
         let f_credits: Final =
-            credits.aleo::transfer_public(fairdrop_ref_v2.aleo, budget as u64);
+            credits.aleo::transfer_public(fairdrop_ref_v3.aleo, budget as u64);
 
-        let f_ref: Final = fairdrop_ref_v2.aleo::fund_reserve(auction_id, budget);
+        let f_ref: Final = fairdrop_ref_v3.aleo::fund_reserve(auction_id, budget);
 
         return final {
             f_credits.run();

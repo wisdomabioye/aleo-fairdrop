@@ -1,5 +1,5 @@
 /**
- * Transaction builders for fairdrop_ref_v2.aleo transitions.
+ * Transaction builders for fairdrop_ref_v3.aleo transitions.
  */
 
 import { PROGRAMS } from '@fairdrop/config';

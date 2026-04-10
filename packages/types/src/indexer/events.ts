@@ -29,7 +29,7 @@ export enum UtilityTransition {
   // fairdrop_vest_v2.aleo
   CreateVest         = 'create_vest',
   Release            = 'release',
-  // fairdrop_ref_v2.aleo
+  // fairdrop_ref_v3.aleo
   RecordReferral     = 'record_referral',
   FundReserve        = 'fund_reserve',
   CreditCommission   = 'credit_commission',

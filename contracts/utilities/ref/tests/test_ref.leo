@@ -1,4 +1,4 @@
-// Tests for fairdrop_ref_v2.aleo
+// Tests for fairdrop_ref_v3.aleo
 // ── Leo 4.0 migration notes ───────────────────────────────────────────────────
 //   @test script → @test fn ... -> Final
 //   f.await()    → return final { f.run(); };
@@ -7,7 +7,7 @@
 //   async constructor → constructor
 //   test_never_passes removed: @test fn are entry points; dummy stub no longer needed.
 // ─────────────────────────────────────────────────────────────────────────────
-import fairdrop_ref_v2.aleo;
+import fairdrop_ref_v3.aleo;
 
 // ── Unit-test coverage scope ─────────────────────────────────────────────────
 //   ✓ set_allowed_caller — unapproved op guard: approved_ops defaults false → revert.
@@ -53,7 +53,7 @@ program test_ref.aleo {
     @test
     @should_fail
     fn test_set_caller_unapproved() -> Final {
-        let f: Final = fairdrop_ref_v2.aleo::set_allowed_caller(
+        let f: Final = fairdrop_ref_v3.aleo::set_allowed_caller(
             aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc,
             true,
             1u64,  // op_nonce — no approved_ops entry for this hash → assert fails
@@ -75,8 +75,8 @@ program test_ref.aleo {
     // Within cap — should pass.
     @test
     fn test_create_code_ok() -> Final {
-        let (code, f): (fairdrop_ref_v2.aleo::ReferralCode, Final) =
-            fairdrop_ref_v2.aleo::create_code(
+        let (code, f): (fairdrop_ref_v3.aleo::ReferralCode, Final) =
+            fairdrop_ref_v3.aleo::create_code(
                 1field,  // auction_id
                 500u16,  // commission_bps — below 2000 default cap
             );
@@ -86,8 +86,8 @@ program test_ref.aleo {
     // Exactly at cap — inclusive boundary should pass.
     @test
     fn test_create_code_at_cap() -> Final {
-        let (code, f): (fairdrop_ref_v2.aleo::ReferralCode, Final) =
-            fairdrop_ref_v2.aleo::create_code(
+        let (code, f): (fairdrop_ref_v3.aleo::ReferralCode, Final) =
+            fairdrop_ref_v3.aleo::create_code(
                 2field,
                 2000u16,  // exactly equal to default max_referral_bps
             );
@@ -97,8 +97,8 @@ program test_ref.aleo {
     // Zero bps — technically within cap (0 ≤ 2000); functionally useless but valid.
     @test
     fn test_create_code_zero_bps() -> Final {
-        let (code, f): (fairdrop_ref_v2.aleo::ReferralCode, Final) =
-            fairdrop_ref_v2.aleo::create_code(
+        let (code, f): (fairdrop_ref_v3.aleo::ReferralCode, Final) =
+            fairdrop_ref_v3.aleo::create_code(
                 3field,
                 0u16,
             );
@@ -109,8 +109,8 @@ program test_ref.aleo {
     @test
     @should_fail
     fn test_create_code_over_bps() -> Final {
-        let (code, f): (fairdrop_ref_v2.aleo::ReferralCode, Final) =
-            fairdrop_ref_v2.aleo::create_code(
+        let (code, f): (fairdrop_ref_v3.aleo::ReferralCode, Final) =
+            fairdrop_ref_v3.aleo::create_code(
                 4field,
                 2001u16,  // 1 above default cap — config CPI reverts in finalize
             );
@@ -121,8 +121,8 @@ program test_ref.aleo {
     @test
     @should_fail
     fn test_create_code_max_bps() -> Final {
-        let (code, f): (fairdrop_ref_v2.aleo::ReferralCode, Final) =
-            fairdrop_ref_v2.aleo::create_code(
+        let (code, f): (fairdrop_ref_v3.aleo::ReferralCode, Final) =
+            fairdrop_ref_v3.aleo::create_code(
                 5field,
                 65535u16,
             );
@@ -143,7 +143,7 @@ program test_ref.aleo {
     @test
     @should_fail
     fn test_fund_reserve_unauth() -> Final {
-        let f: Final = fairdrop_ref_v2.aleo::fund_reserve(
+        let f: Final = fairdrop_ref_v3.aleo::fund_reserve(
             1field,  // auction_id
             0u128,   // amount — irrelevant; caller guard fires first
         );
@@ -154,7 +154,7 @@ program test_ref.aleo {
     @test
     @should_fail
     fn test_fund_reserve_unauth_nz() -> Final {
-        let f: Final = fairdrop_ref_v2.aleo::fund_reserve(
+        let f: Final = fairdrop_ref_v3.aleo::fund_reserve(
             2field,
             1_000_000u128,  // 1 credit in microcredits — irrelevant
         );
@@ -176,7 +176,7 @@ program test_ref.aleo {
     @test
     @should_fail
     fn test_record_ref_unauth() -> Final {
-        let f: Final = fairdrop_ref_v2.aleo::record_referral(
+        let f: Final = fairdrop_ref_v3.aleo::record_referral(
             0field,  // code_id — D12 fires before code_registered[code_id] check
             1field,  // auction_id
             0field,  // bidder_key
@@ -189,7 +189,7 @@ program test_ref.aleo {
     @test
     @should_fail
     fn test_record_ref_unauth_nz() -> Final {
-        let f: Final = fairdrop_ref_v2.aleo::record_referral(
+        let f: Final = fairdrop_ref_v3.aleo::record_referral(
             12345field,
             99field,
             888field,
@@ -214,7 +214,7 @@ program test_ref.aleo {
     @test
     @should_fail
     fn test_credit_no_record() -> Final {
-        let f: Final = fairdrop_ref_v2.aleo::credit_commission(
+        let f: Final = fairdrop_ref_v3.aleo::credit_commission(
             1field,  // code_id
             1field,  // bidder_key — never set by record_referral → .get() reverts
         );
@@ -225,7 +225,7 @@ program test_ref.aleo {
     @test
     @should_fail
     fn test_credit_no_record_zero() -> Final {
-        let f: Final = fairdrop_ref_v2.aleo::credit_commission(
+        let f: Final = fairdrop_ref_v3.aleo::credit_commission(
             0field,
             0field,
         );
@@ -236,7 +236,7 @@ program test_ref.aleo {
     @test
     @should_fail
     fn test_credit_no_record_alt() -> Final {
-        let f: Final = fairdrop_ref_v2.aleo::credit_commission(
+        let f: Final = fairdrop_ref_v3.aleo::credit_commission(
             999field,
             888field,
         );

@@ -127,7 +127,7 @@ program test_raise.aleo {
     // Group 2: D12 caller-guard failures
     // =========================================================================
     // In the unit-test environment, allowed_callers mappings in fairdrop_proof_v3.aleo
-    // and fairdrop_ref_v2.aleo are empty. fairdrop_raise_v3.aleo is not registered
+    // and fairdrop_ref_v3.aleo are empty. fairdrop_raise_v3.aleo is not registered
     // as a trusted caller, so CPI calls to those programs fail on their D12 guards.
 
     // close_auction → update_reputation → proof D12 fires:

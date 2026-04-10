@@ -145,7 +145,7 @@ From the admin panel, approve each auction contract as a caller in each utility 
 - `fairdrop_config_v3.aleo`
 - `fairdrop_gate_v3.aleo`
 - `fairdrop_proof_v3.aleo`
-- `fairdrop_ref_v2.aleo`
+- `fairdrop_ref_v3.aleo`
 - `fairdrop_vest_v2.aleo`
 
 This is a one-time on-chain operation per auction contract. Until it's done, auction creation will fail.

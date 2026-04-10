@@ -47,7 +47,7 @@ The existing frontend lives at `/home/abioye/aleo-guide/fairdrop/` (single-contr
 
 | Feature | Status | Source |
 |---|---|---|
-| Referral code creation, link generation, commission tracking | Missing | `fairdrop_ref_v2.aleo/create_code`, `claim_commission` |
+| Referral code creation, link generation, commission tracking | Missing | `fairdrop_ref_v3.aleo/create_code`, `claim_commission` |
 | Slash unrevealed commitments (sealed auctions) | Missing | `fairdrop_sealed_v3.aleo/slash_unrevealed` |
 | Close abandoned auction for reward (closer reward) | Missing | any `close_auction` (closer ≠ creator) |
 | Vesting schedule display & token release | Missing | `fairdrop_vest_v2.aleo/release` |
@@ -61,7 +61,7 @@ The existing frontend lives at `/home/abioye/aleo-guide/fairdrop/` (single-contr
 | `claim_commit_voided` for sealed bid cancel flow | Missing | `fairdrop_sealed_v3.aleo/claim_commit_voided` |
 | Search connecting to services/api | Missing | `GET /auctions?q=` |
 | Pagination for auction listing (API-driven) | Direct-chain N+50 RPC calls | `GET /auctions` |
-| `credit_commission` permissionless step (call before `claim_commission`) | Missing | `fairdrop_ref_v2.aleo/credit_commission` |
+| `credit_commission` permissionless step (call before `claim_commission`) | Missing | `fairdrop_ref_v3.aleo/credit_commission` |
 | Admin panel for `set_allowed_caller` + `fairdrop_config_v3.aleo` management | Missing | all utility contracts |
 
 ### 2.4 Scalability Issues
@@ -83,7 +83,7 @@ The existing frontend lives at `/home/abioye/aleo-guide/fairdrop/` (single-contr
 | Detail page assumes Dutch price logic for all auction types | `useCurrentPrice.ts`, `PriceChart.tsx` | Sealed uses Dutch price at `commit_end_block`; ascending rises; raise is fixed |
 | `BidForm` only handles Dutch (quantity × price) | `BidForm.tsx` | Raise = payment only; Sealed = commit hash; Ascending = qty×price; LBP/Quadratic differ |
 | `claim_commit_voided` missing from Claim flow | `ClaimPage.tsx` | Sealed bidders holding Commitment (not yet revealed) call this, not `claim_voided` |
-| `claim_commission` called wrong (was "withdraw_commission") | WEB_DESIGN v1 | Confirmed: `fairdrop_ref_v2.aleo/claim_commission(code, claimed_amount)` |
+| `claim_commission` called wrong (was "withdraw_commission") | WEB_DESIGN v1 | Confirmed: `fairdrop_ref_v3.aleo/claim_commission(code, claimed_amount)` |
 | Vesting release called wrong (was "claim_vested") | WEB_DESIGN v1 | Confirmed: `fairdrop_vest_v2.aleo/release(vest, amount)` |
 | `ParticipationReceipt` described as user-mintable | WEB_DESIGN v1 | Auto-issued by CPI at `commit_bid`/`place_bid` — no user action |
 | No `auction_id` URL param format validation | `AuctionDetailPage` | A bad field causes unhandled RPC error |
@@ -1406,7 +1406,7 @@ Route: `/referral`.
 
 - Auction search by name or ID
 - Commission BPS input: validated client-side ≤ `maxReferralBps` from `useProtocolConfig`
-- "Create Code" → `fairdrop_ref_v2.aleo/create_code(auction_id, commission_bps)` → returns `ReferralCode` record
+- "Create Code" → `fairdrop_ref_v3.aleo/create_code(auction_id, commission_bps)` → returns `ReferralCode` record
 - Share link: `https://app.fairdrop.xyz/auctions/:id?ref=<myAddress>`
 
 ### 13.2 Code List
@@ -1524,7 +1524,7 @@ Only functions listed here should be called from the frontend. Confirmed by read
 - `assert_ref_bps(commission_bps: u16)` — CPI only
 - `check_not_paused()` — CPI only
 
-### fairdrop_ref_v2.aleo
+### fairdrop_ref_v3.aleo
 - `set_allowed_caller(program_addr: address, allowed: bool)` — admin
 - `create_code(auction_id: field, commission_bps: u16)` → `ReferralCode` — user
 - `credit_commission(code_id: field, bidder_key: field)` — **permissionless** (anyone)

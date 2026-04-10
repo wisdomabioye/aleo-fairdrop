@@ -47,7 +47,7 @@ export function computeBidderKey(bidder: string, auctionId: string): string {
   return hashStruct(`{ bidder: ${bidder}, auction_id: ${auctionId} }`);
 }
 
-// ── fairdrop_ref_v2.aleo ──────────────────────────────────────────────────────
+// ── fairdrop_ref_v3.aleo ──────────────────────────────────────────────────────
 
 /**
  * Compute a referral list enumeration key.
