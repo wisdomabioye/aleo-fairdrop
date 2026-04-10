@@ -227,6 +227,9 @@ importers:
       '@fairdrop/config':
         specifier: workspace:*
         version: link:../config
+      '@fairdrop/leo-abigen':
+        specifier: workspace:*
+        version: link:../leo-abigen
       '@fairdrop/types':
         specifier: workspace:*
         version: link:../types

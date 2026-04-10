@@ -61,8 +61,8 @@ export function emitFactory(abi: Abi): string {
   return [
     '// ── Factory ──────────────────────────────────────────────────────────────────',
     '',
-    `export function create${clientName}(config?: ClientConfig): ${clientName} {`,
-    `  return createAbigen(_abi, config ?? {}) as ${clientName};`,
+    `export function create${clientName}(config?: Parameters<typeof createAbigen>[1]): ${clientName} {`,
+    `  return createAbigen(_abi, config ?? {}) as unknown as ${clientName};`,
     '}',
     '',
   ].join('\n');

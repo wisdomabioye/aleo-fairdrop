@@ -1,7 +1,8 @@
 // Inner plaintext type — used in struct fields, record fields, mapping keys/values.
 export type AleoPlaintext =
-  | { Primitive: 'Field' | 'Address' | 'Boolean' }
+  | { Primitive: 'Field' | 'Address' | 'Boolean' | 'Signature' }
   | { Primitive: { UInt: 'U8' | 'U16' | 'U32' | 'U64' | 'U128' } }
+  | { Array:  { element: AleoPlaintext; length: number } }
   | { Struct: { path: string[]; program: string } };
 
 // Function input type — Public inputs wrap the plaintext type in { Plaintext: ... }.

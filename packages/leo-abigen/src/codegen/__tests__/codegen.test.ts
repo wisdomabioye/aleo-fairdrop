@@ -84,9 +84,10 @@ describe('emitRecords', () => {
     expect(out).toContain('_record:');
   });
 
-  it('emits the createRecordScanner call', () => {
+  it('emits the createRecordScanner call without AbiStruct import needed', () => {
     const out = emitRecords([lpTokenRecord], []);
     expect(out).toContain('createRecordScanner(');
+    expect(out).not.toContain('AbiStruct');
   });
 
   it('emits the scan function with correct name', () => {
@@ -171,9 +172,9 @@ describe('emitFactory', () => {
     expect(out).toContain('export function createMyContractV1(');
   });
 
-  it('accepts optional ClientConfig', () => {
+  it('accepts optional config via Parameters<typeof createAbigen>[1]', () => {
     const out = emitFactory(minimalAbi);
-    expect(out).toContain('config?: ClientConfig');
+    expect(out).toContain('config?: Parameters<typeof createAbigen>[1]');
   });
 
   it('returns the correct client type', () => {
@@ -183,7 +184,7 @@ describe('emitFactory', () => {
 
   it('calls createAbigen with embedded _abi', () => {
     const out = emitFactory(minimalAbi);
-    expect(out).toContain('return createAbigen(_abi, config ?? {}) as MyContractV1;');
+    expect(out).toContain('return createAbigen(_abi, config ?? {}) as unknown as MyContractV1;');
   });
 });
 
@@ -238,10 +239,17 @@ describe('generateTypes', () => {
     expect(transitionIdx).toBeLessThan(clientIdx);
   });
 
-  it('embeds the ABI as a const', () => {
+  it('embeds the ABI as a const typed via Parameters<typeof createAbigen>[0]', () => {
     const out = generateTypes(minimalAbi);
-    expect(out).toContain("const _abi: Abi = JSON.parse('");
+    expect(out).toContain("const _abi = JSON.parse('");
+    expect(out).toContain('as Parameters<typeof createAbigen>[0]');
     expect(out).toContain('my_contract_v1.aleo');
+  });
+
+  it('does not import Abi — type derived from createAbigen parameter', () => {
+    const out = generateTypes(minimalAbi);
+    // 'Abi' must not appear as a standalone import (AbiRecord/AbiStruct are fine)
+    expect(out).not.toMatch(/import type \{[^}]*\bAbi\b[^RS][^}]*\}/);
   });
 
   it('imports createAbigen from @fairdrop/leo-abigen', () => {
@@ -249,15 +257,16 @@ describe('generateTypes', () => {
     expect(out).toContain('import { createAbigen');
   });
 
-  it('imports ClientConfig type from @fairdrop/leo-abigen', () => {
+  it('emits a typed factory function using Parameters to avoid extra imports', () => {
     const out = generateTypes(minimalAbi);
-    expect(out).toContain('ClientConfig');
+    expect(out).toContain('export function createMyContractV1(config?: Parameters<typeof createAbigen>[1]): MyContractV1 {');
+    expect(out).toContain('return createAbigen(_abi, config ?? {}) as unknown as MyContractV1;');
   });
 
-  it('emits a typed factory function', () => {
+  it('does not import ClientConfig or TxOptions — derived via Parameters', () => {
     const out = generateTypes(minimalAbi);
-    expect(out).toContain('export function createMyContractV1(config?: ClientConfig): MyContractV1 {');
-    expect(out).toContain('return createAbigen(_abi, config ?? {}) as MyContractV1;');
+    expect(out).not.toContain('ClientConfig');
+    expect(out).not.toContain('TxOptions');
   });
 
   it('factory function appears after the client interface', () => {

@@ -38,10 +38,10 @@ export function generateTypes(abi: Abi): string {
   // Imports
   if (abi.records.length > 0) {
     sections.push('import { createAbigen, createRecordScanner }                       from "@fairdrop/leo-abigen";');
-    sections.push('import type { Abi, AbiRecord, AbiStruct, ClientConfig, TransitionHandle, TxOptions } from "@fairdrop/leo-abigen";');
+    sections.push('import type { AbiRecord, TransitionHandle }                        from "@fairdrop/leo-abigen";');
   } else {
     sections.push('import { createAbigen }                                            from "@fairdrop/leo-abigen";');
-    sections.push('import type { Abi, ClientConfig, TransitionHandle, TxOptions }    from "@fairdrop/leo-abigen";');
+    sections.push('import type { TransitionHandle }                                   from "@fairdrop/leo-abigen";');
   }
 
   const primitiveImports: string[] = [...brandedImports];
@@ -56,9 +56,9 @@ export function generateTypes(abi: Abi): string {
   }
   sections.push('');
 
-  // Embedded ABI — consumers never import abi.json manually
-  sections.push(`// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment`);
-  sections.push(`const _abi: Abi = JSON.parse('${JSON.stringify(abi).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}') as Abi;`);
+  // Embedded ABI — consumers never import abi.json manually.
+  // Typed as Parameters<typeof createAbigen>[0] (i.e. Abi) to avoid an extra import.
+  sections.push(`const _abi = JSON.parse('${JSON.stringify(abi).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}') as Parameters<typeof createAbigen>[0];`);
   sections.push('');
 
   // Body
@@ -82,6 +82,11 @@ export function generateTypes(abi: Abi): string {
 
 // ── CLI ───────────────────────────────────────────────────────────────────────
 
+/** Derive output filename from program id: "fairswap_dex_v2.aleo" → "fairswap-dex-v2.ts" */
+function programToFilename(program: string): string {
+  return program.replace(/\.aleo$/, '').replace(/_/g, '-') + '.ts';
+}
+
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
 
@@ -89,7 +94,7 @@ async function main(): Promise<void> {
   const outFlag = args.indexOf('--out');
 
   if (abiFlag === -1 || !args[abiFlag + 1]) {
-    console.error('Usage: leo-abigen --abi <path/to/abi.json> --out <path/to/output.ts>');
+    console.error('Usage: leo-abigen --abi <path/to/abi.json> [--out <dir-or-file>]');
     process.exit(1);
   }
 
@@ -97,7 +102,7 @@ async function main(): Promise<void> {
   const outPath = outFlag !== -1 && args[outFlag + 1] ? args[outFlag + 1]! : null;
 
   const { readFile, writeFile } = await import('node:fs/promises');
-  const { resolve, dirname }    = await import('node:path');
+  const { resolve, dirname, extname, join } = await import('node:path');
   const { mkdirSync }           = await import('node:fs');
 
   const raw = await readFile(abiPath, 'utf-8');
@@ -105,7 +110,10 @@ async function main(): Promise<void> {
   const output = generateTypes(abi);
 
   if (outPath) {
-    const resolved = resolve(outPath);
+    // If --out has no file extension, treat it as a directory and derive the filename.
+    const resolved = extname(outPath) === ''
+      ? join(resolve(outPath), programToFilename(abi.program))
+      : resolve(outPath);
     mkdirSync(dirname(resolved), { recursive: true });
     await writeFile(resolved, output, 'utf-8');
     console.log(`[leo-abigen] generated ${resolved}`);

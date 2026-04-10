@@ -20,16 +20,17 @@ export function programToClientName(programId: string): string {
 export function plaintextToTsType(ty: AleoPlaintext): string {
   if ('Primitive' in ty) {
     const p = ty.Primitive;
-    if (p === 'Field')   return 'Field';
-    if (p === 'Address') return 'Address';
-    if (p === 'Boolean') return 'boolean';
-    const uint = (p as { UInt: string }).UInt;
-    if (uint === 'U128') return 'U128';
-    if (uint === 'U64')  return 'U64';
-    if (uint === 'U32')  return 'number';
-    if (uint === 'U16')  return 'number';
-    if (uint === 'U8')   return 'number';
+    if (typeof p === 'object') {
+      if (p.UInt === 'U128') return 'U128';
+      if (p.UInt === 'U64')  return 'U64';
+      return 'number'; // U32, U16, U8
+    }
+    if (p === 'Field')     return 'Field';
+    if (p === 'Address')   return 'Address';
+    if (p === 'Boolean')   return 'boolean';
+    if (p === 'Signature') return 'string';
   }
+  if ('Array'  in ty) return `${plaintextToTsType(ty.Array.element)}[]`;
   if ('Struct' in ty) return ty.Struct.path[ty.Struct.path.length - 1]!;
   throw new Error(`[leo-abigen] cannot map type: ${JSON.stringify(ty)}`);
 }
@@ -46,7 +47,9 @@ export function inputToTsType(ty: AleoInputType): string {
 export function collectPrimitiveImports(types: string[]): string[] {
   const branded = new Set<string>();
   for (const t of types) {
-    if (t === 'Field' || t === 'Address' || t === 'U128' || t === 'U64') branded.add(t);
+    // Strip trailing [] to handle array types like 'Field[]'
+    const base = t.replace(/\[\]+$/, '');
+    if (base === 'Field' || base === 'Address' || base === 'U128' || base === 'U64') branded.add(base);
   }
   return [...branded].sort();
 }

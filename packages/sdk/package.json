@@ -72,6 +72,7 @@
     }
   },
   "scripts": {
+    "codegen":    "node scripts/codegen.mjs",
     "build":      "tsdown",
     "type-check": "tsc --noEmit",
     "test":       "vitest run",
@@ -79,7 +80,8 @@
   },
   "dependencies": {
     "@fairdrop/config": "workspace:*",
-    "@fairdrop/types":  "workspace:*"
+    "@fairdrop/types":  "workspace:*",
+    "@fairdrop/leo-abigen":  "workspace:*"
   },
   "peerDependencies": {
     "@provablehq/sdk": "*"

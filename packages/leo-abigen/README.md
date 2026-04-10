@@ -24,16 +24,13 @@ npm install leo-abigen @fairdrop/types
 ## Quick start
 
 ```typescript
-import abi from "./build/abi.json";
-import { createAbigen, fromAleoClient } from "leo-abigen";
-import type { MyContractV1 } from "./generated/my-contract-v1";
+import { createFairswapDexV2 } from "./generated/fairswap-dex-v2";
 
-const client = createAbigen(abi, {
-  fetchMapping: fromAleoClient(aleoNetworkClient),
-}) as MyContractV1;
+// Factory function — ABI is embedded, no manual import needed
+const client = createFairswapDexV2({ fetchMapping: fromAleoClient(aleoNetworkClient) });
 
 // Builder mode (recommended for React hooks — avoids stale wallet reference)
-const spec = client.swap.build({ token_in_id: "1", amount_in: "1000000" as U128, ... });
+const spec = client.swap.build({ token_in_id: "1field", amount_in: "1000000" as U128, ... });
 const { executeTransaction } = useWallet();
 await executeTransaction(spec);
 
@@ -52,8 +49,17 @@ const lpTokens = client.records.lpTokens(walletRecords);
 Generate a typed client from a contract's `abi.json`:
 
 ```bash
-leo-abigen --abi build/abi.json --out src/generated/my-contract-v1.ts
+# Auto-derive filename from program id (recommended)
+leo-abigen --abi build/abi.json --out src/generated/
+
+# Explicit output filename
+leo-abigen --abi build/abi.json --out src/generated/my-contract.ts
+
+# Print to stdout
+leo-abigen --abi build/abi.json
 ```
+
+The program id drives the filename: `fairswap_dex_v2.aleo` → `fairswap-dex-v2.ts`.
 
 The generated file imports only from `leo-abigen` and `@fairdrop/types/primitives` — no contract-specific dependencies.
 
@@ -84,11 +90,44 @@ The generated file imports only from `leo-abigen` and `@fairdrop/types/primitive
 
 ---
 
+## Generated file anatomy
+
+Given `fairswap_dex_v2.aleo`, the CLI emits `fairswap-dex-v2.ts` containing:
+
+| Section | What it contains |
+|---|---|
+| Struct interfaces | `export interface PoolState { ... }` |
+| Record interfaces | `export interface LpTokenRecord { ...; spent: boolean; _record: string }` |
+| Record scanners | `export function scanLpTokenRecords(entries: WalletRecord[]): LpTokenRecord[]` |
+| Args interfaces | `export interface SwapArgs { token_in_id: Field; ... }` |
+| Client interface | `export interface FairswapDexV2 { swap: TransitionHandle<SwapArgs>; ... }` |
+| Embedded ABI | `const _abi = JSON.parse('...') as Parameters<typeof createAbigen>[0]` |
+| Factory function | `export function createFairswapDexV2(config?): FairswapDexV2` |
+
+The embedded ABI means consumers never import or manage `abi.json` manually.
+
+---
+
 ## API
+
+### `createXxx(config?)` — generated factory
+
+Each generated file exports a typed factory named after the contract:
+
+```typescript
+import { createFairswapDexV2 } from "./generated/fairswap-dex-v2";
+
+const client = createFairswapDexV2({
+  fetchMapping:       fromAleoClient(networkClient), // for mapping reads
+  executeTransaction: wallet.executeTransaction,     // for executor mode
+  fee:                500_000,                       // microcredits, default 300_000
+  privateFee:         false,
+});
+```
 
 ### `createAbigen(abi, config)`
 
-Creates a dynamic client object. Cast to the generated interface for full type safety.
+Creates a dynamic client object directly. Use when you have the ABI at hand and don't need the generated factory.
 
 | Config option | Type | Description |
 |---|---|---|
@@ -115,13 +154,13 @@ const spec: TransactionOptions = client.swap.build(args);
 
 ### `createRecordScanner(record, structs)`
 
-Creates a typed scanner for a specific record type. Used internally by the generated code, but also exportable for custom record handling.
+Creates a typed scanner for a specific record type. Used internally by the generated code.
 
 ---
 
 ## Type mapping
 
-| Leo type | In-memory TypeScript | Serialized (wire) form |
+| Leo type | TypeScript | Serialized (wire) form |
 |---|---|---|
 | `Field` | `Field` (`Brand<string, 'Field'>`) | `"3443field"` |
 | `U128` | `U128` (`Brand<string, 'U128'>`) | `"1000000u128"` |
@@ -129,6 +168,8 @@ Creates a typed scanner for a specific record type. Used internally by the gener
 | `U32` / `U16` / `U8` | `number` | `"100u32"` |
 | `Address` | `Address` (`Brand<string, 'Address'>`) | identity |
 | `Boolean` | `boolean` | `"true"` / `"false"` |
+| `Signature` | `string` | identity |
+| `[T; N]` | `T[]` | `"[val1, val2, ...]"` |
 | Struct | Generated interface | `"{ field: value, ... }"` |
 | Record input | `string \| Record<string, unknown>` | passed through to wallet |
 
@@ -152,7 +193,7 @@ src/
     records.ts      ← emit record interfaces + scanners
     transitions.ts  ← emit Args interfaces
     mappings.ts     ← emit mapping reader declarations
-    client.ts       ← emit typed client interface
+    client.ts       ← emit typed client interface + factory function
     utils.ts        ← toCamelCase, toPascalCase, type mapping helpers
   index.ts          ← public API re-exports
 ```
