@@ -135,7 +135,7 @@ fn local_sqrt(n: u128) -> u128 {
     return s64 < s63 ? s64 : s63;
 }
 
-program test_fairswap_dex_v3.aleo {
+program test_fairswap_dex.aleo {
 
     @noupgrade
     constructor() {}
@@ -234,14 +234,16 @@ program test_fairswap_dex_v3.aleo {
 
     @test
     @should_fail
-    fn test_create_pool_same_token() {
-        fairswap_dex_v3.aleo::create_pool(1field, 1field, 30u16);
+    fn test_create_pool_same_token() -> Final {
+        let f: Final = fairswap_dex_v3.aleo::create_pool(1field, 1field, 30u16);
+        return final { f.run(); };
     }
 
     @test
     @should_fail
-    fn test_create_pool_fee_too_high() {
-        fairswap_dex_v3.aleo::create_pool(1field, 2field, 101u16);
+    fn test_create_pool_fee_too_high() -> Final {
+        let f: Final = fairswap_dex_v3.aleo::create_pool(1field, 2field, 101u16);
+        return final { f.run(); };
     }
 
     // =========================================================================
@@ -250,30 +252,34 @@ program test_fairswap_dex_v3.aleo {
 
     @test
     @should_fail
-    fn test_add_liq_zero_amt_a() {
+    fn test_add_liq_zero_amt_a() -> Final {
         let dummy: address = aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc;
-        fairswap_dex_v3.aleo::add_liquidity(1field, 2field, 0u128, 100u128, 30u16, 0u128, dummy);
+        let f: Final = fairswap_dex_v3.aleo::add_liquidity(1field, 2field, 0u128, 100u128, 30u16, 0u128, dummy);
+        return final { f.run(); };
     }
 
     @test
     @should_fail
-    fn test_add_liq_zero_amt_b() {
+    fn test_add_liq_zero_amt_b() -> Final {
         let dummy: address = aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc;
-        fairswap_dex_v3.aleo::add_liquidity(1field, 2field, 100u128, 0u128, 30u16, 0u128, dummy);
+        let f: Final = fairswap_dex_v3.aleo::add_liquidity(1field, 2field, 100u128, 0u128, 30u16, 0u128, dummy);
+        return final { f.run(); };
     }
 
     @test
     @should_fail
-    fn test_add_liq_same_token() {
+    fn test_add_liq_same_token() -> Final {
         let dummy: address = aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc;
-        fairswap_dex_v3.aleo::add_liquidity(3field, 3field, 100u128, 100u128, 30u16, 0u128, dummy);
+        let f: Final = fairswap_dex_v3.aleo::add_liquidity(3field, 3field, 100u128, 100u128, 30u16, 0u128, dummy);
+        return final { f.run(); };
     }
 
     @test
     @should_fail
-    fn test_remove_liq_zero_lp() {
+    fn test_remove_liq_zero_lp() -> Final {
         let dummy: address = aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc;
-        fairswap_dex_v3.aleo::remove_liquidity(1field, 2field, 0u128, 0u128, 0u128, dummy);
+        let f: Final = fairswap_dex_v3.aleo::remove_liquidity(1field, 2field, 0u128, 0u128, 0u128, dummy);
+        return final { f.run(); };
     }
 
     // =========================================================================
@@ -282,23 +288,26 @@ program test_fairswap_dex_v3.aleo {
 
     @test
     @should_fail
-    fn test_swap_zero_amount_in_fails() {
+    fn test_swap_zero_amount_in() -> Final {
         let dummy: address = aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc;
-        fairswap_dex_v3.aleo::swap(1field, 2field, 0u128, 1u128, dummy);
+        let f: Final = fairswap_dex_v3.aleo::swap(1field, 2field, 0u128, 1u128, dummy);
+        return final { f.run(); };
     }
 
     @test
     @should_fail
-    fn test_swap_zero_min_out_fails() {
+    fn test_swap_zero_min_out() -> Final {
         let dummy: address = aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc;
-        fairswap_dex_v3.aleo::swap(1field, 2field, 100u128, 0u128, dummy);
+        let f: Final = fairswap_dex_v3.aleo::swap(1field, 2field, 100u128, 0u128, dummy);
+        return final { f.run(); };
     }
 
     @test
     @should_fail
-    fn test_swap_same_token_fails() {
+    fn test_swap_same_token() -> Final {
         let dummy: address = aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc;
-        fairswap_dex_v3.aleo::swap(4field, 4field, 100u128, 1u128, dummy);
+        let f: Final = fairswap_dex_v3.aleo::swap(4field, 4field, 100u128, 1u128, dummy);
+        return final { f.run(); };
     }
 
     // =========================================================================
