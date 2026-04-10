@@ -54,3 +54,16 @@ export function recordScannerKeys(records: AbiRecord[]): { key: string; name: st
     return { key: name.charAt(0).toLowerCase() + name.slice(1) + 's', name };
   });
 }
+
+/** Emit the factory function that embeds the ABI and returns a typed client. */
+export function emitFactory(abi: Abi): string {
+  const clientName = programToClientName(abi.program);
+  return [
+    '// ── Factory ──────────────────────────────────────────────────────────────────',
+    '',
+    `export function create${clientName}(config?: ClientConfig): ${clientName} {`,
+    `  return createAbigen(_abi, config ?? {}) as ${clientName};`,
+    '}',
+    '',
+  ].join('\n');
+}

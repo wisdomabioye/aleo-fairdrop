@@ -4,8 +4,8 @@ import type { Abi } from '../runtime/abi';
 import { emitStructs }          from './structs';
 import { emitRecords }          from './records';
 import { emitTransitions }      from './transitions';
-import { emitClientInterface }  from './client';
-import { collectPrimitiveImports, plaintextToTsType, inputToTsType } from './utils';
+import { emitClientInterface, emitFactory } from './client';
+import { collectPrimitiveImports, plaintextToTsType, inputToTsType, programToClientName } from './utils';
 
 // ── Code generation ───────────────────────────────────────────────────────────
 
@@ -37,10 +37,11 @@ export function generateTypes(abi: Abi): string {
 
   // Imports
   if (abi.records.length > 0) {
-    sections.push('import { createRecordScanner }                         from "@fairdrop/leo-abigen";');
-    sections.push('import type { TransitionHandle, TxOptions, AbiRecord, AbiStruct } from "@fairdrop/leo-abigen";');
+    sections.push('import { createAbigen, createRecordScanner }                       from "@fairdrop/leo-abigen";');
+    sections.push('import type { Abi, AbiRecord, AbiStruct, ClientConfig, TransitionHandle, TxOptions } from "@fairdrop/leo-abigen";');
   } else {
-    sections.push('import type { TransitionHandle, TxOptions }            from "@fairdrop/leo-abigen";');
+    sections.push('import { createAbigen }                                            from "@fairdrop/leo-abigen";');
+    sections.push('import type { Abi, ClientConfig, TransitionHandle, TxOptions }    from "@fairdrop/leo-abigen";');
   }
 
   const primitiveImports: string[] = [...brandedImports];
@@ -55,6 +56,11 @@ export function generateTypes(abi: Abi): string {
   }
   sections.push('');
 
+  // Embedded ABI — consumers never import abi.json manually
+  sections.push(`// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment`);
+  sections.push(`const _abi: Abi = JSON.parse('${JSON.stringify(abi).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}') as Abi;`);
+  sections.push('');
+
   // Body
   const structs = emitStructs(abi.structs);
   if (structs) sections.push(structs);
@@ -67,6 +73,9 @@ export function generateTypes(abi: Abi): string {
 
   const client = emitClientInterface(abi);
   if (client) sections.push(client);
+
+  const factory = emitFactory(abi);
+  if (factory) sections.push(factory);
 
   return sections.join('\n');
 }

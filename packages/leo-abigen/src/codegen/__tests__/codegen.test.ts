@@ -3,7 +3,7 @@ import { generateTypes } from '../index';
 import { emitStructs }   from '../structs';
 import { emitRecords }   from '../records';
 import { emitTransitions } from '../transitions';
-import { emitClientInterface } from '../client';
+import { emitClientInterface, emitFactory } from '../client';
 import type { Abi, AbiStruct, AbiRecord, AbiFunction } from '../../runtime/abi';
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -163,6 +163,30 @@ describe('emitClientInterface', () => {
   });
 });
 
+// ── emitFactory ───────────────────────────────────────────────────────────────
+
+describe('emitFactory', () => {
+  it('derives factory name from program id', () => {
+    const out = emitFactory(minimalAbi);
+    expect(out).toContain('export function createMyContractV1(');
+  });
+
+  it('accepts optional ClientConfig', () => {
+    const out = emitFactory(minimalAbi);
+    expect(out).toContain('config?: ClientConfig');
+  });
+
+  it('returns the correct client type', () => {
+    const out = emitFactory(minimalAbi);
+    expect(out).toContain('): MyContractV1 {');
+  });
+
+  it('calls createAbigen with embedded _abi', () => {
+    const out = emitFactory(minimalAbi);
+    expect(out).toContain('return createAbigen(_abi, config ?? {}) as MyContractV1;');
+  });
+});
+
 // ── generateTypes — minified ABI ─────────────────────────────────────────────
 
 describe('generateTypes — minified ABI input', () => {
@@ -212,5 +236,35 @@ describe('generateTypes', () => {
     expect(structIdx).toBeLessThan(recordIdx);
     expect(recordIdx).toBeLessThan(transitionIdx);
     expect(transitionIdx).toBeLessThan(clientIdx);
+  });
+
+  it('embeds the ABI as a const', () => {
+    const out = generateTypes(minimalAbi);
+    expect(out).toContain("const _abi: Abi = JSON.parse('");
+    expect(out).toContain('my_contract_v1.aleo');
+  });
+
+  it('imports createAbigen from @fairdrop/leo-abigen', () => {
+    const out = generateTypes(minimalAbi);
+    expect(out).toContain('import { createAbigen');
+  });
+
+  it('imports ClientConfig type from @fairdrop/leo-abigen', () => {
+    const out = generateTypes(minimalAbi);
+    expect(out).toContain('ClientConfig');
+  });
+
+  it('emits a typed factory function', () => {
+    const out = generateTypes(minimalAbi);
+    expect(out).toContain('export function createMyContractV1(config?: ClientConfig): MyContractV1 {');
+    expect(out).toContain('return createAbigen(_abi, config ?? {}) as MyContractV1;');
+  });
+
+  it('factory function appears after the client interface', () => {
+    const out = generateTypes(minimalAbi);
+    const clientIdx  = out.indexOf('export interface MyContractV1 {');
+    const factoryIdx = out.indexOf('export function createMyContractV1(');
+    expect(clientIdx).toBeGreaterThanOrEqual(0);
+    expect(factoryIdx).toBeGreaterThan(clientIdx);
   });
 });

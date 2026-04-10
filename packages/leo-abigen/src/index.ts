@@ -3,6 +3,7 @@ export { fromAleoClient }                            from './runtime/adapters';
 export { createRecordScanner }                       from './runtime/records';
 export { createTransitionBuilder }                   from './runtime/transition';
 export type { TransitionHandle, TxOptions }          from './runtime/transition';
+export type { ClientConfig }                         from './runtime/client';
 export type { Abi, AbiRecord, AbiStruct, AbiField,
               AbiMapping, AbiFunction, AbiInput,
               AleoPlaintext, AleoInputType }          from './runtime/abi';
