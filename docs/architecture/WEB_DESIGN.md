@@ -48,7 +48,7 @@ The existing frontend lives at `/home/abioye/aleo-guide/fairdrop/` (single-contr
 | Feature | Status | Source |
 |---|---|---|
 | Referral code creation, link generation, commission tracking | Missing | `fairdrop_ref_v2.aleo/create_code`, `claim_commission` |
-| Slash unrevealed commitments (sealed auctions) | Missing | `fairdrop_sealed_v2.aleo/slash_unrevealed` |
+| Slash unrevealed commitments (sealed auctions) | Missing | `fairdrop_sealed_v3.aleo/slash_unrevealed` |
 | Close abandoned auction for reward (closer reward) | Missing | any `close_auction` (closer ≠ creator) |
 | Vesting schedule display & token release | Missing | `fairdrop_vest_v2.aleo/release` |
 | Gate verification — Merkle proof submission | Missing | `fairdrop_gate_v2.aleo/verify_merkle` |
@@ -58,7 +58,7 @@ The existing frontend lives at `/home/abioye/aleo-guide/fairdrop/` (single-contr
 | BidForm for: Raise, Sealed (commit/reveal), Ascending, LBP, Quadratic | Missing | respective auction programs |
 | PriceChart for Ascending (rising price) | Missing | |
 | Create auction form variants (all 6 types) | Stub only | |
-| `claim_commit_voided` for sealed bid cancel flow | Missing | `fairdrop_sealed_v2.aleo/claim_commit_voided` |
+| `claim_commit_voided` for sealed bid cancel flow | Missing | `fairdrop_sealed_v3.aleo/claim_commit_voided` |
 | Search connecting to services/api | Missing | `GET /auctions?q=` |
 | Pagination for auction listing (API-driven) | Direct-chain N+50 RPC calls | `GET /auctions` |
 | `credit_commission` permissionless step (call before `claim_commission`) | Missing | `fairdrop_ref_v2.aleo/credit_commission` |
@@ -1001,7 +1001,7 @@ For all types except Sealed: single "Ends in N blocks" while active; "Ended N bl
 - Reveal phase: `quantity` and `nonce` **pre-filled from the decrypted `Commitment` record** (AutoDecrypt) → `reveal_bid`
 - Past reveal window: "Reveal window closed"
 
-**Sealed bid nonce — no persistence needed (Option A)**: The `Commitment` record stores `quantity: u128` and `nonce: field` as private fields (encrypted to the bidder's view key on-chain). AutoDecrypt makes them available to the frontend from the wallet at reveal time. The frontend reads the decrypted record and pre-fills both fields — no localStorage, no cross-device fragility. See contract change in `fairdrop_sealed_v2.aleo` `Commitment` record.
+**Sealed bid nonce — no persistence needed (Option A)**: The `Commitment` record stores `quantity: u128` and `nonce: field` as private fields (encrypted to the bidder's view key on-chain). AutoDecrypt makes them available to the frontend from the wallet at reveal time. The frontend reads the decrypted record and pre-fills both fields — no localStorage, no cross-device fragility. See contract change in `fairdrop_sealed_v3.aleo` `Commitment` record.
 
 **Commitment record filtering**: a user may hold Commitment records for multiple sealed auctions. The hook `useCommitmentRecord(auctionId)` filters `requestRecords(PROGRAMS.sealed.programId)` by `record.auction_id === auctionId` to find the one relevant to the current detail page. Never assume a single record per program.
 
@@ -1548,7 +1548,7 @@ Only functions listed here should be called from the frontend. Confirmed by read
 - `verify_credential(auction_id: field, issuer: address, sig: signature, expiry: u32)` — bidder
 - `register_gate(...)`, `check_admission(...)` — CPI only
 
-### fairdrop_sealed_v2.aleo (key user-facing transitions)
+### fairdrop_sealed_v3.aleo (key user-facing transitions)
 - `create_auction(...)` — creator
 - `commit_bid_private(...)` / `commit_bid_public(...)` — bidder, commit phase only
 - `commit_bid_private_ref(...)` / `commit_bid_public_ref(...)` — bidder with referral

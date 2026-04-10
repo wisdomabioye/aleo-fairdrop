@@ -1,4 +1,4 @@
-// fairdrop_sealed_v2.aleo — Privacy-preserving sealed-bid commit-reveal auction.
+// fairdrop_sealed_v3.aleo — Privacy-preserving sealed-bid commit-reveal auction.
 //
 // Mechanism: three-phase commit-reveal with uniform Dutch clearing price.
 //   COMMIT  [start_block → commit_end_block]: bidders lock payment + commit to quantity hash.
@@ -171,7 +171,7 @@ struct ConfigSnapshot {
     referral_pool_bps: u16,
 }
 
-program fairdrop_sealed_v2.aleo {
+program fairdrop_sealed_v3.aleo {
     // Upgrade governance: 3-of-5 multi-sig must call fairdrop_multisig_v1.aleo::approve_upgrade
     // with contract_key=11field and this program's compiled checksum before deployment.
     @checksum(mapping="fairdrop_multisig_v1.aleo::approved_upgrades", key="11field")
@@ -382,9 +382,9 @@ program fairdrop_sealed_v2.aleo {
             assert_eq(auction_id, expected_id);
             assert_eq(config.auction_id, auction_id);
 
-            // Verify fairdrop_sealed_v2.aleo has SUPPLY_MANAGER_ROLE on the sale token.
+            // Verify fairdrop_sealed_v3.aleo has SUPPLY_MANAGER_ROLE on the sale token.
             let sealed_role_key: field = BHP256::hash_to_field(TokenOwner {
-                account:  fairdrop_sealed_v2.aleo,
+                account:  fairdrop_sealed_v3.aleo,
                 token_id: config.sale_token_id,
             });
             assert_eq(

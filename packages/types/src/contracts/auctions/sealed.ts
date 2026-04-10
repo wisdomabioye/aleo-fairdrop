@@ -1,5 +1,5 @@
 /**
- * fairdrop_sealed_v2.aleo — TypeScript types.
+ * fairdrop_sealed_v3.aleo — TypeScript types.
  *
  * Three-phase sealed-bid commit-reveal auction with uniform Dutch clearing price.
  *

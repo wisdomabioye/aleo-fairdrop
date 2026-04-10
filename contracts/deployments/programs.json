@@ -80,7 +80,7 @@
       "upgradeKey":     "10field"
     },
     "sealed": {
-      "programId":      "fairdrop_sealed_v2.aleo",
+      "programId":      "fairdrop_sealed_v3.aleo",
       "programAddress": "aleo1wnkyc5qez7d2z68w35jelp549k9zxuad05t5pflya0gnzh3wzurszsdne5",
       "contractPath":   "contracts/auctions/sealed",
       "salt":           "3field",
