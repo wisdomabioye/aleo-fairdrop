@@ -73,7 +73,7 @@
       "upgradeKey":     "9field"
     },
     "raise": {
-      "programId":      "fairdrop_raise_v2.aleo",
+      "programId":      "fairdrop_raise_v3.aleo",
       "programAddress": "aleo1uhd5pytlnk3sfsn2x3q6hh4aks56t2l36zknp3m96feynvgqrq9sg4ah0t",
       "contractPath":   "contracts/auctions/raise",
       "salt":           "4field",

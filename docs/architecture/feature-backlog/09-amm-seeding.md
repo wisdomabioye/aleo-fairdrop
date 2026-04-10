@@ -14,7 +14,7 @@ Contract work completed:
 2. `add_liquidity_cpi` supports atomic pool creation (`pools.contains()` check).
 3. Upgrade key `12field` reserved in `fairdrop_multisig_v1.aleo`.
 4. `seed_liquidity` added to all 6 auction contracts (raise, dutch, ascending, sealed, lbp, quadratic).
-5. `withdraw_unsold` upper-bound bug fixed in `fairdrop_raise_v2.aleo` and verified correct in all 6.
+5. `withdraw_unsold` upper-bound bug fixed in `fairdrop_raise_v3.aleo` and verified correct in all 6.
 6. `ZERO_ADDRESS` constant defined in all 6 auction contracts; `assert_neq(lp_recipient, ZERO_ADDRESS)` guards added.
 7. Unit tests updated across all 6 auction test files (Group 5: `test_seed_liq_*`).
 8. DEX unit tests fixed (missing `fee_bps: u16` param in `add_liquidity*` calls).
@@ -327,7 +327,7 @@ is used directly as an `address` value throughout, matching the existing pattern
 
 ---
 
-## Bug fix: `fairdrop_raise_v2.aleo::withdraw_unsold` — ✓ FIXED
+## Bug fix: `fairdrop_raise_v3.aleo::withdraw_unsold` — ✓ FIXED
 
 **Problem found during `seed_liquidity` design review — now resolved.**
 

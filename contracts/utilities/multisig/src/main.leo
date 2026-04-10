@@ -40,7 +40,7 @@
 //   7field  fairdrop_dutch_v3.aleo
 //   8field  fairdrop_lbp_v3.aleo
 //   9field  fairdrop_quadratic_v3.aleo
-//  10field  fairdrop_raise_v2.aleo
+//  10field  fairdrop_raise_v3.aleo
 //  11field  fairdrop_sealed_v2.aleo
 //  12field  fairswap_dex_v2.aleo
 //  13field+ reserved for future contracts

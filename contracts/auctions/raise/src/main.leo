@@ -1,4 +1,4 @@
-// fairdrop_raise_v2.aleo — Privacy-preserving fixed-price community raise.
+// fairdrop_raise_v3.aleo — Privacy-preserving fixed-price community raise.
 //
 // Mechanism: creator sets raise_target (total credits to collect) and supply
 // (tokens to distribute). Bidders commit any payment ≥ min_bid_amount.
@@ -25,7 +25,7 @@
 //                 Re-minted at claim/claim_vested. Net supply change = 0.
 //
 // Roles required:
-//   fairdrop_raise_v2.aleo — SUPPLY_MANAGER_ROLE on sale token (burn + mint).
+//   fairdrop_raise_v3.aleo — SUPPLY_MANAGER_ROLE on sale token (burn + mint).
 //   fairdrop_vest_v2.aleo  — SUPPLY_MANAGER_ROLE on sale token (mint at release),
 //                         required only when vest_enabled = true.
 //
@@ -174,7 +174,7 @@ struct ConfigSnapshot {
     referral_pool_bps:  u16,
 }
 
-program fairdrop_raise_v2.aleo {
+program fairdrop_raise_v3.aleo {
     // Upgrade governance: 3-of-5 multi-sig must call fairdrop_multisig_v1.aleo::approve_upgrade
     // with contract_key=10field and this program's compiled checksum before deployment.
     @checksum(mapping="fairdrop_multisig_v1.aleo::approved_upgrades", key="10field")
@@ -368,9 +368,9 @@ program fairdrop_raise_v2.aleo {
             assert_eq(auction_id, expected_id);
             assert_eq(config.auction_id, auction_id);
 
-            // Verify fairdrop_raise_v2.aleo has SUPPLY_MANAGER_ROLE on the sale token.
+            // Verify fairdrop_raise_v3.aleo has SUPPLY_MANAGER_ROLE on the sale token.
             let raise_role_key: field = BHP256::hash_to_field(TokenOwner {
-                account:  fairdrop_raise_v2.aleo,
+                account:  fairdrop_raise_v3.aleo,
                 token_id: config.sale_token_id,
             });
             assert_eq(

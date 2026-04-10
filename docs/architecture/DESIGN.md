@@ -36,7 +36,7 @@ A token launch platform on Aleo. Three auction modes, one shared infrastructure 
 ```
 fairdrop_dutch_v3.aleo      ← live. Dutch descending-price auction.
 fairdrop_sealed_v2.aleo     ← build next. Sealed-bid commit-reveal, uniform clearing price.
-fairdrop_raise_v2.aleo      ← fixed-price sealed allocation, pro-rata by payment.
+fairdrop_raise_v3.aleo      ← fixed-price sealed allocation, pro-rata by payment.
 fairdrop_ascending_v3.aleo  ← ascending-price auction, pay-what-you-bid, early = cheapest.
 fairdrop_lbp_v3.aleo        ← supply-weighted descending price. Bots can't frontrun.
 fairdrop_quadratic_v3.aleo  ← pro-rata by sqrt(payment). Anti-whale, ZK-native fairness.
@@ -54,7 +54,7 @@ fairdrop_vest_v2.aleo       ← post-claim token vesting
 fairdrop_dutch_v3.aleo      PROGRAM_SALT = 1field
 fairdrop_ascending_v3.aleo  PROGRAM_SALT = 2field
 fairdrop_sealed_v2.aleo     PROGRAM_SALT = 3field
-fairdrop_raise_v2.aleo      PROGRAM_SALT = 4field
+fairdrop_raise_v3.aleo      PROGRAM_SALT = 4field
 fairdrop_lbp_v3.aleo        PROGRAM_SALT = 5field
 fairdrop_quadratic_v3.aleo  PROGRAM_SALT = 6field
 ```
@@ -93,7 +93,7 @@ Aleo `finalize` functions (on-chain execution) only accept **public** inputs. An
 
 **There is no simpler mechanism that achieves true quantity hiding with price discovery on Aleo today.** Multi-party computation and homomorphic encryption are not available.
 
-**The one exception:** `fairdrop_raise_v2.aleo` avoids commit-reveal by abandoning price discovery. It tracks only `total_payments` (public), computes allocation privately at claim time. No quantity ever reaches finalize.
+**The one exception:** `fairdrop_raise_v3.aleo` avoids commit-reveal by abandoning price discovery. It tracks only `total_payments` (public), computes allocation privately at claim time. No quantity ever reaches finalize.
 
 ---
 
@@ -271,7 +271,7 @@ assert(state.total_committed > 0 || /* handle 0-bid void case */)
 
 ---
 
-### 4c. Fixed-Price Raise (`fairdrop_raise_v2.aleo`)
+### 4c. Fixed-Price Raise (`fairdrop_raise_v3.aleo`)
 **Status:** not yet built. Simplest to build — no commit-reveal.
 
 Creator sets `raise_target` (total credits to collect) and `supply` (tokens to distribute). Implied price = `raise_target / supply`. Bidders lock any payment ≥ `min_payment`. No quantity specified at bid time.
@@ -788,7 +788,7 @@ bid_committed: field => bool    // BHP256(bidder, auction_id) → has committed
 **Decision:** `fairdrop_sealed_v2.aleo` uses Dutch pricing during the commit window. The clearing price is the Dutch price at `commit_end_block`, computed deterministically from config fields — no extra storage.
 
 **Why:** three alternatives were considered:
-- *Fixed price:* no price discovery, same as `fairdrop_raise_v2.aleo` — redundant.
+- *Fixed price:* no price discovery, same as `fairdrop_raise_v3.aleo` — redundant.
 - *Vickrey (pay second-highest):* requires sorting all bids, impossible inside a single finalize function.
 - *Dutch price at commit_end_block:* uniform clearing price set before reveals begin. Manipulating reveal order has zero effect on the final price. Bidders lock sufficient collateral at commit time and receive the overpayment as a refund at claim. The Dutch descent during the commit window creates a time-value incentive to commit without forcing a specific price point.
 
@@ -854,10 +854,10 @@ creator_revenue  = total_payments - protocol_fee
 | G14 | `verify_and_admit` mixes Merkle + credential — dummy inputs waste proving | gate | Split into `verify_merkle` and `verify_credential` separate transitions | Designed |
 | G15 | Conditional CPI for optional gating not possible in Leo | gate | `gate_mode: u8` in config; auction finalize checks mode before enforcing `verified` | Designed |
 | G16 | Vesting was two user steps but design implied one — intent unclear | vest | Creator-mandatory: `vest_enabled` in AuctionConfig; `claim` CPIs into `create_vest` | Designed |
-| G17 | `fairdrop_raise_v2.aleo` needs `RaiseBid` record (no quantity), not shared `Bid` | raise | Separate `RaiseBid { owner, auction_id, payment_amount }` record; `Bid` is dutch/sealed only | Designed |
+| G17 | `fairdrop_raise_v3.aleo` needs `RaiseBid` record (no quantity), not shared `Bid` | raise | Separate `RaiseBid { owner, auction_id, payment_amount }` record; `Bid` is dutch/sealed only | Designed |
 | G18 | Slasher requires off-chain indexer — not mentioned | sealed | Fairdrop-operated slasher bot watches `commit_bid` events and calls `slash_unrevealed` | Designed |
 | G19 | `blinded_commitment = BHP256(hash, salt)` has undefined salt | proof | Use `commitment_hash` directly in `ParticipationReceipt` — already hides all fields | Designed |
-| G20 | `fairdrop_raise_v2.aleo` missing private bid path | raise | Add `bid_private` (consume credits UTXO) alongside `bid_public` — same pattern as Dutch | Designed |
+| G20 | `fairdrop_raise_v3.aleo` missing private bid path | raise | Add `bid_private` (consume credits UTXO) alongside `bid_public` — same pattern as Dutch | Designed |
 | G21 | `claim` uses caller-supplied params before finalize validates — fragile pattern | all auction | Standard Leo pattern (D11). Finalize rejects if mismatch → tx reverts. Frontend must read from on-chain state. | Designed |
 | G22 | No minimum collateral enforced at sealed commit time — underflow at claim | sealed | In private transition body: assert `payment_amount >= quantity * clearing_price(commit_end_block) / sale_scale` | Designed |
 | G23 | `auction_id` collides across programs — utility mappings share namespace | all | Per-program `PROGRAM_SALT` constant in `auction_id` generation: `BHP256({ PROGRAM_SALT, creator, nonce })` | Designed |
@@ -865,7 +865,7 @@ creator_revenue  = total_payments - protocol_fee
 | G25 | `credit_commission` funding source undefined — escrow insolvency risk | ref | Commissions funded from protocol fee via `referral_reserve[auction_id]` (D13) | Designed |
 | G26 | Vesting cliff/end use `block.height` at claim — different schedules per claimer | vest | Base = `state.ended_at_block`. `cliff_block = ended_at_block + config.vest_cliff_blocks` (S8 fix) | Designed |
 | G27 | `cancel_commitment` leaves `bid_committed = true` — permanent auction lockout | sealed | `finalize_cancel_commitment` resets `bid_committed[key] = false` | Designed |
-| G28 | `fairdrop_raise_v2.aleo` void-if-below-target behavior undefined | raise | Void on `total_payments < raise_target`. `claim_voided` refunds. `withdraw_unsold` returns full supply. | Designed |
+| G28 | `fairdrop_raise_v3.aleo` void-if-below-target behavior undefined | raise | Void on `total_payments < raise_target`. `claim_voided` refunds. `withdraw_unsold` returns full supply. | Designed |
 | G29 | `CredentialMessage` struct field order not defined — off-chain/on-chain mismatch | gate | Formal struct defined in Section 5a with explicit field order. Off-chain service must match exactly. | Designed |
 | G30 | `record_referral` double-crediting — same bidder credited twice for same auction | ref | `referral_recorded: field => bool` keyed by `BHP256(bidder_key, auction_id)` prevents re-entry | Designed |
 | G31 | `participated` not reset on `cancel_commitment` — cancelled bids appear as participation | proof | By design: `participated` = "committed intent." Gating contracts must document this semantics. | Accepted |
@@ -938,7 +938,7 @@ PHASE 1c  fairdrop_sealed_v2.aleo
           ─ new mappings: pending_commits, bid_committed
           ─ deploy slasher bot as protocol infrastructure (S5)
 
-PHASE 1d  fairdrop_raise_v2.aleo + fairdrop_ascending_v3.aleo
+PHASE 1d  fairdrop_raise_v3.aleo + fairdrop_ascending_v3.aleo
           ─ raise: bid_private + bid_public, RaiseBid record, pro-rata allocation
           ─ ascending: same structure as Dutch but price formula inverted
             pay-what-you-bid, Bid record carries bid_price, no refund at claim
@@ -1015,7 +1015,7 @@ PARALLEL 2b  Indexer v2 — extend to watch ascending, lbp, quadratic, ref, proo
 - **Reveal window duration:** what block count is acceptable for user experience? (30 min ≈ 450 blocks at ~4 s/block.)
 - **Slash split ratio:** 80/20 protocol/caller is a placeholder — what ratio maximally incentivizes third-party slashers?
 - **Commission bps range in `fairdrop_ref_v2.aleo`:** should there be a protocol-enforced max to prevent creators from self-referral gaming?
-- **`fairdrop_raise_v2.aleo` supply-not-met handling:** full refund, or clear at floor_price if any payment came in?
+- **`fairdrop_raise_v3.aleo` supply-not-met handling:** full refund, or clear at floor_price if any payment came in?
 - **Phase 1e deployment strategy:** redeploy `fairdrop_dutch_v2` etc. importing `ref` + `vest`, or ship Dutch/Sealed/Raise without ref/vest first and add them in a version bump? (Version bump is simpler operationally but splits the user base.)
 - **G32 — pro-rata `escrow_sales` deduction:** when adding `allocation_factor` in Phase 1c, the `finalize_claim` deduction must change from `bid.quantity` to `actual_quantity`. Must be explicitly verified during implementation.
 - **`PROGRAM_SALT` values:** canonical values assigned in Section 2 (1–6field). Once deployed, changing salt breaks all existing auction IDs. Treat as immutable constants.
@@ -1078,7 +1078,7 @@ The indexer polls the Aleo node, parses finalize executions for all Fairdrop pro
 ```
 fairdrop_dutch_v3.aleo
 fairdrop_sealed_v2.aleo
-fairdrop_raise_v2.aleo
+fairdrop_raise_v3.aleo
 fairdrop_ascending_v3.aleo
 fairdrop_lbp_v3.aleo
 fairdrop_quadratic_v3.aleo
