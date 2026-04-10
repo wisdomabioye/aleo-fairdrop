@@ -1,4 +1,4 @@
-// fairdrop_ascending_v2.aleo — Privacy-preserving ascending-price auction.
+// fairdrop_ascending_v3.aleo — Privacy-preserving ascending-price auction.
 //
 // Mechanism: price rises from floor_price toward ceiling_price in discrete steps.
 // Early bidders pay less; late bidders pay more (pay-what-you-bid, no uniform clearing).
@@ -8,7 +8,7 @@
 // Sale tokens   : token_registry.aleo::Token. Burned at create, re-minted at claim.
 //
 // Roles required:
-//   fairdrop_ascending_v2.aleo — SUPPLY_MANAGER_ROLE on sale token (burn + mint).
+//   fairdrop_ascending_v3.aleo — SUPPLY_MANAGER_ROLE on sale token (burn + mint).
 //   fairdrop_vest_v2.aleo      — SUPPLY_MANAGER_ROLE on sale token (mint at release),
 //                             required only when vest_enabled = true.
 //
@@ -330,7 +330,7 @@ final fn record_bid(
 // Program interface
 // =============================================================================
 
-program fairdrop_ascending_v2.aleo {
+program fairdrop_ascending_v3.aleo {
     // Upgrade governance: 3-of-5 multi-sig must call fairdrop_multisig_v1.aleo::approve_upgrade
     // with contract_key=6field and this program's compiled checksum before deployment.
     @checksum(mapping="fairdrop_multisig_v1.aleo::approved_upgrades", key="6field")
@@ -544,7 +544,7 @@ program fairdrop_ascending_v2.aleo {
 
             // Verify SUPPLY_MANAGER_ROLE on sale token.
             let asc_role_key: field = BHP256::hash_to_field(TokenOwner {
-                account:  fairdrop_ascending_v2.aleo,
+                account:  fairdrop_ascending_v3.aleo,
                 token_id: config.sale_token_id,
             });
             assert_eq(

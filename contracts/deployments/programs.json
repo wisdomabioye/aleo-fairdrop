@@ -45,7 +45,7 @@
       "upgradeKey":     "5field"
     },
     "ascending": {
-      "programId":      "fairdrop_ascending_v2.aleo",
+      "programId":      "fairdrop_ascending_v3.aleo",
       "programAddress": "aleo1kf0rw9ml6de66hgglxtdah255dz885uczeffgku7lavjy3qqcs9q4pzvwh",
       "contractPath":   "contracts/auctions/ascending",
       "salt":           "2field",

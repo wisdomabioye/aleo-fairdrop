@@ -4,7 +4,7 @@
 
 When a bid lands within the final `extension_window` blocks of an ascending auction, the effective end
 block is pushed forward by `extension_blocks`. Prevents last-second bot sniping. Applies to
-`fairdrop_ascending_v2.aleo` only — other auction types do not have a "last-second" problem.
+`fairdrop_ascending_v3.aleo` only — other auction types do not have a "last-second" problem.
 
 ---
 
@@ -12,7 +12,7 @@ block is pushed forward by `extension_blocks`. Prevents last-second bot sniping.
 
 | Layer | Touch |
 |---|---|
-| Contract | `fairdrop_ascending_v2.aleo` — AscendingParams, AuctionState, place_bid_*, close_auction |
+| Contract | `fairdrop_ascending_v3.aleo` — AscendingParams, AuctionState, place_bid_*, close_auction |
 | SDK | `@fairdrop/sdk/transactions` — update `buildCreateAuction` AscendingInput type + `buildPlaceBid` |
 | Frontend | `AscendingPricingStep`, `build-inputs.ts`, auction detail countdown display |
 

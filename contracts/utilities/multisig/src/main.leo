@@ -36,7 +36,7 @@
 //   3field  fairdrop_proof_v2.aleo
 //   4field  fairdrop_ref_v2.aleo
 //   5field  fairdrop_vest_v2.aleo
-//   6field  fairdrop_ascending_v2.aleo
+//   6field  fairdrop_ascending_v3.aleo
 //   7field  fairdrop_dutch_v2.aleo
 //   8field  fairdrop_lbp_v2.aleo
 //   9field  fairdrop_quadratic_v2.aleo
