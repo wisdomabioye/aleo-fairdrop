@@ -23,7 +23,7 @@ Both models are independent. A single auction can have both active simultaneousl
 The `auction_id` inside the receipt never appears on-chain. The contract computes
 `bidder_key = BHP256(self.signer, receipt.auction_id)` entirely in the proof context
 and passes only the hash to `final {}` for verification against the `participated`
-mapping in `fairdrop_proof_v2.aleo`.
+mapping in `fairdrop_proof_v3.aleo`.
 
 What is visible on-chain per claim:
 - A `bidder_key` hash (already public in `participated` from the original bid)
@@ -119,7 +119,7 @@ Protocol calls this when funding from fee reserves.
 ```leo
 fn claim(
     public pool_id:  field,
-    receipt: fairdrop_proof_v2.aleo::ParticipationReceipt,
+    receipt: fairdrop_proof_v3.aleo::ParticipationReceipt,
 ) -> (RewardVoucher, Final)
 ```
 
@@ -140,7 +140,7 @@ let claim_key: field = BHP256::hash_to_field(ClaimKey {
 `final {}` validates:
 - Pool exists and has budget
 - Not expired (`config.expires_at_block == 0 || block.height <= config.expires_at_block`)
-- `fairdrop_proof_v2.aleo::participated[bidder_key] == true`
+- `fairdrop_proof_v3.aleo::participated[bidder_key] == true`
 - If `config.auction_id != 0field`: verifies receipt is from that specific auction
   (private comparison — `receipt.auction_id == config.auction_id` checked in proof context,
   result passed as bool to `final {}`)
@@ -157,9 +157,9 @@ let claim_key: field = BHP256::hash_to_field(ClaimKey {
 ```leo
 fn claim_tiered(
     public pool_id: field,
-    r0: fairdrop_proof_v2.aleo::ParticipationReceipt,
-    r1: fairdrop_proof_v2.aleo::ParticipationReceipt,
-    r2: fairdrop_proof_v2.aleo::ParticipationReceipt,
+    r0: fairdrop_proof_v3.aleo::ParticipationReceipt,
+    r1: fairdrop_proof_v3.aleo::ParticipationReceipt,
+    r2: fairdrop_proof_v3.aleo::ParticipationReceipt,
 ) -> (RewardVoucher, Final)
 ```
 
@@ -271,7 +271,7 @@ After auction clears, bidders who hold a receipt see:
 1. Define `PoolConfig`, `RewardVoucher`, `ClaimKey` structs; mappings in new contract.
 2. Implement `create_pool`, `claim`, `claim_tiered`, `top_up_pool`, `close_pool`,
    `set_registered_auction` transitions.
-3. Register contract as an `allowed_caller` in `fairdrop_proof_v2.aleo`? — No:
+3. Register contract as an `allowed_caller` in `fairdrop_proof_v3.aleo`? — No:
    `fairdrop_rewards_v1.aleo` reads `participated` as a cross-program mapping read
    in `final {}`, not via CPI. No `allowed_callers` change needed.
 4. Add `@checksum` constructor; register upgrade key in multisig.

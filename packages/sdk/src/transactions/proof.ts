@@ -1,5 +1,5 @@
 /**
- * Transaction builders for fairdrop_proof_v2.aleo.
+ * Transaction builders for fairdrop_proof_v3.aleo.
  *
  * Admin (multisig-protected):
  *   setProofAllowedCaller — grant/revoke an auction program's CPI rights.

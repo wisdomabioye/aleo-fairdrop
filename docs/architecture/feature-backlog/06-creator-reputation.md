@@ -2,7 +2,7 @@
 
 ## Summary
 
-Surface the on-chain `CreatorStats` from `fairdrop_proof_v2.aleo` in the frontend. Show a trust
+Surface the on-chain `CreatorStats` from `fairdrop_proof_v3.aleo` in the frontend. Show a trust
 badge on auction cards, a full reputation panel on auction detail pages, and a creator page
 showing their stats and auction history. No new contract data — `reputation[address]` is already
 populated by `update_reputation` CPI calls at `close_auction`.
@@ -28,7 +28,7 @@ identity via its own IPFS metadata and a profile layer adds no verifiable signal
 
 ## On-chain data available
 
-`fairdrop_proof_v2.aleo::reputation[address]` (Leo field names):
+`fairdrop_proof_v3.aleo::reputation[address]` (Leo field names):
 
 ```ts
 auctions_run: u64   // total auctions closed (filled or not)

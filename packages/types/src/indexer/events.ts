@@ -23,7 +23,7 @@ export enum DutchTransition {
 
 /** Utility contract transition names. */
 export enum UtilityTransition {
-  // fairdrop_proof_v2.aleo
+  // fairdrop_proof_v3.aleo
   IssueReceipt       = 'issue_receipt',
   UpdateReputation   = 'update_reputation',
   // fairdrop_vest_v2.aleo

@@ -27,7 +27,7 @@
       "upgradeKey":     "2field"
     },
     "proof": {
-      "programId":      "fairdrop_proof_v2.aleo",
+      "programId":      "fairdrop_proof_v3.aleo",
       "programAddress": "aleo1txlfp23827kt592s6lgwrpv990k3ge5798d2jn8047mh4fv0w5ysfg98nt",
       "contractPath":   "contracts/utilities/proof",
       "upgradeKey":     "3field"

@@ -81,7 +81,7 @@ Change every `transition` to `fn`. The return type `-> Future` becomes `-> Final
 async transition place_bid_public(...) -> (Bid, ParticipationReceipt, Future) {
 
 // after
-fn place_bid_public(...) -> (Bid, fairdrop_proof_v2.aleo::ParticipationReceipt, Final) {
+fn place_bid_public(...) -> (Bid, fairdrop_proof_v3.aleo::ParticipationReceipt, Final) {
 ```
 
 Non-async (pure) transitions that returned no Future simply become:
@@ -145,7 +145,7 @@ Key points:
 fn place_bid_public(...) -> (..., Final) {
     let f_credits: Final = credits.aleo::transfer_public_as_signer(...);
     let f_gate: Final    = fairdrop_gate_v3.aleo::check_admission(...);
-    let (receipt, f_proof): (..., Final) = fairdrop_proof_v2.aleo::issue_receipt(...);
+    let (receipt, f_proof): (..., Final) = fairdrop_proof_v3.aleo::issue_receipt(...);
     // ...build Bid record...
     return (bid, receipt, final {
         assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false));
@@ -253,7 +253,7 @@ fn place_bid_public(
     public auction_id: field,
     public quantity: u128,
     public payment_amount: u64,
-) -> (Bid, fairdrop_proof_v2.aleo::ParticipationReceipt, Final) {
+) -> (Bid, fairdrop_proof_v3.aleo::ParticipationReceipt, Final) {
     let bidder_key: field =
         bid_setup(self.signer, auction_id, quantity, payment_amount);
     let bid: Bid = Bid {
@@ -263,8 +263,8 @@ fn place_bid_public(
     let f_credits: Final =
         credits.aleo::transfer_public_as_signer(self.address, payment_amount);
     let f_gate: Final = fairdrop_gate_v3.aleo::check_admission(auction_id);
-    let (receipt, f_proof): (fairdrop_proof_v2.aleo::ParticipationReceipt, Final) =
-        fairdrop_proof_v2.aleo::issue_receipt(auction_id, 0field, bidder_key);
+    let (receipt, f_proof): (fairdrop_proof_v3.aleo::ParticipationReceipt, Final) =
+        fairdrop_proof_v3.aleo::issue_receipt(auction_id, 0field, bidder_key);
     return (bid, receipt, final {
         assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false));
         f_credits.run(); f_gate.run(); f_proof.run();
@@ -335,7 +335,7 @@ fn place_bid_private_ref(...) -> (..., Final) {
 | Close revenue computation | `close_auction` only | inline (not shared) |
 | Burn-backed mint budget decrement | `claim`, `withdraw_unsold` | `decrement_escrow_sales` |
 | Payment escrow decrement | `withdraw_payments`, `claim_voided` | `decrement_escrow_payments` |
-| Proof D12 check | `fairdrop_proof_v2.aleo` transitions 2+3 | `assert_caller_allowed` |
+| Proof D12 check | `fairdrop_proof_v3.aleo` transitions 2+3 | `assert_caller_allowed` |
 | Ref D12 check | `fairdrop_ref_v2.aleo` transitions | `assert_caller_allowed` |
 
 ---
@@ -347,7 +347,7 @@ Migrate bottom-up: utilities first (no auction dependencies), then auctions, the
 ### Phase 1 — Utility contracts (5 files, ~1,650 lines total)
 
 1. **`fairdrop_config_v3.aleo`** (300 lines) — simplest; no CPI calls; no `final fn` opportunities
-2. **`fairdrop_proof_v2.aleo`** (198 lines) — 3 transitions; extract `assert_caller_allowed` final fn
+2. **`fairdrop_proof_v3.aleo`** (198 lines) — 3 transitions; extract `assert_caller_allowed` final fn
 3. **`fairdrop_gate_v3.aleo`** (382 lines) — 4 transitions; similar D12 pattern
 4. **`fairdrop_ref_v2.aleo`** (461 lines) — 4 transitions; extract `assert_caller_allowed`
 5. **`fairdrop_vest_v2.aleo`** (310 lines) — 3 transitions
@@ -463,7 +463,7 @@ return `Final` and end with `return final { f.run(); }`.**
 
 ```leo
 import fairdrop_dutch_v3.aleo;
-import fairdrop_proof_v2.aleo;
+import fairdrop_proof_v3.aleo;
 import token_registry.aleo;
 
 program test_dutch.aleo {
@@ -476,7 +476,7 @@ program test_dutch.aleo {
     fn test_bid_pub_zero_qty() -> Final {
         let (_, _, f): (
             fairdrop_dutch_v3.aleo::Bid,
-            fairdrop_proof_v2.aleo::ParticipationReceipt,
+            fairdrop_proof_v3.aleo::ParticipationReceipt,
             Final,
         ) = fairdrop_dutch_v3.aleo::place_bid_public(1field, 0u128, 1000u64);
         return final { f.run(); };

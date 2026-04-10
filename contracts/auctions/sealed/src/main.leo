@@ -61,7 +61,7 @@ import credits.aleo;
 import token_registry.aleo;
 import fairdrop_config_v3.aleo;
 import fairdrop_gate_v3.aleo;
-import fairdrop_proof_v2.aleo;
+import fairdrop_proof_v3.aleo;
 import fairdrop_ref_v2.aleo;
 import fairdrop_vest_v2.aleo;
 import fairswap_dex_v3.aleo;
@@ -464,7 +464,7 @@ program fairdrop_sealed_v3.aleo {
         private quantity:      u128,
         private nonce:         field,
         public payment_amount: u64,
-    ) -> (credits.aleo::credits, Commitment, fairdrop_proof_v2.aleo::ParticipationReceipt, Final) {
+    ) -> (credits.aleo::credits, Commitment, fairdrop_proof_v3.aleo::ParticipationReceipt, Final) {
         assert(quantity > 0u128);
         assert(payment_amount > 0u64);
 
@@ -488,8 +488,8 @@ program fairdrop_sealed_v3.aleo {
 
         let f_gate: Final = fairdrop_gate_v3.aleo::check_admission(auction_id);
 
-        let (receipt, f_proof): (fairdrop_proof_v2.aleo::ParticipationReceipt, Final) =
-            fairdrop_proof_v2.aleo::issue_receipt(auction_id, 0field, bidder_key);
+        let (receipt, f_proof): (fairdrop_proof_v3.aleo::ParticipationReceipt, Final) =
+            fairdrop_proof_v3.aleo::issue_receipt(auction_id, 0field, bidder_key);
 
         let commitment: Commitment = Commitment {
             owner:          signer,
@@ -551,7 +551,7 @@ program fairdrop_sealed_v3.aleo {
         private quantity:      u128,
         private nonce:         field,
         public payment_amount: u64,
-    ) -> (Commitment, fairdrop_proof_v2.aleo::ParticipationReceipt, Final) {
+    ) -> (Commitment, fairdrop_proof_v3.aleo::ParticipationReceipt, Final) {
         assert(quantity > 0u128);
         assert(payment_amount > 0u64);
 
@@ -573,8 +573,8 @@ program fairdrop_sealed_v3.aleo {
 
         let f_gate: Final = fairdrop_gate_v3.aleo::check_admission(auction_id);
 
-        let (receipt, f_proof): (fairdrop_proof_v2.aleo::ParticipationReceipt, Final) =
-            fairdrop_proof_v2.aleo::issue_receipt(auction_id, 0field, bidder_key);
+        let (receipt, f_proof): (fairdrop_proof_v3.aleo::ParticipationReceipt, Final) =
+            fairdrop_proof_v3.aleo::issue_receipt(auction_id, 0field, bidder_key);
 
         let commitment: Commitment = Commitment {
             owner:          signer,
@@ -635,7 +635,7 @@ program fairdrop_sealed_v3.aleo {
         private nonce:         field,
         public payment_amount: u64,
         public code_id:        field,
-    ) -> (credits.aleo::credits, Commitment, fairdrop_proof_v2.aleo::ParticipationReceipt, Final) {
+    ) -> (credits.aleo::credits, Commitment, fairdrop_proof_v3.aleo::ParticipationReceipt, Final) {
         assert(quantity > 0u128);
         assert(payment_amount > 0u64);
 
@@ -657,8 +657,8 @@ program fairdrop_sealed_v3.aleo {
 
         let f_gate: Final = fairdrop_gate_v3.aleo::check_admission(auction_id);
 
-        let (receipt, f_proof): (fairdrop_proof_v2.aleo::ParticipationReceipt, Final) =
-            fairdrop_proof_v2.aleo::issue_receipt(auction_id, 0field, bidder_key);
+        let (receipt, f_proof): (fairdrop_proof_v3.aleo::ParticipationReceipt, Final) =
+            fairdrop_proof_v3.aleo::issue_receipt(auction_id, 0field, bidder_key);
 
         let f_ref: Final = fairdrop_ref_v2.aleo::record_referral(
             code_id,
@@ -726,7 +726,7 @@ program fairdrop_sealed_v3.aleo {
         private nonce:         field,
         public payment_amount: u64,
         public code_id:        field,
-    ) -> (Commitment, fairdrop_proof_v2.aleo::ParticipationReceipt, Final) {
+    ) -> (Commitment, fairdrop_proof_v3.aleo::ParticipationReceipt, Final) {
         assert(quantity > 0u128);
         assert(payment_amount > 0u64);
 
@@ -748,8 +748,8 @@ program fairdrop_sealed_v3.aleo {
 
         let f_gate: Final = fairdrop_gate_v3.aleo::check_admission(auction_id);
 
-        let (receipt, f_proof): (fairdrop_proof_v2.aleo::ParticipationReceipt, Final) =
-            fairdrop_proof_v2.aleo::issue_receipt(auction_id, 0field, bidder_key);
+        let (receipt, f_proof): (fairdrop_proof_v3.aleo::ParticipationReceipt, Final) =
+            fairdrop_proof_v3.aleo::issue_receipt(auction_id, 0field, bidder_key);
 
         let f_ref: Final = fairdrop_ref_v2.aleo::record_referral(
             code_id,
@@ -1022,7 +1022,7 @@ program fairdrop_sealed_v3.aleo {
             credits.aleo::transfer_public(signer, closer_reward as u64);
 
         let f_proof: Final =
-            fairdrop_proof_v2.aleo::update_reputation(creator, filled, volume);
+            fairdrop_proof_v3.aleo::update_reputation(creator, filled, volume);
 
         return final {
             f_closer.run();

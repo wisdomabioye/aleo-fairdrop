@@ -49,7 +49,7 @@ export function parseReferralRecord(raw: string): ReferralRecord {
   };
 }
 
-// ── fairdrop_proof_v2.aleo ────────────────────────────────────────────────────
+// ── fairdrop_proof_v3.aleo ────────────────────────────────────────────────────
 
 /**
  * Parse a CreatorStats struct from proof's reputation[creator].

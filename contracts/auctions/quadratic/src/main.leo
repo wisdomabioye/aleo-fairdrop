@@ -77,7 +77,7 @@ import credits.aleo;
 import token_registry.aleo;
 import fairdrop_config_v3.aleo;
 import fairdrop_gate_v3.aleo;
-import fairdrop_proof_v2.aleo;
+import fairdrop_proof_v3.aleo;
 import fairdrop_ref_v2.aleo;
 import fairdrop_vest_v2.aleo;
 import fairswap_dex_v3.aleo;
@@ -483,7 +483,7 @@ program fairdrop_quadratic_v3.aleo {
         payment:               credits.aleo::credits,
         public auction_id:     field,
         public payment_amount: u64,
-    ) -> (credits.aleo::credits, QuadraticBid, fairdrop_proof_v2.aleo::ParticipationReceipt, Final) {
+    ) -> (credits.aleo::credits, QuadraticBid, fairdrop_proof_v3.aleo::ParticipationReceipt, Final) {
         assert(payment_amount > 0u64);
 
         let bidder_key: field = BHP256::hash_to_field(BidderKey {
@@ -498,8 +498,8 @@ program fairdrop_quadratic_v3.aleo {
 
         let f_gate: Final = fairdrop_gate_v3.aleo::check_admission(auction_id);
 
-        let (receipt, f_proof): (fairdrop_proof_v2.aleo::ParticipationReceipt, Final) =
-            fairdrop_proof_v2.aleo::issue_receipt(auction_id, 0field, bidder_key);
+        let (receipt, f_proof): (fairdrop_proof_v3.aleo::ParticipationReceipt, Final) =
+            fairdrop_proof_v3.aleo::issue_receipt(auction_id, 0field, bidder_key);
 
         let bid: QuadraticBid = QuadraticBid {
             owner:               self.signer,
@@ -565,7 +565,7 @@ program fairdrop_quadratic_v3.aleo {
     fn place_bid_public(
         public auction_id:     field,
         public payment_amount: u64,
-    ) -> (QuadraticBid, fairdrop_proof_v2.aleo::ParticipationReceipt, Final) {
+    ) -> (QuadraticBid, fairdrop_proof_v3.aleo::ParticipationReceipt, Final) {
         assert(payment_amount > 0u64);
 
         let bidder_key: field = BHP256::hash_to_field(BidderKey {
@@ -580,8 +580,8 @@ program fairdrop_quadratic_v3.aleo {
 
         let f_gate: Final = fairdrop_gate_v3.aleo::check_admission(auction_id);
 
-        let (receipt, f_proof): (fairdrop_proof_v2.aleo::ParticipationReceipt, Final) =
-            fairdrop_proof_v2.aleo::issue_receipt(auction_id, 0field, bidder_key);
+        let (receipt, f_proof): (fairdrop_proof_v3.aleo::ParticipationReceipt, Final) =
+            fairdrop_proof_v3.aleo::issue_receipt(auction_id, 0field, bidder_key);
 
         let bid: QuadraticBid = QuadraticBid {
             owner:               self.signer,
@@ -649,7 +649,7 @@ program fairdrop_quadratic_v3.aleo {
         public auction_id:     field,
         public payment_amount: u64,
         public code_id:        field,
-    ) -> (credits.aleo::credits, QuadraticBid, fairdrop_proof_v2.aleo::ParticipationReceipt, Final) {
+    ) -> (credits.aleo::credits, QuadraticBid, fairdrop_proof_v3.aleo::ParticipationReceipt, Final) {
         assert(payment_amount > 0u64);
 
         let bidder_key: field = BHP256::hash_to_field(BidderKey {
@@ -664,8 +664,8 @@ program fairdrop_quadratic_v3.aleo {
 
         let f_gate: Final = fairdrop_gate_v3.aleo::check_admission(auction_id);
 
-        let (receipt, f_proof): (fairdrop_proof_v2.aleo::ParticipationReceipt, Final) =
-            fairdrop_proof_v2.aleo::issue_receipt(auction_id, 0field, bidder_key);
+        let (receipt, f_proof): (fairdrop_proof_v3.aleo::ParticipationReceipt, Final) =
+            fairdrop_proof_v3.aleo::issue_receipt(auction_id, 0field, bidder_key);
 
         let f_ref: Final = fairdrop_ref_v2.aleo::record_referral(
             code_id,
@@ -740,7 +740,7 @@ program fairdrop_quadratic_v3.aleo {
         public auction_id:     field,
         public payment_amount: u64,
         public code_id:        field,
-    ) -> (QuadraticBid, fairdrop_proof_v2.aleo::ParticipationReceipt, Final) {
+    ) -> (QuadraticBid, fairdrop_proof_v3.aleo::ParticipationReceipt, Final) {
         assert(payment_amount > 0u64);
 
         let bidder_key: field = BHP256::hash_to_field(BidderKey {
@@ -755,8 +755,8 @@ program fairdrop_quadratic_v3.aleo {
 
         let f_gate: Final = fairdrop_gate_v3.aleo::check_admission(auction_id);
 
-        let (receipt, f_proof): (fairdrop_proof_v2.aleo::ParticipationReceipt, Final) =
-            fairdrop_proof_v2.aleo::issue_receipt(auction_id, 0field, bidder_key);
+        let (receipt, f_proof): (fairdrop_proof_v3.aleo::ParticipationReceipt, Final) =
+            fairdrop_proof_v3.aleo::issue_receipt(auction_id, 0field, bidder_key);
 
         let f_ref: Final = fairdrop_ref_v2.aleo::record_referral(
             code_id,
@@ -844,7 +844,7 @@ program fairdrop_quadratic_v3.aleo {
             credits.aleo::transfer_public(self.signer, closer_reward as u64);
 
         let f_proof: Final =
-            fairdrop_proof_v2.aleo::update_reputation(creator, filled, volume);
+            fairdrop_proof_v3.aleo::update_reputation(creator, filled, volume);
 
         return final {
             assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));

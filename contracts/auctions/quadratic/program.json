@@ -21,7 +21,7 @@
       "path": "../../utilities/gate"
     },
     {
-      "name": "fairdrop_proof_v2.aleo",
+      "name": "fairdrop_proof_v3.aleo",
       "location": "local",
       "path": "../../utilities/proof"
     },

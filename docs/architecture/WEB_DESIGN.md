@@ -53,8 +53,8 @@ The existing frontend lives at `/home/abioye/aleo-guide/fairdrop/` (single-contr
 | Vesting schedule display & token release | Missing | `fairdrop_vest_v2.aleo/release` |
 | Gate verification — Merkle proof submission | Missing | `fairdrop_gate_v3.aleo/verify_merkle` |
 | Gate verification — Credential presentation | Missing | `fairdrop_gate_v3.aleo/verify_credential` |
-| Participation receipt display (auto-issued; no user action) | Missing | `fairdrop_proof_v2.aleo/ParticipationReceipt` records in wallet |
-| Creator reputation display | Missing | `fairdrop_proof_v2.aleo/reputation` mapping |
+| Participation receipt display (auto-issued; no user action) | Missing | `fairdrop_proof_v3.aleo/ParticipationReceipt` records in wallet |
+| Creator reputation display | Missing | `fairdrop_proof_v3.aleo/reputation` mapping |
 | BidForm for: Raise, Sealed (commit/reveal), Ascending, LBP, Quadratic | Missing | respective auction programs |
 | PriceChart for Ascending (rising price) | Missing | |
 | Create auction form variants (all 6 types) | Stub only | |
@@ -948,7 +948,7 @@ On mobile: all panels stack vertically. Right column is sticky on desktop so the
 - Vest icon (hourglass if enabled)
 - `auction_id` truncated with copy button
 - Creator address (truncated, links to creator profile)
-- Creator reputation from `fairdrop_proof_v2.aleo/reputation[creator]`:
+- Creator reputation from `fairdrop_proof_v3.aleo/reputation[creator]`:
   `N auctions · N filled · Volume N ALEO`
 
 ### 8.3 Price Panel (type-dispatched via registry)
@@ -1536,7 +1536,7 @@ Only functions listed here should be called from the frontend. Confirmed by read
 - `release(vest: VestedAllocation, amount: u128)` → `(Token, VestedAllocation)` — record owner
 - `create_vest(...)` — CPI only
 
-### fairdrop_proof_v2.aleo
+### fairdrop_proof_v3.aleo
 - `set_allowed_caller(program_addr: address, allowed: bool)` — admin
 - `issue_receipt(...)` — CPI only; **no user-callable minting**
 - `update_reputation(...)` — CPI only

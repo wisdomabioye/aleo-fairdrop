@@ -8,7 +8,7 @@
 //   test_never_passes removed: @test fn are entry points; dummy stub no longer needed.
 // ─────────────────────────────────────────────────────────────────────────────
 import fairdrop_sealed_v3.aleo;
-import fairdrop_proof_v2.aleo;
+import fairdrop_proof_v3.aleo;
 import token_registry.aleo;
 import credits.aleo;
 
@@ -82,7 +82,7 @@ program test_sealed.aleo {
     fn test_commit_pub_zero_qty() -> Final {
         let (commit, receipt, f): (
             fairdrop_sealed_v3.aleo::Commitment,
-            fairdrop_proof_v2.aleo::ParticipationReceipt,
+            fairdrop_proof_v3.aleo::ParticipationReceipt,
             Final,
         ) = fairdrop_sealed_v3.aleo::commit_bid_public(
             1field,   // auction_id — dummy; assert fires before any CPI
@@ -99,7 +99,7 @@ program test_sealed.aleo {
     fn test_commit_pub_zero_pay() -> Final {
         let (commit, receipt, f): (
             fairdrop_sealed_v3.aleo::Commitment,
-            fairdrop_proof_v2.aleo::ParticipationReceipt,
+            fairdrop_proof_v3.aleo::ParticipationReceipt,
             Final,
         ) = fairdrop_sealed_v3.aleo::commit_bid_public(
             1field,   // auction_id
@@ -116,7 +116,7 @@ program test_sealed.aleo {
     fn test_commit_pub_ref_zero_qty() -> Final {
         let (commit, receipt, f): (
             fairdrop_sealed_v3.aleo::Commitment,
-            fairdrop_proof_v2.aleo::ParticipationReceipt,
+            fairdrop_proof_v3.aleo::ParticipationReceipt,
             Final,
         ) = fairdrop_sealed_v3.aleo::commit_bid_public_ref(
             1field,   // auction_id
@@ -134,7 +134,7 @@ program test_sealed.aleo {
     fn test_commit_pub_ref_zero_pay() -> Final {
         let (commit, receipt, f): (
             fairdrop_sealed_v3.aleo::Commitment,
-            fairdrop_proof_v2.aleo::ParticipationReceipt,
+            fairdrop_proof_v3.aleo::ParticipationReceipt,
             Final,
         ) = fairdrop_sealed_v3.aleo::commit_bid_public_ref(
             1field,
@@ -175,7 +175,7 @@ program test_sealed.aleo {
     // =========================================================================
     // Group 2: D12 caller-guard failures
     // =========================================================================
-    // In the unit-test environment, allowed_callers mappings in fairdrop_proof_v2.aleo
+    // In the unit-test environment, allowed_callers mappings in fairdrop_proof_v3.aleo
     // and fairdrop_ref_v2.aleo are empty. fairdrop_sealed_v3.aleo is not registered
     // as a trusted caller, so CPI calls to those programs fail on their D12 guards.
 

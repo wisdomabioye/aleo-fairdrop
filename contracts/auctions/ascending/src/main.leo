@@ -65,7 +65,7 @@ import credits.aleo;
 import token_registry.aleo;
 import fairdrop_config_v3.aleo;
 import fairdrop_gate_v3.aleo;
-import fairdrop_proof_v2.aleo;
+import fairdrop_proof_v3.aleo;
 import fairdrop_ref_v2.aleo;
 import fairdrop_vest_v2.aleo;
 import fairswap_dex_v3.aleo;
@@ -631,7 +631,7 @@ program fairdrop_ascending_v3.aleo {
         public auction_id:     field,
         public quantity:       u128,
         public payment_amount: u64,
-    ) -> (credits.aleo::credits, Bid, fairdrop_proof_v2.aleo::ParticipationReceipt, Final) {
+    ) -> (credits.aleo::credits, Bid, fairdrop_proof_v3.aleo::ParticipationReceipt, Final) {
         // bid_setup: asserts, bidder_key, Bid record — shared with all variants.
         // bid_setup: asserts + bidder_key. Bid constructed here because
         // module-level fn cannot return records in Leo 4.0.
@@ -650,8 +650,8 @@ program fairdrop_ascending_v3.aleo {
 
         // CPIs shared with public variant (gate + proof).
         let f_gate: Final = fairdrop_gate_v3.aleo::check_admission(auction_id);
-        let (receipt, f_proof): (fairdrop_proof_v2.aleo::ParticipationReceipt, Final) =
-            fairdrop_proof_v2.aleo::issue_receipt(auction_id, 0field, bidder_key);
+        let (receipt, f_proof): (fairdrop_proof_v3.aleo::ParticipationReceipt, Final) =
+            fairdrop_proof_v3.aleo::issue_receipt(auction_id, 0field, bidder_key);
 
         return (change, bid, receipt, final {
             assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
@@ -679,7 +679,7 @@ program fairdrop_ascending_v3.aleo {
         public auction_id:     field,
         public quantity:       u128,
         public payment_amount: u64,
-    ) -> (Bid, fairdrop_proof_v2.aleo::ParticipationReceipt, Final) {
+    ) -> (Bid, fairdrop_proof_v3.aleo::ParticipationReceipt, Final) {
         // bid_setup: asserts + bidder_key. Bid constructed here because
         // module-level fn cannot return records in Leo 4.0.
         let bidder_key: field =
@@ -696,8 +696,8 @@ program fairdrop_ascending_v3.aleo {
             credits.aleo::transfer_public_as_signer(self.address, payment_amount);
 
         let f_gate: Final = fairdrop_gate_v3.aleo::check_admission(auction_id);
-        let (receipt, f_proof): (fairdrop_proof_v2.aleo::ParticipationReceipt, Final) =
-            fairdrop_proof_v2.aleo::issue_receipt(auction_id, 0field, bidder_key);
+        let (receipt, f_proof): (fairdrop_proof_v3.aleo::ParticipationReceipt, Final) =
+            fairdrop_proof_v3.aleo::issue_receipt(auction_id, 0field, bidder_key);
 
         return (bid, receipt, final {
             assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
@@ -724,7 +724,7 @@ program fairdrop_ascending_v3.aleo {
         public quantity:       u128,
         public payment_amount: u64,
         public code_id:        field,
-    ) -> (credits.aleo::credits, Bid, fairdrop_proof_v2.aleo::ParticipationReceipt, Final) {
+    ) -> (credits.aleo::credits, Bid, fairdrop_proof_v3.aleo::ParticipationReceipt, Final) {
         // bid_setup: asserts + bidder_key. Bid constructed here because
         // module-level fn cannot return records in Leo 4.0.
         let bidder_key: field =
@@ -740,8 +740,8 @@ program fairdrop_ascending_v3.aleo {
             credits.aleo::transfer_private_to_public(payment, self.address, payment_amount);
 
         let f_gate: Final = fairdrop_gate_v3.aleo::check_admission(auction_id);
-        let (receipt, f_proof): (fairdrop_proof_v2.aleo::ParticipationReceipt, Final) =
-            fairdrop_proof_v2.aleo::issue_receipt(auction_id, 0field, bidder_key);
+        let (receipt, f_proof): (fairdrop_proof_v3.aleo::ParticipationReceipt, Final) =
+            fairdrop_proof_v3.aleo::issue_receipt(auction_id, 0field, bidder_key);
 
         // Referral attribution: attribute this bid payment to code_id.
         let f_ref: Final = fairdrop_ref_v2.aleo::record_referral(
@@ -775,7 +775,7 @@ program fairdrop_ascending_v3.aleo {
         public quantity:       u128,
         public payment_amount: u64,
         public code_id:        field,
-    ) -> (Bid, fairdrop_proof_v2.aleo::ParticipationReceipt, Final) {
+    ) -> (Bid, fairdrop_proof_v3.aleo::ParticipationReceipt, Final) {
         // bid_setup: asserts + bidder_key. Bid constructed here because
         // module-level fn cannot return records in Leo 4.0.
         let bidder_key: field =
@@ -791,8 +791,8 @@ program fairdrop_ascending_v3.aleo {
             credits.aleo::transfer_public_as_signer(self.address, payment_amount);
 
         let f_gate: Final = fairdrop_gate_v3.aleo::check_admission(auction_id);
-        let (receipt, f_proof): (fairdrop_proof_v2.aleo::ParticipationReceipt, Final) =
-            fairdrop_proof_v2.aleo::issue_receipt(auction_id, 0field, bidder_key);
+        let (receipt, f_proof): (fairdrop_proof_v3.aleo::ParticipationReceipt, Final) =
+            fairdrop_proof_v3.aleo::issue_receipt(auction_id, 0field, bidder_key);
 
         let f_ref: Final = fairdrop_ref_v2.aleo::record_referral(
             code_id,
@@ -837,7 +837,7 @@ program fairdrop_ascending_v3.aleo {
             credits.aleo::transfer_public(closer, closer_reward as u64);
 
         let f_proof: Final =
-            fairdrop_proof_v2.aleo::update_reputation(creator, filled, volume);
+            fairdrop_proof_v3.aleo::update_reputation(creator, filled, volume);
 
         return final {
             assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));

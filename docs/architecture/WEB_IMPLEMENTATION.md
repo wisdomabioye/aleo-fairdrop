@@ -179,7 +179,7 @@
 
 ### Remaining Detail Page features
 
-- [ ] Creator reputation from `fairdrop_proof_v2.aleo/reputation[creator]` — displayed in auction header
+- [ ] Creator reputation from `fairdrop_proof_v3.aleo/reputation[creator]` — displayed in auction header
 - [ ] Participation receipts tab fully wired (filter `requestRecords(PROGRAMS.proof.programId)` by `auction_id`)
 
 ---

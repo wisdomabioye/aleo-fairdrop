@@ -8,7 +8,7 @@
 //   test_never_passes removed: @test fn are entry points; dummy stub no longer needed.
 // ─────────────────────────────────────────────────────────────────────────────
 import fairdrop_quadratic_v3.aleo;
-import fairdrop_proof_v2.aleo;
+import fairdrop_proof_v3.aleo;
 import token_registry.aleo;
 import credits.aleo;
 
@@ -78,7 +78,7 @@ program test_quadratic.aleo {
     fn test_bid_pub_zero_pay() -> Final {
         let (bid, receipt, f): (
             fairdrop_quadratic_v3.aleo::QuadraticBid,
-            fairdrop_proof_v2.aleo::ParticipationReceipt,
+            fairdrop_proof_v3.aleo::ParticipationReceipt,
             Final,
         ) = fairdrop_quadratic_v3.aleo::place_bid_public(
             1field,  // auction_id — dummy; assert fires before any CPI
@@ -93,7 +93,7 @@ program test_quadratic.aleo {
     fn test_bid_pub_ref_zero_pay() -> Final {
         let (bid, receipt, f): (
             fairdrop_quadratic_v3.aleo::QuadraticBid,
-            fairdrop_proof_v2.aleo::ParticipationReceipt,
+            fairdrop_proof_v3.aleo::ParticipationReceipt,
             Final,
         ) = fairdrop_quadratic_v3.aleo::place_bid_public_ref(
             1field,  // auction_id
@@ -132,7 +132,7 @@ program test_quadratic.aleo {
     // =========================================================================
     // Group 2: D12 caller-guard failures
     // =========================================================================
-    // In the unit-test environment, allowed_callers mappings in fairdrop_proof_v2.aleo
+    // In the unit-test environment, allowed_callers mappings in fairdrop_proof_v3.aleo
     // and fairdrop_ref_v2.aleo are empty. fairdrop_quadratic_v3.aleo is not registered
     // as a trusted caller, so CPI calls to those programs fail on their D12 guards.
 

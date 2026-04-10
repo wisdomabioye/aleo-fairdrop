@@ -1,5 +1,5 @@
 /**
- * On-chain mapping reads for fairdrop_proof_v2.aleo.
+ * On-chain mapping reads for fairdrop_proof_v3.aleo.
  */
 
 import type { CreatorReputation } from '@fairdrop/types/contracts/utilities';

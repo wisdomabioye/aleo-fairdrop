@@ -19,7 +19,7 @@ The plan also had a fundamental architecture flaw: it tried to use `reputation[b
 (a **creator** stats mapping) as a bidder participation signal. There is no public
 bidder participation aggregate in the protocol, and building one would deanonymize
 bidders — directly contradicting the `BHP256(bidder, auction_id)` privacy model in
-`fairdrop_proof_v2.aleo`.
+`fairdrop_proof_v3.aleo`.
 
 ---
 

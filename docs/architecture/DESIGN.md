@@ -44,7 +44,7 @@ fairdrop_quadratic_v3.aleo  ← pro-rata by sqrt(payment). Anti-whale, ZK-native
      all six import ↓
 
 fairdrop_gate_v3.aleo       ← allowlist + ZK credential gating
-fairdrop_proof_v2.aleo      ← participation receipts + creator reputation
+fairdrop_proof_v3.aleo      ← participation receipts + creator reputation
 fairdrop_ref_v2.aleo        ← referral codes + commission distribution
 fairdrop_vest_v2.aleo       ← post-claim token vesting
 ```
@@ -68,7 +68,7 @@ fairdrop_quadratic_v3.aleo  PROGRAM_SALT = 6field
 
 **CPI direction:** auction contracts import and call utility contracts. Utility contracts never call auction contracts. One-way dependency.
 
-**Record ownership:** records belong to their defining program. `fairdrop_dutch_v3.aleo/Bid` cannot be consumed by `fairdrop_sealed_v3.aleo`. Each auction type defines its own record types. Utility contracts define their own records (e.g. `fairdrop_proof_v2.aleo/ParticipationReceipt`).
+**Record ownership:** records belong to their defining program. `fairdrop_dutch_v3.aleo/Bid` cannot be consumed by `fairdrop_sealed_v3.aleo`. Each auction type defines its own record types. Utility contracts define their own records (e.g. `fairdrop_proof_v3.aleo/ParticipationReceipt`).
 
 **Leo contract mutability (important):** Leo contracts deployed on-chain are upgradeable within these rules:
 - **Allowed:** add new `import` statements, add new transitions, add new finalize functions, modify existing finalize/transition logic, add new mappings, add new records, add new structs.
@@ -494,7 +494,7 @@ The off-chain Fairdrop signing service MUST hash fields in this exact order usin
 
 ---
 
-### 5b. `fairdrop_proof_v2.aleo` — Participation & Reputation
+### 5b. `fairdrop_proof_v3.aleo` — Participation & Reputation
 Issues participation receipts and tracks creator reputation. Imported by all auction contracts.
 
 ```
@@ -918,13 +918,13 @@ CRITICAL DEPLOYMENT RULE (C2): Auction contracts import utility contracts at dep
 Imports cannot be added after deployment. Build ALL utility contracts first.
 Deploy auction contracts ONCE, correctly, with all imports in place.
 
-PHASE 1a  fairdrop_gate_v3.aleo + fairdrop_proof_v2.aleo
+PHASE 1a  fairdrop_gate_v3.aleo + fairdrop_proof_v3.aleo
           ─ gate: verify_merkle, verify_credential, register_gate (gate_mode 0/1/2)
           ─ proof: issue_receipt (commitment_hash, not blinded), update_reputation
           ─ deploy both before writing any auction contract code
 
 PHASE 1b  fairdrop_dutch_v3.aleo — NEW deployment (not an update to live v4)
-          ─ imports fairdrop_gate_v3.aleo + fairdrop_proof_v2.aleo from day one
+          ─ imports fairdrop_gate_v3.aleo + fairdrop_proof_v3.aleo from day one
           ─ protocol fee + closer reward in close_auction
           ─ cancel_auction + claim_voided transitions (G4)
           ─ optional gating via gate_mode config field (M1)
@@ -932,7 +932,7 @@ PHASE 1b  fairdrop_dutch_v3.aleo — NEW deployment (not an update to live v4)
 
 PHASE 1c  fairdrop_sealed_v3.aleo
           ─ commit_bid, reveal_bid, slash_unrevealed, close, claim, claim_voided
-          ─ imports fairdrop_gate_v3.aleo + fairdrop_proof_v2.aleo
+          ─ imports fairdrop_gate_v3.aleo + fairdrop_proof_v3.aleo
           ─ AuctionConfig: commit_end_block, reveal_end_block, start_price, floor_price, decay fields
           ─ clearing_price = Dutch price at commit_end_block (D10)
           ─ new mappings: pending_commits, bid_committed
@@ -942,7 +942,7 @@ PHASE 1d  fairdrop_raise_v3.aleo + fairdrop_ascending_v3.aleo
           ─ raise: bid_private + bid_public, RaiseBid record, pro-rata allocation
           ─ ascending: same structure as Dutch but price formula inverted
             pay-what-you-bid, Bid record carries bid_price, no refund at claim
-          ─ both import fairdrop_gate_v3.aleo + fairdrop_proof_v2.aleo
+          ─ both import fairdrop_gate_v3.aleo + fairdrop_proof_v3.aleo
 
 PHASE 1e  fairdrop_ref_v2.aleo + fairdrop_vest_v2.aleo
           ─ ref: create_code, record_referral, credit_commission (permissionless), claim_commission
@@ -1083,7 +1083,7 @@ fairdrop_ascending_v3.aleo
 fairdrop_lbp_v3.aleo
 fairdrop_quadratic_v3.aleo
 fairdrop_gate_v3.aleo       (for gate registrations)
-fairdrop_proof_v2.aleo      (for reputation updates)
+fairdrop_proof_v3.aleo      (for reputation updates)
 fairdrop_ref_v2.aleo        (for referral activity)
 ```
 
@@ -1161,7 +1161,7 @@ CREATE TABLE commitments (
     status           TEXT NOT NULL       -- 'pending' | 'revealed' | 'cancelled' | 'slashed'
 );
 
--- Creator reputation (from fairdrop_proof_v2.aleo)
+-- Creator reputation (from fairdrop_proof_v3.aleo)
 CREATE TABLE creator_stats (
     creator          TEXT PRIMARY KEY,
     auctions_run     INTEGER DEFAULT 0,
@@ -1355,7 +1355,7 @@ body: {
 - `ALLOWLIST` — address must be in a creator-supplied list (stored in credential service DB)
 - `KYC` — address must have passed a KYC provider integration (e.g., Fractal, Synaps)
 - `TOKEN_HOLD` — address must hold a minimum balance of a specified token (indexer verifies)
-- `PREVIOUS_PARTICIPANT` — address must appear in `fairdrop_proof_v2.aleo/participated` for a prior auction
+- `PREVIOUS_PARTICIPANT` — address must appear in `fairdrop_proof_v3.aleo/participated` for a prior auction
 
 **Signing:**
 ```
@@ -1419,7 +1419,7 @@ Sealed auction bidders must submit their reveal within `[commit_end_block, revea
 | Commitment hashes | Yes | `pending_commits` mapping — directly readable |
 | Clearing price | Yes | Computed from config deterministically |
 | Metadata content | Yes | Hash on-chain; content on IPFS; anyone can verify |
-| Creator reputation | Yes | `fairdrop_proof_v2.aleo/reputation` mapping |
+| Creator reputation | Yes | `fairdrop_proof_v3.aleo/reputation` mapping |
 | Credential issuance | **No** | Signing service is a trust boundary — issuer's off-chain decisions are opaque |
 | Indexer data | **Partially** | Convenience layer; any discrepancy is verifiable against chain |
 

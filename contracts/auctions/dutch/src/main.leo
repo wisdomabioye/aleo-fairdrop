@@ -57,7 +57,7 @@
 import fairdrop_multisig_v2.aleo;
 import fairdrop_config_v3.aleo;
 import fairdrop_gate_v3.aleo;
-import fairdrop_proof_v2.aleo;
+import fairdrop_proof_v3.aleo;
 import fairdrop_ref_v2.aleo;
 import fairdrop_vest_v2.aleo;
 import credits.aleo;
@@ -579,7 +579,7 @@ program fairdrop_dutch_v3.aleo {
         public auction_id:     field,
         public quantity:       u128,
         public payment_amount: u64,
-    ) -> (credits.aleo::credits, Bid, fairdrop_proof_v2.aleo::ParticipationReceipt, Final) {
+    ) -> (credits.aleo::credits, Bid, fairdrop_proof_v3.aleo::ParticipationReceipt, Final) {
         // bid_setup: asserts + bidder_key. Bid constructed here (records cannot
         // be returned from module-level fn in Leo 4.0).
         let bidder_key: field =
@@ -597,8 +597,8 @@ program fairdrop_dutch_v3.aleo {
 
         let f_gate: Final = fairdrop_gate_v3.aleo::check_admission(auction_id);
 
-        let (receipt, f_proof): (fairdrop_proof_v2.aleo::ParticipationReceipt, Final) =
-            fairdrop_proof_v2.aleo::issue_receipt(auction_id, 0field, bidder_key);
+        let (receipt, f_proof): (fairdrop_proof_v3.aleo::ParticipationReceipt, Final) =
+            fairdrop_proof_v3.aleo::issue_receipt(auction_id, 0field, bidder_key);
 
         return (change, bid, receipt, final {
             assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
@@ -625,7 +625,7 @@ program fairdrop_dutch_v3.aleo {
         public auction_id:     field,
         public quantity:       u128,
         public payment_amount: u64,
-    ) -> (Bid, fairdrop_proof_v2.aleo::ParticipationReceipt, Final) {
+    ) -> (Bid, fairdrop_proof_v3.aleo::ParticipationReceipt, Final) {
         let bidder_key: field =
             bid_setup(self.signer, auction_id, quantity, payment_amount);
         let bid: Bid = Bid {
@@ -640,8 +640,8 @@ program fairdrop_dutch_v3.aleo {
 
         let f_gate: Final = fairdrop_gate_v3.aleo::check_admission(auction_id);
 
-        let (receipt, f_proof): (fairdrop_proof_v2.aleo::ParticipationReceipt, Final) =
-            fairdrop_proof_v2.aleo::issue_receipt(auction_id, 0field, bidder_key);
+        let (receipt, f_proof): (fairdrop_proof_v3.aleo::ParticipationReceipt, Final) =
+            fairdrop_proof_v3.aleo::issue_receipt(auction_id, 0field, bidder_key);
 
         return (bid, receipt, final {
             assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));
@@ -668,7 +668,7 @@ program fairdrop_dutch_v3.aleo {
         public quantity:       u128,
         public payment_amount: u64,
         public code_id:        field,
-    ) -> (credits.aleo::credits, Bid, fairdrop_proof_v2.aleo::ParticipationReceipt, Final) {
+    ) -> (credits.aleo::credits, Bid, fairdrop_proof_v3.aleo::ParticipationReceipt, Final) {
         let bidder_key: field =
             bid_setup(self.signer, auction_id, quantity, payment_amount);
         let bid: Bid = Bid {
@@ -683,8 +683,8 @@ program fairdrop_dutch_v3.aleo {
 
         let f_gate: Final = fairdrop_gate_v3.aleo::check_admission(auction_id);
 
-        let (receipt, f_proof): (fairdrop_proof_v2.aleo::ParticipationReceipt, Final) =
-            fairdrop_proof_v2.aleo::issue_receipt(auction_id, 0field, bidder_key);
+        let (receipt, f_proof): (fairdrop_proof_v3.aleo::ParticipationReceipt, Final) =
+            fairdrop_proof_v3.aleo::issue_receipt(auction_id, 0field, bidder_key);
 
         // Attribute this bid to the referral code.
         let f_ref: Final = fairdrop_ref_v2.aleo::record_referral(
@@ -718,7 +718,7 @@ program fairdrop_dutch_v3.aleo {
         public quantity:       u128,
         public payment_amount: u64,
         public code_id:        field,
-    ) -> (Bid, fairdrop_proof_v2.aleo::ParticipationReceipt, Final) {
+    ) -> (Bid, fairdrop_proof_v3.aleo::ParticipationReceipt, Final) {
         let bidder_key: field =
             bid_setup(self.signer, auction_id, quantity, payment_amount);
         let bid: Bid = Bid {
@@ -733,8 +733,8 @@ program fairdrop_dutch_v3.aleo {
 
         let f_gate: Final = fairdrop_gate_v3.aleo::check_admission(auction_id);
 
-        let (receipt, f_proof): (fairdrop_proof_v2.aleo::ParticipationReceipt, Final) =
-            fairdrop_proof_v2.aleo::issue_receipt(auction_id, 0field, bidder_key);
+        let (receipt, f_proof): (fairdrop_proof_v3.aleo::ParticipationReceipt, Final) =
+            fairdrop_proof_v3.aleo::issue_receipt(auction_id, 0field, bidder_key);
 
         let f_ref: Final = fairdrop_ref_v2.aleo::record_referral(
             code_id,
@@ -784,7 +784,7 @@ program fairdrop_dutch_v3.aleo {
 
         // Update creator's on-chain reputation.
         let f_proof: Final =
-            fairdrop_proof_v2.aleo::update_reputation(creator, filled, volume);
+            fairdrop_proof_v3.aleo::update_reputation(creator, filled, volume);
 
         return final {
             assert(!fairdrop_config_v3.aleo::paused.get_or_use(0field, false) && !paused.get_or_use(0field, false));

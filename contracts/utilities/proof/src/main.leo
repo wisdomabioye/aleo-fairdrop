@@ -1,4 +1,4 @@
-// fairdrop_proof_v2.aleo — Participation receipts and creator reputation.
+// fairdrop_proof_v3.aleo — Participation receipts and creator reputation.
 // Leo 4.0 migration: fn/Final/final/:: — no behavioural changes.
 //
 // Responsibility:
@@ -54,7 +54,7 @@ struct AllowedCallerOp { caller: address, allowed: bool, nonce: u64 }
 // Program interface
 // =============================================================================
 
-program fairdrop_proof_v2.aleo {
+program fairdrop_proof_v3.aleo {
     // Upgrade governance: 3-of-5 multi-sig must call fairdrop_multisig_v2.aleo::approve_upgrade
     // with contract_key=3field and this program's compiled checksum before deployment.
     @checksum(mapping="fairdrop_multisig_v2.aleo::approved_upgrades", key="3field")

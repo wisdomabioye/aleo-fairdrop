@@ -144,7 +144,7 @@ From the admin panel, approve each auction contract as a caller in each utility 
 
 - `fairdrop_config_v3.aleo`
 - `fairdrop_gate_v3.aleo`
-- `fairdrop_proof_v2.aleo`
+- `fairdrop_proof_v3.aleo`
 - `fairdrop_ref_v2.aleo`
 - `fairdrop_vest_v2.aleo`
 
