@@ -86,7 +86,7 @@ program fairdrop_multisig_v1.aleo {
     const KEY_QUADRATIC:     field = 9field;
     const KEY_RAISE:         field = 10field;
     const KEY_SEALED:        field = 11field;
-    const KEY_FAIRSWAP_V2:   field = 12field;  // fairswap_dex_v2.aleo
+    const KEY_FAIRSWAP:   field = 12field;  // fairswap
 
     // =========================================================================
     // Mappings

@@ -20,6 +20,7 @@ export interface Programs {
   proof:     ProgramEntry;
   ref:       ProgramEntry;
   vest:      ProgramEntry;
+  fairswap:      ProgramEntry;
 }
 
 export interface Accounts {
