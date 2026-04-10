@@ -27,7 +27,7 @@ const privateFn: AbiFunction = {
   outputs: [],
 };
 
-const PROGRAM = 'fairswap_dex_v2.aleo';
+const PROGRAM = 'fairswap_dex_v3.aleo';
 const ADDR    = 'aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc';
 
 describe('createTransitionBuilder — build()', () => {

@@ -42,7 +42,7 @@
 //   9field  fairdrop_quadratic_v3.aleo
 //  10field  fairdrop_raise_v3.aleo
 //  11field  fairdrop_sealed_v3.aleo
-//  12field  fairswap_dex_v2.aleo
+//  12field  fairswap_dex_v3.aleo
 //  13field+ reserved for future contracts
 //
 // ── Upgrade governance for this contract ─────────────────────────────────────

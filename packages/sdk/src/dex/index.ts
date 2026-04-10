@@ -1,7 +1,7 @@
 /**
  * @fairdrop/sdk/dex
  *
- * Everything needed to interact with fairswap_dex_v2.aleo.
+ * Everything needed to interact with fairswap_dex_v3.aleo.
  *
  * Preferred usage — generated typed client:
  *   import { createFairswapDexV2 } from '@fairdrop/sdk/dex';

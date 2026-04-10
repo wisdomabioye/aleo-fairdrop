@@ -3,14 +3,14 @@
 ## Summary
 
 After `close_auction`, the creator seeds a DEX liquidity pool using their revenue and unsold
-supply in **a single transaction**. The auction contract calls `fairswap_dex_v2.aleo` directly
+supply in **a single transaction**. The auction contract calls `fairswap_dex_v3.aleo` directly
 via CPI — no record scanning, no multi-step sequence, no intermediate withdrawals.
 
 **Status: CONTRACT LAYER COMPLETE** — `seed_liquidity` is implemented and tested in all 6
 auction contracts. SDK and frontend integration remain.
 
 Contract work completed:
-1. `fairswap_dex_v2.aleo` written, tested, and DEX `token_registry` arg order corrected.
+1. `fairswap_dex_v3.aleo` written, tested, and DEX `token_registry` arg order corrected.
 2. `add_liquidity_cpi` supports atomic pool creation (`pools.contains()` check).
 3. Upgrade key `12field` reserved in `fairdrop_multisig_v1.aleo`.
 4. `seed_liquidity` added to all 6 auction contracts (raise, dutch, ascending, sealed, lbp, quadratic).
@@ -22,7 +22,7 @@ Contract work completed:
 Remaining before deployment:
 1. SDK: `buildSeedLiquidity` + `validateSeedLiquidity` pre-flight (see SDK section below).
 2. Frontend: update `useSeedLiquidity` + `SeedLiquidityPanel` to single-step.
-3. `fairswap_dex_v2.aleo` deployed and verified on Aleo testnet/mainnet.
+3. `fairswap_dex_v3.aleo` deployed and verified on Aleo testnet/mainnet.
 4. Integration test on devnet: cleared auction → seed_liquidity → pool seeded → LP received.
 
 ---
@@ -75,7 +75,7 @@ check will surface an error if the creator's balance is insufficient.
 
 ---
 
-## Prerequisite: `fairswap_dex_v2.aleo` revamp
+## Prerequisite: `fairswap_dex_v3.aleo` revamp
 
 The existing `fairswap_dex_v1.aleo` (renamed from `private_dex.aleo`) is not suitable for
 long-term use. It lacks a factory pattern, uses LP token records (which break CPI composability),
@@ -266,7 +266,7 @@ let (record_sale, f_sale): (token_registry.aleo::Token, Final) =
 
 // 4. DEX: atomically create pool (if new) + update reserves + mint LP to lp_recipient
 //    Both records are consumed here — same proof, never on-chain as UTXOs.
-let f_cpi: Final = fairswap_dex_v2.aleo::add_liquidity_cpi_private_in(
+let f_cpi: Final = fairswap_dex_v3.aleo::add_liquidity_cpi_private_in(
     record_sale,
     record_cred,
     fee_bps,
@@ -318,11 +318,11 @@ f_cpi.run()      // DEX: pool create (if new) + reserve update + LP mint to lp_r
 
 Each auction contract received:
 
-1. **Import**: `import fairswap_dex_v2.aleo;`
+1. **Import**: `import fairswap_dex_v3.aleo;`
 2. **`ZERO_ADDRESS` constant**: `const ZERO_ADDRESS: address = aleo1qqq...3ljyzc;` — defined after `PROGRAM_SALT` in each contract.
 3. **`seed_liquidity` transition** — per the design above.
 
-No `DEX_ADDRESS` constant needed. Leo resolves program addresses from the import — `fairswap_dex_v2.aleo`
+No `DEX_ADDRESS` constant needed. Leo resolves program addresses from the import — `fairswap_dex_v3.aleo`
 is used directly as an `address` value throughout, matching the existing pattern used for `fairdrop_vest_v2.aleo`.
 
 ---
@@ -473,7 +473,7 @@ function useSeedLiquidity(auctionId: string, auctionType: AuctionType): {
 ## Checklist
 
 ### Contract layer — complete
-- [x] `fairswap_dex_v2.aleo` written and unit-tested
+- [x] `fairswap_dex_v3.aleo` written and unit-tested
 - [x] `add_liquidity_cpi_private_in` supports atomic pool creation (no prior `create_pool` required); pause-exempt for existing pools
 - [x] Upgrade key `12field` reserved in `fairdrop_multisig_v1.aleo`
 - [x] Two-level pause added to all 6 auction contracts and DEX
@@ -491,18 +491,18 @@ function useSeedLiquidity(auctionId: string, auctionType: AuctionType): {
 - [ ] `SeedLiquidityPanel` updated to single-step status UI
 
 ### Deployment — pending
-- [ ] `fairswap_dex_v2.aleo` deployed and verified on testnet
+- [ ] `fairswap_dex_v3.aleo` deployed and verified on testnet
 - [ ] Integration test on devnet: cleared auction → `seed_liquidity` → pool seeded → LP received
 
 ---
 
 ## Implementation steps
 
-1. ~~Write `fairswap_dex_v2.aleo`~~ ✓ done
-2. ~~Write unit tests for `fairswap_dex_v2.aleo`~~ ✓ done
+1. ~~Write `fairswap_dex_v3.aleo`~~ ✓ done
+2. ~~Write unit tests for `fairswap_dex_v3.aleo`~~ ✓ done
 3. ~~Audit `withdraw_unsold` in all 6 auction contracts; fix raise's missing upper-bound check~~ ✓ done
 4. ~~Add `seed_liquidity` to all 6 auction contracts~~ ✓ done
-   - ~~`import fairswap_dex_v2.aleo;`~~
+   - ~~`import fairswap_dex_v3.aleo;`~~
    - ~~`ZERO_ADDRESS` constant, `assert_neq(lp_recipient, ZERO_ADDRESS)` guard~~
    - ~~`seed_liquidity` transition (per design above)~~
    - ~~Unit tests (Group 5) added to all 6 test files~~
@@ -511,7 +511,7 @@ function useSeedLiquidity(auctionId: string, auctionType: AuctionType): {
    - Pre-flight: check creator holds `amount_credits` CREDITS_RESERVED_TOKEN_ID; surface error if not
 7. Update `useSeedLiquidity` — single-step execution, pool preview via `fetchPool`
 8. Update `SeedLiquidityPanel` — remove multi-step status UI
-9. Deploy `fairswap_dex_v2.aleo` to testnet; run devnet integration test
+9. Deploy `fairswap_dex_v3.aleo` to testnet; run devnet integration test
 
 ---
 
@@ -519,7 +519,7 @@ function useSeedLiquidity(auctionId: string, auctionType: AuctionType): {
 
 # DEX Extension Phases
 
-These phases build on top of `fairswap_dex_v2.aleo` once it is deployed and stable.
+These phases build on top of `fairswap_dex_v3.aleo` once it is deployed and stable.
 Each phase is independently shippable.
 
 ---
@@ -532,7 +532,7 @@ splitting their balance.
 
 ### Contracts
 
-`fairswap_router_v1.aleo` — a thin routing layer that CPI-calls `fairswap_dex_v2.aleo`.
+`fairswap_router_v1.aleo` — a thin routing layer that CPI-calls `fairswap_dex_v3.aleo`.
 It holds no funds and owns no state. Upgrade key: `13field`.
 
 ### Transitions
@@ -656,7 +656,7 @@ export function computeLpShare(lpAmount: bigint, lpSupply: bigint, reserveA: big
 
 ## Phase 3 — Price Oracle Exposure
 
-**Goal:** Make `fairswap_dex_v2.aleo` usable as an on-chain price oracle for other Aleo
+**Goal:** Make `fairswap_dex_v3.aleo` usable as an on-chain price oracle for other Aleo
 contracts (e.g. a future lending or derivatives protocol).
 
 No new contracts. The TWAP values (`price_a_cum`, `price_b_cum`, `last_block`) are already in
@@ -667,12 +667,12 @@ No new contracts. The TWAP values (`price_a_cum`, `price_b_cum`, `last_block`) a
 A contract that needs a price reads the pool mapping directly via CPI:
 
 ```leo
-let pool: PoolState = fairswap_dex_v2.aleo/pools.get(pool_key);
+let pool: PoolState = fairswap_dex_v3.aleo/pools.get(pool_key);
 // Snapshot price_a_cum at two block heights (stored in own mapping)
 // TWAP = (price_a_cum_now - price_a_cum_then) / (block_now - block_then)
 ```
 
-The consuming contract must store its own snapshots — `fairswap_dex_v2.aleo` does not push
+The consuming contract must store its own snapshots — `fairswap_dex_v3.aleo` does not push
 prices anywhere. This is identical to the Uniswap V2 oracle pattern.
 
 ### Indexer additions

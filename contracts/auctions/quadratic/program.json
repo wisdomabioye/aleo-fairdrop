@@ -36,7 +36,7 @@
       "path": "../../utilities/vest"
     },
     {
-      "name": "fairswap_dex_v2.aleo",
+      "name": "fairswap_dex_v3.aleo",
       "location": "local",
       "path": "../../dex/fairswap_dex"
     },

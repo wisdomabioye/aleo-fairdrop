@@ -85,7 +85,7 @@ import fairdrop_gate_v2.aleo;
 import fairdrop_proof_v2.aleo;
 import fairdrop_ref_v2.aleo;
 import fairdrop_vest_v2.aleo;
-import fairswap_dex_v2.aleo;
+import fairswap_dex_v3.aleo;
 
 // =========================================================================
 // Structs (moved outside program {} for Leo 4.0)
@@ -1248,7 +1248,7 @@ program fairdrop_lbp_v3.aleo {
     // seed_liquidity — post-auction DEX pool seeding (creator only)
     // =========================================================================
     //
-    // After close_auction (cleared), creator seeds fairswap_dex_v2.aleo with
+    // After close_auction (cleared), creator seeds fairswap_dex_v3.aleo with
     // liquidity in a single atomic transaction. No intermediate withdrawals.
     //
     // Token flow (all within one final {} — fully atomic):
@@ -1291,13 +1291,13 @@ program fairdrop_lbp_v3.aleo {
         let f_signer_to_auction: Final =
             token_registry.aleo::transfer_public_as_signer(CREDITS_RESERVED_TOKEN_ID, self.address, amount_credits);
         let (record_credits, f_to_private): (token_registry.aleo::Token, Final) =
-            token_registry.aleo::transfer_public_to_private(CREDITS_RESERVED_TOKEN_ID, fairswap_dex_v2.aleo, amount_credits, false);
+            token_registry.aleo::transfer_public_to_private(CREDITS_RESERVED_TOKEN_ID, fairswap_dex_v3.aleo, amount_credits, false);
 
         // Mint unsold sale tokens as a private record owned by the DEX.
         let (record_sale, f_sale): (token_registry.aleo::Token, Final) =
-            token_registry.aleo::mint_private(sale_token_id, fairswap_dex_v2.aleo, amount_sale_token, false, 4294967295u32);
+            token_registry.aleo::mint_private(sale_token_id, fairswap_dex_v3.aleo, amount_sale_token, false, 4294967295u32);
 
-        let f_cpi: Final = fairswap_dex_v2.aleo::add_liquidity_cpi_private_in(
+        let f_cpi: Final = fairswap_dex_v3.aleo::add_liquidity_cpi_private_in(
             record_credits,
             record_sale,
             fee_bps,

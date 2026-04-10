@@ -74,7 +74,7 @@ The `abi.json` produced by `leo build` has five top-level keys:
 
 | Key | Purpose |
 |-----|---------|
-| `program` | Program ID string (`"fairswap_dex_v2.aleo"`) |
+| `program` | Program ID string (`"fairswap_dex_v3.aleo"`) |
 | `structs` | Named structs with typed fields |
 | `records` | Named records with typed fields + mode |
 | `mappings` | On-chain mappings: key type + value type |
@@ -760,7 +760,7 @@ import type { WalletRecord }                                  from "@fairdrop/ty
 
 ```typescript
 // auto-generated — do not edit
-// source: fairswap_dex_v2.aleo  abi.json
+// source: fairswap_dex_v3.aleo  abi.json
 
 import { createRecordScanner }                         from "@fairdrop/leo-abigen";
 import type { TransitionHandle, TxOptions, AbiRecord } from "@fairdrop/leo-abigen";

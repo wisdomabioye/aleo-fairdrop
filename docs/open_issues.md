@@ -81,7 +81,7 @@ None viable for this codebase. The affected functions (`vest::release`, `ref::cl
 ## Issue 2: Private paths use `burn_private`/`mint_private` — fails for all external tokens
 
 **Severity:** Critical
-**Component:** `fairswap_dex_v2.aleo` — `add_liquidity_private` (L474–477), `remove_liquidity_private` (L752–755), `swap_private` (L973–976)
+**Component:** `fairswap_dex_v3.aleo` — `add_liquidity_private` (L474–477), `remove_liquidity_private` (L752–755), `swap_private` (L973–976)
 **Status:** Resolved (superseded by Issue 3 fix)
 
 ### Description
@@ -97,7 +97,7 @@ Resolved as part of Issue 3. The private paths were switched from `burn_private`
 ## Issue 3: Phantom reserves — private swaps and private adds inflate reserves without funding DEX balance
 
 **Severity:** Critical
-**Component:** `fairswap_dex_v2.aleo` — `swap_private` (L978–1017), `add_liquidity_private` (L481–537)
+**Component:** `fairswap_dex_v3.aleo` — `swap_private` (L978–1017), `add_liquidity_private` (L481–537)
 **Status:** Resolved
 
 ### Description
@@ -127,7 +127,7 @@ Both functions are permissionless (no role required), so Issue 2's role checks w
 ## Issue 4: Stale header comment describes the old `add_liquidity_cpi` two-step design
 
 **Severity:** High (misleads SDK integrators)
-**Component:** `fairswap_dex_v2.aleo` — lines 12, 39–43
+**Component:** `fairswap_dex_v3.aleo` — lines 12, 39–43
 **Status:** Resolved
 
 ### Description
@@ -154,7 +154,7 @@ Replace lines 39–43 with:
 ## Issue 5: Undocumented u128 overflow in `lp_for_add`, `sqrt_u128(a×b)`, and `swap_out`
 
 **Severity:** High (silent revert at moderate liquidity levels)
-**Component:** `fairswap_dex_v2.aleo` — `lp_for_add` (L117–118), `sqrt_u128` call sites (L412, L514, L617), `swap_out` (L108–110)
+**Component:** `fairswap_dex_v3.aleo` — `lp_for_add` (L117–118), `sqrt_u128` call sites (L412, L514, L617), `swap_out` (L108–110)
 **Status:** Resolved (documentation)
 
 ### Description
@@ -187,7 +187,7 @@ Add SDK-side guards: reject inputs where `a * b > u128::MAX` before submitting (
 ## Issue 6: `add_liquidity_cpi_private_in` bypasses pause for pool creation
 
 **Severity:** Medium
-**Component:** `fairswap_dex_v2.aleo` — `add_liquidity_cpi_private_in` (L565–645)
+**Component:** `fairswap_dex_v3.aleo` — `add_liquidity_cpi_private_in` (L565–645)
 **Status:** Resolved
 
 ### Description
@@ -212,7 +212,7 @@ if !pools.contains(pool_key) {
 ## Issue 7: Initial LP mint panics with no pre-check if `sqrt(amt_a × amt_b) < MIN_LIQUIDITY`
 
 **Severity:** Medium (confusing silent revert)
-**Component:** `fairswap_dex_v2.aleo` — `add_liquidity` (L412), `add_liquidity_private` (L514), `add_liquidity_cpi_private_in` (L617)
+**Component:** `fairswap_dex_v3.aleo` — `add_liquidity` (L412), `add_liquidity_private` (L514), `add_liquidity_cpi_private_in` (L617)
 **Status:** Resolved
 
 ### Description
@@ -241,7 +241,7 @@ Alternatively, document the requirement clearly in the SDK pre-submission checks
 ## Issue 8: `swap_private` and `remove_liquidity_private` hardcode output to `self.signer` — no recipient parameter
 
 **Severity:** Medium (limits composability)
-**Component:** `fairswap_dex_v2.aleo` — `swap_private` (L976), `remove_liquidity_private` (L753–755)
+**Component:** `fairswap_dex_v3.aleo` — `swap_private` (L976), `remove_liquidity_private` (L753–755)
 **Status:** Resolved
 
 ### Description
@@ -280,7 +280,7 @@ fn remove_liquidity_private(
 ## Issue 9: `swap_private` should track protocol fee after Issue 2 fix
 
 **Severity:** Low
-**Component:** `fairswap_dex_v2.aleo` — `swap_private` (L992–994)
+**Component:** `fairswap_dex_v3.aleo` — `swap_private` (L992–994)
 **Status:** Resolved
 
 ### Description
@@ -306,7 +306,7 @@ protocol_fees.set(fee_key, protocol_fees.get_or_use(fee_key, 0u128) + proto_cut)
 ## Issue 10: `DEFAULT_FEE_BPS` constant is never enforced — appears to be a validated bound but is not
 
 **Severity:** Low
-**Component:** `fairswap_dex_v2.aleo` — L259
+**Component:** `fairswap_dex_v3.aleo` — L259
 **Status:** Resolved
 
 ### Description
@@ -328,7 +328,7 @@ const DEFAULT_FEE_BPS: u16 = 30u16;
 ## Issue 12: `withdraw_protocol_fees` reserve decrement underflows after LP drainage
 
 **Severity:** High
-**Component:** `fairswap_dex_v2.aleo` — `withdraw_protocol_fees` (L1078–1112)
+**Component:** `fairswap_dex_v3.aleo` — `withdraw_protocol_fees` (L1078–1112)
 **Status:** Resolved
 
 ### Description
@@ -361,7 +361,7 @@ Insert after `assert(token_id == pool.token_a || token_id == pool.token_b)` (L10
 ## Issue 13: `add_liquidity_private` always mints LP record to `self.signer` — no `recipient` parameter
 
 **Severity:** Medium (limits composability)
-**Component:** `fairswap_dex_v2.aleo` — `add_liquidity_private` (L483, L492)
+**Component:** `fairswap_dex_v3.aleo` — `add_liquidity_private` (L483, L492)
 **Status:** Resolved
 
 ### Description
@@ -396,7 +396,7 @@ For direct wallet calls the SDK sets `recipient = self.signer`.
 ## Issue 14: `make_pool_key` is dead code after Issue 11
 
 **Severity:** Low
-**Component:** `fairswap_dex_v2.aleo` — L100–104
+**Component:** `fairswap_dex_v3.aleo` — L100–104
 **Status:** Resolved
 
 ### Description
@@ -429,7 +429,7 @@ mapping pools: field => PoolState;
 ## Issue 15: Stale "Burns" comment in `add_liquidity_private` header
 
 **Severity:** Low (misleads SDK integrators)
-**Component:** `fairswap_dex_v2.aleo` — L458
+**Component:** `fairswap_dex_v3.aleo` — L458
 **Status:** Resolved
 
 ### Description
@@ -450,7 +450,7 @@ After Issue 3, the records are deposited via `transfer_private_to_public`, not b
 ## Issue 11: `canonical_pair` computed twice per transition — minor constraint waste
 
 **Severity:** Low
-**Component:** `fairswap_dex_v2.aleo` — multiple transitions
+**Component:** `fairswap_dex_v3.aleo` — multiple transitions
 **Status:** Resolved
 
 ### Description
@@ -472,7 +472,7 @@ let pool_key: field = BHP256::hash_to_field(PoolKey { token_a: ca, token_b: cb }
 ## Issue 16: No LP position conversion between public and private — farming blocked, auction LP locked
 
 **Severity:** Medium
-**Component:** `fairswap_dex_v2.aleo` — missing transitions
+**Component:** `fairswap_dex_v3.aleo` — missing transitions
 **Status:** Resolved
 
 ### Description
@@ -529,7 +529,7 @@ fn lp_to_public(
 ## Issue 17: `remove_liquidity` uses `.get()` for LP balance — opaque panic on missing key
 
 **Severity:** Low
-**Component:** `fairswap_dex_v2.aleo` — `remove_liquidity` (L716)
+**Component:** `fairswap_dex_v3.aleo` — `remove_liquidity` (L716)
 **Status:** Resolved
 
 ### Description
@@ -547,7 +547,7 @@ let cbal: u128 = lp_balances.get_or_use(ckey, 0u128);
 ## Issue 18: Stale comment in `create_pool` — "enforced in final {}"
 
 **Severity:** Low
-**Component:** `fairswap_dex_v2.aleo` — `create_pool` (L310)
+**Component:** `fairswap_dex_v3.aleo` — `create_pool` (L310)
 **Status:** Resolved
 
 ### Description
@@ -567,7 +567,7 @@ After Issue 11, canonical ordering is enforced in the transition body (proof con
 ## Issue 19: `lp_to_private` and `lp_to_public` — missing pause checks
 
 **Severity:** Low (no reserve corruption; consistency gap)
-**Component:** `fairswap_dex_v2.aleo` — `lp_to_private` (final block), `lp_to_public` (final block)
+**Component:** `fairswap_dex_v3.aleo` — `lp_to_private` (final block), `lp_to_public` (final block)
 **Status:** Resolved
 
 ### Description
@@ -607,7 +607,7 @@ fn lp_to_public(...) -> Final {
 ## Issue 20: `lp_for_add` divide-by-zero when pool reserves are drained to zero by rounding
 
 **Severity:** Low (accepted Uniswap V2 edge case; pool permanently bricked if triggered)
-**Component:** `fairswap_dex_v2.aleo` — `add_liquidity` (non-initial path), `add_liquidity_private` (non-initial path), `add_liquidity_cpi_private_in` (non-initial path)
+**Component:** `fairswap_dex_v3.aleo` — `add_liquidity` (non-initial path), `add_liquidity_private` (non-initial path), `add_liquidity_cpi_private_in` (non-initial path)
 **Status:** Resolved
 
 ### Description
@@ -640,7 +640,7 @@ let lp_out: u128 = is_initial
 ## Issue 21: `assert_eq(pool.token_a, ca)` missing in all three swap transitions
 
 **Severity:** Low (technically safe; defensive consistency gap)
-**Component:** `fairswap_dex_v2.aleo` — `swap`, `swap_cpi_private_in`, `swap_private` (each `final {}` block)
+**Component:** `fairswap_dex_v3.aleo` — `swap`, `swap_cpi_private_in`, `swap_private` (each `final {}` block)
 **Status:** Resolved
 
 ### Description
@@ -663,7 +663,7 @@ assert_eq(pool.token_a, ca);   // ← add this
 ## Issue 22: TWAP not updated on liquidity operations — oracle accuracy gap vs Uniswap V2
 
 **Severity:** Low (no fund risk; oracle reliability gap for future integrators)
-**Component:** `fairswap_dex_v2.aleo` — `add_liquidity`, `add_liquidity_private`, `add_liquidity_cpi_private_in`, `remove_liquidity`, `remove_liquidity_private`
+**Component:** `fairswap_dex_v3.aleo` — `add_liquidity`, `add_liquidity_private`, `add_liquidity_cpi_private_in`, `remove_liquidity`, `remove_liquidity_private`
 **Status:** Open — acceptable for launch; must be addressed before price-sensitive oracle consumers (lending, options) are built on top
 
 ### Description

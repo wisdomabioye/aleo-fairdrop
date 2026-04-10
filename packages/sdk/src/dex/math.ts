@@ -11,7 +11,7 @@ const MIN_LIQUIDITY = 1_000n;
 
 /**
  * Compute the swap output amount for a given input.
- * Mirrors: swap_out(res_in, res_out, amount_in, fee_bps) in fairswap_dex_v2.aleo.
+ * Mirrors: swap_out(res_in, res_out, amount_in, fee_bps) in fairswap_dex_v3.aleo.
  *
  * @returns Amount of token_out the DEX will pay out.
  */
@@ -107,7 +107,7 @@ export function applySlippage(amount: bigint, slippageBps: number): bigint {
 
 /**
  * Integer square root via Newton-Raphson iteration.
- * Mirrors the 64-iteration implementation in fairswap_dex_v2.aleo.
+ * Mirrors the 64-iteration implementation in fairswap_dex_v3.aleo.
  */
 function bigintSqrt(n: bigint): bigint {
   if (n === 0n) return 0n;

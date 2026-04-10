@@ -1,5 +1,5 @@
 /**
- * On-chain mapping reads for fairswap_dex_v2.aleo.
+ * On-chain mapping reads for fairswap_dex_v3.aleo.
  *
  * All functions return null (or 0n for balances) on miss or RPC error.
  * Key derivation (computePoolKey, computeLpBalKey, computeProtocolFeeKey)

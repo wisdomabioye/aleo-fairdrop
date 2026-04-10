@@ -12,7 +12,7 @@
  *
  * ---
  *
- * Transaction builders for fairswap_dex_v2.aleo.
+ * Transaction builders for fairswap_dex_v3.aleo.
  *
  * All builders accept JS-native types (bigint amounts, plain strings for
  * addresses and field literals) and return TxSpec — same shape as every

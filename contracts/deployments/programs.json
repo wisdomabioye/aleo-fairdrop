@@ -87,7 +87,7 @@
       "upgradeKey":     "11field"
     },
     "fairswap": {
-      "programId":      "fairswap_dex_v2.aleo",
+      "programId":      "fairswap_dex_v3.aleo",
       "programAddress": "aleo1rnkyc5qez7d2z68w35jeep549k9zxuad05t5pflya0gnz23wzuxszsdwe2",
       "contractPath":   "contracts/dex/fairswap_dex",
       "salt":           "",

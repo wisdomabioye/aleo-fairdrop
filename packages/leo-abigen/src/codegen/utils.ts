@@ -11,7 +11,7 @@ export function toPascalCase(s: string): string {
   return c.charAt(0).toUpperCase() + c.slice(1);
 }
 
-/** program id → client interface name: "fairswap_dex_v2.aleo" → "FairswapDexV2" */
+/** program id → client interface name: "fairswap_dex_v3.aleo" → "FairswapDexV2" */
 export function programToClientName(programId: string): string {
   return toPascalCase(programId.replace(/\.aleo$/, ''));
 }

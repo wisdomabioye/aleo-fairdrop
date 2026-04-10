@@ -32,7 +32,7 @@
 //     private Token records via transfer_public_to_private(dex_address, amount, false)
 //     or to hold real private Token records from token_registry.aleo.
 
-import fairswap_dex_v2.aleo;
+import fairswap_dex_v3.aleo;
 
 // =============================================================================
 // Local replicas of module-level proof helpers
@@ -135,7 +135,7 @@ fn local_sqrt(n: u128) -> u128 {
     return s64 < s63 ? s64 : s63;
 }
 
-program test_fairswap_dex_v2.aleo {
+program test_fairswap_dex_v3.aleo {
 
     @noupgrade
     constructor() {}
@@ -235,13 +235,13 @@ program test_fairswap_dex_v2.aleo {
     @test
     @should_fail
     fn test_create_pool_same_token() {
-        fairswap_dex_v2.aleo::create_pool(1field, 1field, 30u16);
+        fairswap_dex_v3.aleo::create_pool(1field, 1field, 30u16);
     }
 
     @test
     @should_fail
     fn test_create_pool_fee_too_high() {
-        fairswap_dex_v2.aleo::create_pool(1field, 2field, 101u16);
+        fairswap_dex_v3.aleo::create_pool(1field, 2field, 101u16);
     }
 
     // =========================================================================
@@ -252,28 +252,28 @@ program test_fairswap_dex_v2.aleo {
     @should_fail
     fn test_add_liq_zero_amt_a() {
         let dummy: address = aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc;
-        fairswap_dex_v2.aleo::add_liquidity(1field, 2field, 0u128, 100u128, 30u16, 0u128, dummy);
+        fairswap_dex_v3.aleo::add_liquidity(1field, 2field, 0u128, 100u128, 30u16, 0u128, dummy);
     }
 
     @test
     @should_fail
     fn test_add_liq_zero_amt_b() {
         let dummy: address = aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc;
-        fairswap_dex_v2.aleo::add_liquidity(1field, 2field, 100u128, 0u128, 30u16, 0u128, dummy);
+        fairswap_dex_v3.aleo::add_liquidity(1field, 2field, 100u128, 0u128, 30u16, 0u128, dummy);
     }
 
     @test
     @should_fail
     fn test_add_liq_same_token() {
         let dummy: address = aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc;
-        fairswap_dex_v2.aleo::add_liquidity(3field, 3field, 100u128, 100u128, 30u16, 0u128, dummy);
+        fairswap_dex_v3.aleo::add_liquidity(3field, 3field, 100u128, 100u128, 30u16, 0u128, dummy);
     }
 
     @test
     @should_fail
     fn test_remove_liq_zero_lp() {
         let dummy: address = aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc;
-        fairswap_dex_v2.aleo::remove_liquidity(1field, 2field, 0u128, 0u128, 0u128, dummy);
+        fairswap_dex_v3.aleo::remove_liquidity(1field, 2field, 0u128, 0u128, 0u128, dummy);
     }
 
     // =========================================================================
@@ -284,21 +284,21 @@ program test_fairswap_dex_v2.aleo {
     @should_fail
     fn test_swap_zero_amount_in_fails() {
         let dummy: address = aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc;
-        fairswap_dex_v2.aleo::swap(1field, 2field, 0u128, 1u128, dummy);
+        fairswap_dex_v3.aleo::swap(1field, 2field, 0u128, 1u128, dummy);
     }
 
     @test
     @should_fail
     fn test_swap_zero_min_out_fails() {
         let dummy: address = aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc;
-        fairswap_dex_v2.aleo::swap(1field, 2field, 100u128, 0u128, dummy);
+        fairswap_dex_v3.aleo::swap(1field, 2field, 100u128, 0u128, dummy);
     }
 
     @test
     @should_fail
     fn test_swap_same_token_fails() {
         let dummy: address = aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc;
-        fairswap_dex_v2.aleo::swap(4field, 4field, 100u128, 1u128, dummy);
+        fairswap_dex_v3.aleo::swap(4field, 4field, 100u128, 1u128, dummy);
     }
 
     // =========================================================================
@@ -309,7 +309,7 @@ program test_fairswap_dex_v2.aleo {
     @test
     @should_fail
     fn test_update_fee_bps_too_high() -> Final {
-        let f: Final = fairswap_dex_v2.aleo::update_fee(
+        let f: Final = fairswap_dex_v3.aleo::update_fee(
             1field, 101u16, 1u64,
         );
         return final { f.run(); };
@@ -318,7 +318,7 @@ program test_fairswap_dex_v2.aleo {
     @test
     @should_fail
     fn test_withdraw_fees_zero_amount() -> Final {
-        let f: Final = fairswap_dex_v2.aleo::withdraw_protocol_fees(
+        let f: Final = fairswap_dex_v3.aleo::withdraw_protocol_fees(
             1field,  // pool_key
             2field,  // token_id — dummy; assert(amount > 0) fires first
             0u128,   // amount — ZERO triggers assert(amount > 0)
@@ -331,7 +331,7 @@ program test_fairswap_dex_v2.aleo {
     @test
     @should_fail
     fn test_withdraw_fees_unapproved() -> Final {
-        let f: Final = fairswap_dex_v2.aleo::withdraw_protocol_fees(
+        let f: Final = fairswap_dex_v3.aleo::withdraw_protocol_fees(
             1field,  // pool_key
             2field,  // token_id — dummy; approved_ops check fires
             1u128,   // amount — nonzero; unapproved op fires in final {}
@@ -344,21 +344,21 @@ program test_fairswap_dex_v2.aleo {
     @test
     @should_fail
     fn test_toggle_proto_unapproved() -> Final {
-        let f: Final = fairswap_dex_v2.aleo::toggle_protocol_fee(true, 1u64);
+        let f: Final = fairswap_dex_v3.aleo::toggle_protocol_fee(true, 1u64);
         return final { f.run(); };
     }
 
     @test
     @should_fail
     fn test_toggle_paused_unapproved() -> Final {
-        let f: Final = fairswap_dex_v2.aleo::toggle_paused(true, 1u64);
+        let f: Final = fairswap_dex_v3.aleo::toggle_paused(true, 1u64);
         return final { f.run(); };
     }
 
     @test
     @should_fail
     fn test_update_fee_unapproved() -> Final {
-        let f: Final = fairswap_dex_v2.aleo::update_fee(1field, 30u16, 1u64);
+        let f: Final = fairswap_dex_v3.aleo::update_fee(1field, 30u16, 1u64);
         return final { f.run(); };
     }
 

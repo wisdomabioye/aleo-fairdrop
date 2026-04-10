@@ -59,7 +59,7 @@ leo-abigen --abi build/abi.json --out src/generated/my-contract.ts
 leo-abigen --abi build/abi.json
 ```
 
-The program id drives the filename: `fairswap_dex_v2.aleo` → `fairswap-dex-v2.ts`.
+The program id drives the filename: `fairswap_dex_v3.aleo` → `fairswap-dex-v2.ts`.
 
 The generated file imports only from `leo-abigen` and `@fairdrop/types/primitives` — no contract-specific dependencies.
 
@@ -92,7 +92,7 @@ The generated file imports only from `leo-abigen` and `@fairdrop/types/primitive
 
 ## Generated file anatomy
 
-Given `fairswap_dex_v2.aleo`, the CLI emits `fairswap-dex-v2.ts` containing:
+Given `fairswap_dex_v3.aleo`, the CLI emits `fairswap-dex-v2.ts` containing:
 
 | Section | What it contains |
 |---|---|

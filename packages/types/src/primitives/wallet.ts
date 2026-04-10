@@ -106,7 +106,7 @@ export interface WalletSealedCommitment {
 }
 
 /**
- * Runtime-parsed LpToken record from fairswap_dex_v2.aleo.
+ * Runtime-parsed LpToken record from fairswap_dex_v3.aleo.
  * Produced by useLpTokenRecords after parsing the U128 amount to bigint.
  */
 export interface WalletLpRecord {

@@ -1,4 +1,4 @@
-// fairswap_dex_v2.aleo — Uniswap V2-style constant-product AMM on Aleo.
+// fairswap_dex_v3.aleo — Uniswap V2-style constant-product AMM on Aleo.
 //
 // Design summary:
 //   • Constant product formula: x * y = k
@@ -233,7 +233,7 @@ fn twap_update(pool: PoolState, current_height: u32) -> PoolState {
 // Program interface
 // =============================================================================
 
-program fairswap_dex_v2.aleo {
+program fairswap_dex_v3.aleo {
 
     // Upgrade governance: 3-of-5 multisig must approve with contract_key = 12field.
     @checksum(mapping="fairdrop_multisig_v1.aleo::approved_upgrades", key="12field")

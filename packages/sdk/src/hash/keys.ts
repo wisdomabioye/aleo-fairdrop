@@ -163,7 +163,7 @@ export function computeCredentialMsgHash(
   return hashStruct(`{ holder: ${holder}, auction_id: ${auctionId}, expiry: ${expiry}u32 }`);
 }
 
-// ── fairswap_dex_v2.aleo ─────────────────────────────────────────────────────
+// ── fairswap_dex_v3.aleo ─────────────────────────────────────────────────────
 
 /**
  * Compute the canonical pool key.

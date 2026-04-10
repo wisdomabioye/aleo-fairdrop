@@ -82,7 +82,7 @@ export function generateTypes(abi: Abi): string {
 
 // ── CLI ───────────────────────────────────────────────────────────────────────
 
-/** Derive output filename from program id: "fairswap_dex_v2.aleo" → "fairswap-dex-v2.ts" */
+/** Derive output filename from program id: "fairswap_dex_v3.aleo" → "fairswap-dex-v2.ts" */
 function programToFilename(program: string): string {
   return program.replace(/\.aleo$/, '').replace(/_/g, '-') + '.ts';
 }
