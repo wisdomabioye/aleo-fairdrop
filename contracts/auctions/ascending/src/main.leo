@@ -292,8 +292,9 @@ final fn record_bid(
     let in_window: bool   = config.extension_window > 0u32
         && block.height >= window_start
         && !is_supply_met;
+    let extended: u32     = state.effective_end_block + config.extension_blocks;
     let new_eff_end: u32  = in_window
-        ? min(state.effective_end_block + config.extension_blocks, config.max_end_block)
+        ? (extended < config.max_end_block ? extended : config.max_end_block)
         : state.effective_end_block;
 
     auction_states.set(auction_id, AuctionState {

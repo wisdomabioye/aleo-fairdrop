@@ -143,6 +143,7 @@ program test_ascending.aleo {
         let f: Final = fairdrop_ascending_v2.aleo::withdraw_payments(
             1field,  // auction_id — dummy; assert fires before credits CPI
             0u128,   // amount — ZERO triggers assert(amount > 0)
+            aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r,  // recipient — dummy; never reached
         );
         return final { f.run(); };
     }
@@ -156,6 +157,7 @@ program test_ascending.aleo {
                 1field,   // auction_id
                 0u128,    // amount — ZERO triggers assert(amount > 0)
                 1field,   // sale_token_id — dummy; never reached
+                aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r,  // recipient — dummy; never reached
             );
         return final { f.run(); };
     }
@@ -231,6 +233,7 @@ program test_ascending.aleo {
                 1field,      // auction_id
                 1u128,       // amount = 1 — passes transition-body assert
                 12345field,  // sale_token_id
+                aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r,  // recipient — dummy
             );
         return final { f.run(); };
     }
@@ -244,6 +247,7 @@ program test_ascending.aleo {
         let f: Final = fairdrop_ascending_v2.aleo::withdraw_payments(
             1field,  // auction_id
             1u128,   // amount = 1 — passes transition-body assert; credits fails
+            aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r,  // recipient — dummy
         );
         return final { f.run(); };
     }
