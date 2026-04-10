@@ -2,7 +2,7 @@
  * Transaction builders for fairdrop_config_v1.aleo.
  *
  * All setters are multisig-protected: the op_nonce must match a previously
- * approved op via fairdrop_multisig_v1.aleo::approve_op. Workflow:
+ * approved op via fairdrop_multisig_v2.aleo::approve_op. Workflow:
  *   1. Compute op_hash = BHP256(ConfigOp { fn_key, op_value, nonce: op_nonce })
  *   2. Call multisig::approveOp(op_hash, ...) — 3-of-N admin sigs required
  *   3. Call the setter here with the same (new_value, op_nonce)

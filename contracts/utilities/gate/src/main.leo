@@ -25,8 +25,8 @@
 //   Sig:     Aleo private key sign over the hash above
 //
 // ── GOVERNANCE ───────────────────────────────────────────────────────────────
-// set_allowed_caller is governed by fairdrop_multisig_v1.aleo (two-phase approve_op).
-// Admin rotation requires 3-of-5 multi-sig via fairdrop_multisig_v1.aleo::update_admin.
+// set_allowed_caller is governed by fairdrop_multisig_v2.aleo (two-phase approve_op).
+// Admin rotation requires 3-of-5 multi-sig via fairdrop_multisig_v2.aleo::update_admin.
 //
 // ── Leo 4.0 migration notes ───────────────────────────────────────────────────
 //   async constructor → constructor
@@ -38,7 +38,7 @@
 //   Future → Final, .aleo/ → .aleo::
 // ─────────────────────────────────────────────────────────────────────────────
 
-import fairdrop_multisig_v1.aleo;
+import fairdrop_multisig_v2.aleo;
 
 // ═════════════════════════════════════════════════════════════════════════════
 // Module-level struct definitions
@@ -66,9 +66,9 @@ struct CredentialMessage {
 // =============================================================================
 
 program fairdrop_gate_v3.aleo {
-    // Upgrade governance: 3-of-5 multi-sig must call fairdrop_multisig_v1.aleo::approve_upgrade
+    // Upgrade governance: 3-of-5 multi-sig must call fairdrop_multisig_v2.aleo::approve_upgrade
     // with contract_key=2field and this program's compiled checksum before deployment.
-    @checksum(mapping="fairdrop_multisig_v1.aleo::approved_upgrades", key="2field")
+    @checksum(mapping="fairdrop_multisig_v2.aleo::approved_upgrades", key="2field")
     constructor() {}
 
     // =========================================================================
@@ -119,7 +119,7 @@ program fairdrop_gate_v3.aleo {
             nonce:   op_nonce,
         });
         return final {
-            assert(fairdrop_multisig_v1.aleo::approved_ops.get_or_use(op_hash, false));
+            assert(fairdrop_multisig_v2.aleo::approved_ops.get_or_use(op_hash, false));
             assert(!consumed_ops.get_or_use(op_hash, false));
             consumed_ops.set(op_hash, true);
             allowed_callers.set(program_addr, allowed);

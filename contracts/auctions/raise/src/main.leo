@@ -78,7 +78,7 @@
 //   Future → Final, .aleo/ → .aleo::
 // ─────────────────────────────────────────────────────────────────────────────
 
-import fairdrop_multisig_v1.aleo;
+import fairdrop_multisig_v2.aleo;
 import credits.aleo;
 import token_registry.aleo;
 import fairdrop_config_v3.aleo;
@@ -175,9 +175,9 @@ struct ConfigSnapshot {
 }
 
 program fairdrop_raise_v3.aleo {
-    // Upgrade governance: 3-of-5 multi-sig must call fairdrop_multisig_v1.aleo::approve_upgrade
+    // Upgrade governance: 3-of-5 multi-sig must call fairdrop_multisig_v2.aleo::approve_upgrade
     // with contract_key=10field and this program's compiled checksum before deployment.
-    @checksum(mapping="fairdrop_multisig_v1.aleo::approved_upgrades", key="10field")
+    @checksum(mapping="fairdrop_multisig_v2.aleo::approved_upgrades", key="10field")
     constructor() {}
 
     // =========================================================================
@@ -1279,7 +1279,7 @@ program fairdrop_raise_v3.aleo {
     //
     // Transfers `amount` microcredits from the on-chain protocol_treasury balance
     // to `recipient` as a private credits record. Requires prior 3-of-5 multisig
-    // approval via fairdrop_multisig_v1.aleo::approve_op.
+    // approval via fairdrop_multisig_v2.aleo::approve_op.
     //
     // Op hash pre-image (must match off-chain computation):
     //   BHP256::hash_to_field(WithdrawalOp { amount, recipient, nonce: op_nonce })
@@ -1301,7 +1301,7 @@ program fairdrop_raise_v3.aleo {
             credits.aleo::transfer_public_to_private(recipient, amount as u64);
 
         return (out, final {
-            assert(fairdrop_multisig_v1.aleo::approved_ops.get_or_use(op_hash, false));
+            assert(fairdrop_multisig_v2.aleo::approved_ops.get_or_use(op_hash, false));
             assert(!consumed_ops.get_or_use(op_hash, false));
             consumed_ops.set(op_hash, true);
 
@@ -1322,7 +1322,7 @@ program fairdrop_raise_v3.aleo {
     // claim_voided remains exempt from both checks — bidder capital must always
     // be recoverable regardless of pause state.
     //
-    // Caller must first call fairdrop_multisig_v1.aleo::approve_op with:
+    // Caller must first call fairdrop_multisig_v2.aleo::approve_op with:
     //   op_hash = BHP256::hash_to_field(PauseToggleOp { paused: is_paused, nonce: op_nonce })
 
     fn toggle_paused(
@@ -1334,7 +1334,7 @@ program fairdrop_raise_v3.aleo {
             nonce:  op_nonce,
         });
         return final {
-            assert(fairdrop_multisig_v1.aleo::approved_ops.get_or_use(op_hash, false));
+            assert(fairdrop_multisig_v2.aleo::approved_ops.get_or_use(op_hash, false));
             assert(!consumed_ops.get_or_use(op_hash, false));
             consumed_ops.set(op_hash, true);
             paused.set(0field, is_paused);

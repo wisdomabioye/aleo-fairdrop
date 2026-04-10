@@ -1,6 +1,6 @@
 /**
  * Multisig governance constants — mirrors the Leo constants in
- * fairdrop_multisig_v1.aleo and fairdrop_config_v1.aleo.
+ * fairdrop_multisig_v2.aleo and fairdrop_config_v1.aleo.
  */
 
 import { PROGRAMS } from '@fairdrop/config';

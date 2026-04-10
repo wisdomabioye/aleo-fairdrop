@@ -208,7 +208,7 @@ fn set_registered_auction(
 ) -> Final
 ```
 
-Governed by `fairdrop_multisig_v1.aleo` (same two-phase `approve_op` pattern as other
+Governed by `fairdrop_multisig_v2.aleo` (same two-phase `approve_op` pattern as other
 utility contracts). Required for protocol pools to accept cross-auction receipts.
 
 ---

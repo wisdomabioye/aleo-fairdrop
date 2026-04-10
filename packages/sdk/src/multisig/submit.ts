@@ -1,5 +1,5 @@
 /**
- * On-chain submission builders for fairdrop_multisig_v1.aleo.
+ * On-chain submission builders for fairdrop_multisig_v2.aleo.
  *
  * Each function constructs a TxSpec ready to pass to executeTransaction().
  * Signatures must be obtained off-chain using the prepare* functions from

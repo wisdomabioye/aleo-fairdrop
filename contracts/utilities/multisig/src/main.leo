@@ -1,4 +1,4 @@
-// fairdrop_multisig_v1.aleo — 3-of-5 multi-sig governance root for the Fairdrop protocol.
+// fairdrop_multisig_v2.aleo — 3-of-5 multi-sig governance root for the Fairdrop protocol.
 //
 // Responsibility:
 //   - Authorize upgrades for all 12 Fairdrop contracts via the @checksum pattern.
@@ -30,7 +30,7 @@
 //   withdraw_treasury:  BHP256::hash_to_field(WithdrawalOp{ amount: u128, recipient: address, nonce: u64 })
 //
 // ── Contract key assignments for approved_upgrades ───────────────────────────
-//   0field  fairdrop_multisig_v1.aleo (self — governs its own upgrades)
+//   0field  fairdrop_multisig_v2.aleo (self — governs its own upgrades)
 //   1field  fairdrop_config_v3.aleo
 //   2field  fairdrop_gate_v3.aleo
 //   3field  fairdrop_proof_v2.aleo
@@ -56,8 +56,8 @@
 //   [ ] Call initialize() as the first transaction after deployment
 //   [ ] Call approve_upgrade for all 12 governed contracts before deploying them
 
-program fairdrop_multisig_v1.aleo {
-    @checksum(mapping="fairdrop_multisig_v1.aleo::approved_upgrades", key="0field")
+program fairdrop_multisig_v2.aleo {
+    @checksum(mapping="fairdrop_multisig_v2.aleo::approved_upgrades", key="0field")
     constructor() {}
 
     // =========================================================================

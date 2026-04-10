@@ -17,14 +17,14 @@
 // No money flows through this contract. No records. No escrow.
 //
 // ── GOVERNANCE ───────────────────────────────────────────────────────────────
-// All admin setters use the two-phase approve_op pattern via fairdrop_multisig_v1.aleo.
+// All admin setters use the two-phase approve_op pattern via fairdrop_multisig_v2.aleo.
 // Off-chain workflow for any setter:
 //   1. Compute op_hash = BHP256::hash_to_field(ConfigOp { fn_key, op_value, nonce })
 //      using the OP_* constant for that setter and the intended new_value.
 //   2. 3-of-5 admins sign BHP256::hash_to_field(ApproveOpMsg { op_hash, request_id }).
-//   3. Call fairdrop_multisig_v1.aleo::approve_op(op_hash, sigs..., request_id).
+//   3. Call fairdrop_multisig_v2.aleo::approve_op(op_hash, sigs..., request_id).
 //   4. Call the setter (e.g. set_fee_bps(300u16, nonce)).
-// Upgrades require 3-of-5 via fairdrop_multisig_v1.aleo::approve_upgrade (key=0field).
+// Upgrades require 3-of-5 via fairdrop_multisig_v2.aleo::approve_upgrade (key=0field).
 //
 // ── Leo 4.0 migration notes ───────────────────────────────────────────────────
 //   async constructor → constructor
@@ -32,12 +32,12 @@
 //   Future → Final, .aleo/ → .aleo::
 // ─────────────────────────────────────────────────────────────────────────────
 
-import fairdrop_multisig_v1.aleo;
+import fairdrop_multisig_v2.aleo;
 
 program fairdrop_config_v3.aleo {
-    // Upgrade governance: 3-of-5 multi-sig must call fairdrop_multisig_v1.aleo::approve_upgrade
+    // Upgrade governance: 3-of-5 multi-sig must call fairdrop_multisig_v2.aleo::approve_upgrade
     // with contract_key=1field and this program's compiled checksum before deployment.
-    @checksum(mapping="fairdrop_multisig_v1.aleo::approved_upgrades", key="1field")
+    @checksum(mapping="fairdrop_multisig_v2.aleo::approved_upgrades", key="1field")
     constructor() {}
 
     // =========================================================================
@@ -117,7 +117,7 @@ program fairdrop_config_v3.aleo {
             nonce:  op_nonce,
         });
         return final {
-            assert(fairdrop_multisig_v1.aleo::approved_ops.get_or_use(op_hash, false));
+            assert(fairdrop_multisig_v2.aleo::approved_ops.get_or_use(op_hash, false));
             assert(!consumed_ops.get_or_use(op_hash, false));
             consumed_ops.set(op_hash, true);
             assert(new_value <= MAX_FEE_BPS);
@@ -132,7 +132,7 @@ program fairdrop_config_v3.aleo {
             nonce:  op_nonce,
         });
         return final {
-            assert(fairdrop_multisig_v1.aleo::approved_ops.get_or_use(op_hash, false));
+            assert(fairdrop_multisig_v2.aleo::approved_ops.get_or_use(op_hash, false));
             assert(!consumed_ops.get_or_use(op_hash, false));
             consumed_ops.set(op_hash, true);
             assert(new_value <= MAX_CREATION_FEE);
@@ -147,7 +147,7 @@ program fairdrop_config_v3.aleo {
             nonce:  op_nonce,
         });
         return final {
-            assert(fairdrop_multisig_v1.aleo::approved_ops.get_or_use(op_hash, false));
+            assert(fairdrop_multisig_v2.aleo::approved_ops.get_or_use(op_hash, false));
             assert(!consumed_ops.get_or_use(op_hash, false));
             consumed_ops.set(op_hash, true);
             assert(new_value <= MAX_CLOSER_REWARD);
@@ -162,7 +162,7 @@ program fairdrop_config_v3.aleo {
             nonce:  op_nonce,
         });
         return final {
-            assert(fairdrop_multisig_v1.aleo::approved_ops.get_or_use(op_hash, false));
+            assert(fairdrop_multisig_v2.aleo::approved_ops.get_or_use(op_hash, false));
             assert(!consumed_ops.get_or_use(op_hash, false));
             consumed_ops.set(op_hash, true);
             assert(new_value <= MAX_SLASH_REWARD_BPS);
@@ -177,7 +177,7 @@ program fairdrop_config_v3.aleo {
             nonce:  op_nonce,
         });
         return final {
-            assert(fairdrop_multisig_v1.aleo::approved_ops.get_or_use(op_hash, false));
+            assert(fairdrop_multisig_v2.aleo::approved_ops.get_or_use(op_hash, false));
             assert(!consumed_ops.get_or_use(op_hash, false));
             consumed_ops.set(op_hash, true);
             assert(new_value <= MAX_REFERRAL_BPS_CAP);
@@ -192,7 +192,7 @@ program fairdrop_config_v3.aleo {
             nonce:  op_nonce,
         });
         return final {
-            assert(fairdrop_multisig_v1.aleo::approved_ops.get_or_use(op_hash, false));
+            assert(fairdrop_multisig_v2.aleo::approved_ops.get_or_use(op_hash, false));
             assert(!consumed_ops.get_or_use(op_hash, false));
             consumed_ops.set(op_hash, true);
             assert(new_value <= MAX_REFERRAL_POOL_BPS);
@@ -207,7 +207,7 @@ program fairdrop_config_v3.aleo {
             nonce:  op_nonce,
         });
         return final {
-            assert(fairdrop_multisig_v1.aleo::approved_ops.get_or_use(op_hash, false));
+            assert(fairdrop_multisig_v2.aleo::approved_ops.get_or_use(op_hash, false));
             assert(!consumed_ops.get_or_use(op_hash, false));
             consumed_ops.set(op_hash, true);
             min_auction_duration.set(CONFIG_KEY, new_value);
@@ -222,7 +222,7 @@ program fairdrop_config_v3.aleo {
             nonce:  op_nonce,
         });
         return final {
-            assert(fairdrop_multisig_v1.aleo::approved_ops.get_or_use(op_hash, false));
+            assert(fairdrop_multisig_v2.aleo::approved_ops.get_or_use(op_hash, false));
             assert(!consumed_ops.get_or_use(op_hash, false));
             consumed_ops.set(op_hash, true);
             paused.set(CONFIG_KEY, new_value);

@@ -46,7 +46,7 @@ import credits.aleo;
 //     Client SDK computes max_bid_price = current_price * (10000 + slippage_bps) / 10000.
 //   - Revenue invariant: creator_revenue + protocol_fee = total_payments verified
 //     by running the full lifecycle and checking escrow balances reach 0.
-//   - withdraw_treasury_fees happy path: requires prior fairdrop_multisig_v1.aleo::approve_op
+//   - withdraw_treasury_fees happy path: requires prior fairdrop_multisig_v2.aleo::approve_op
 //       to write approved_ops[op_hash] = true. Only testable on real chain state.
 //   - seed_liquidity: requires cleared, non-voided auction; creator as signer;
 //       SUPPLY_MANAGER_ROLE for mint_public; creator must hold amount_credits of

@@ -55,7 +55,7 @@ Credentials are bound to `(holder, auction_id, expiry)` — they cannot be trans
 
 - Bidder identity in `verified` is pseudonymous: `BHP256(bidder, auction_id)` — the bidder address is never stored in plain text.
 - `register_gate` is gated by `allowed_callers[caller]`, enforced in finalize — only whitelisted auction programs (via CPI) can register gates.
-- Governance: `set_allowed_caller` is controlled by `fairdrop_multisig_v1.aleo` (3-of-5 approval).
+- Governance: `set_allowed_caller` is controlled by `fairdrop_multisig_v2.aleo` (3-of-5 approval).
 
 ---
 

@@ -12,7 +12,7 @@ auction contracts. SDK and frontend integration remain.
 Contract work completed:
 1. `fairswap_dex_v3.aleo` written, tested, and DEX `token_registry` arg order corrected.
 2. `add_liquidity_cpi` supports atomic pool creation (`pools.contains()` check).
-3. Upgrade key `12field` reserved in `fairdrop_multisig_v1.aleo`.
+3. Upgrade key `12field` reserved in `fairdrop_multisig_v2.aleo`.
 4. `seed_liquidity` added to all 6 auction contracts (raise, dutch, ascending, sealed, lbp, quadratic).
 5. `withdraw_unsold` upper-bound bug fixed in `fairdrop_raise_v3.aleo` and verified correct in all 6.
 6. `ZERO_ADDRESS` constant defined in all 6 auction contracts; `assert_neq(lp_recipient, ZERO_ADDRESS)` guards added.
@@ -216,7 +216,7 @@ each swap. External contracts snapshot two values to compute a time-weighted ave
 
 ### Upgrade governance
 
-Declares `@checksum` pointing at `fairdrop_multisig_v1.aleo::approved_upgrades` with upgrade
+Declares `@checksum` pointing at `fairdrop_multisig_v2.aleo::approved_upgrades` with upgrade
 key `12field`. First deployment (edition = 0) bypasses the check; all subsequent upgrades
 require 3-of-5 multisig approval.
 
@@ -475,7 +475,7 @@ function useSeedLiquidity(auctionId: string, auctionType: AuctionType): {
 ### Contract layer — complete
 - [x] `fairswap_dex_v3.aleo` written and unit-tested
 - [x] `add_liquidity_cpi_private_in` supports atomic pool creation (no prior `create_pool` required); pause-exempt for existing pools
-- [x] Upgrade key `12field` reserved in `fairdrop_multisig_v1.aleo`
+- [x] Upgrade key `12field` reserved in `fairdrop_multisig_v2.aleo`
 - [x] Two-level pause added to all 6 auction contracts and DEX
 - [x] `withdraw_unsold` upper-bound verified and fixed in all 6 auction contracts
 - [x] `seed_liquidity` added to all 6 auction contracts

@@ -1,5 +1,5 @@
 /**
- * Multisig governance module for fairdrop_multisig_v1.aleo.
+ * Multisig governance module for fairdrop_multisig_v2.aleo.
  *
  * import { prepareApproveOp, submitApproveOp, UPGRADE_KEY, … } from '@fairdrop/sdk/multisig'
  *

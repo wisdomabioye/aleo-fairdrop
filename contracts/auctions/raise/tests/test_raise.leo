@@ -44,7 +44,7 @@ import credits.aleo;
 //   - claim_voided: requires RaiseBid record from a voided (target not met) auction.
 //   - Revenue invariant: creator_revenue + sum(rounding_refunds) + protocol_fee
 //     = raise_target verified by running the full lifecycle.
-//   - withdraw_treasury_fees happy path: requires prior fairdrop_multisig_v1.aleo::approve_op
+//   - withdraw_treasury_fees happy path: requires prior fairdrop_multisig_v2.aleo::approve_op
 //       to write approved_ops[op_hash] = true. Only testable on real chain state.
 //   - seed_liquidity: requires cleared, non-voided auction; creator as signer;
 //       SUPPLY_MANAGER_ROLE for mint_public; creator must hold amount_credits of

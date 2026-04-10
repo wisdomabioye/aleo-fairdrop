@@ -27,7 +27,7 @@
 //
 // ── Integration-test only (require devnet) ────────────────────────────────────
 //   Finalization: reserves, LP mint/burn, TWAP, protocol fee split.
-//   Governance happy paths: require fairdrop_multisig_v1.aleo::approve_op first.
+//   Governance happy paths: require fairdrop_multisig_v2.aleo::approve_op first.
 //   add_liquidity_cpi_private_in / swap_cpi_private_in: require caller to construct
 //     private Token records via transfer_public_to_private(dex_address, amount, false)
 //     or to hold real private Token records from token_registry.aleo.

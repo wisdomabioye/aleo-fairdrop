@@ -66,7 +66,7 @@
 //   Future → Final, .aleo/ → .aleo::
 // ─────────────────────────────────────────────────────────────────────────────
 
-import fairdrop_multisig_v1.aleo;
+import fairdrop_multisig_v2.aleo;
 import token_registry.aleo;
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -87,9 +87,9 @@ struct AllowedCallerOp { caller: address, allowed: bool, nonce: u64 }
 // =============================================================================
 
 program fairdrop_vest_v2.aleo {
-    // Upgrade governance: 3-of-5 multi-sig must call fairdrop_multisig_v1.aleo::approve_upgrade
+    // Upgrade governance: 3-of-5 multi-sig must call fairdrop_multisig_v2.aleo::approve_upgrade
     // with contract_key=5field and this program's compiled checksum before deployment.
-    @checksum(mapping="fairdrop_multisig_v1.aleo::approved_upgrades", key="5field")
+    @checksum(mapping="fairdrop_multisig_v2.aleo::approved_upgrades", key="5field")
     constructor() {}
 
     // =========================================================================
@@ -154,7 +154,7 @@ program fairdrop_vest_v2.aleo {
             nonce:   op_nonce,
         });
         return final {
-            assert(fairdrop_multisig_v1.aleo::approved_ops.get_or_use(op_hash, false));
+            assert(fairdrop_multisig_v2.aleo::approved_ops.get_or_use(op_hash, false));
             assert(!consumed_ops.get_or_use(op_hash, false));
             consumed_ops.set(op_hash, true);
             allowed_callers.set(program_addr, allowed);

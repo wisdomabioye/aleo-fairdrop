@@ -1,5 +1,5 @@
 /**
- * On-chain mapping reads for fairdrop_multisig_v1.aleo.
+ * On-chain mapping reads for fairdrop_multisig_v2.aleo.
  */
 
 import { PROGRAMS } from '@fairdrop/config';

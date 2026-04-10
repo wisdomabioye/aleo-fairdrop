@@ -45,7 +45,7 @@
 //   No pre-transfer transaction needed; everything is atomic in one proof.
 //
 // Upgrade governance:
-//   @checksum at key 12field in fairdrop_multisig_v1.aleo::approved_upgrades.
+//   @checksum at key 12field in fairdrop_multisig_v2.aleo::approved_upgrades.
 //   First deployment (edition=0) bypasses; all upgrades require 3-of-5.
 //
 // ── Leo 4.0 notes ────────────────────────────────────────────────────────────
@@ -57,7 +57,7 @@
 //   • External mapping read inside final {}: program.aleo::mapping.get(key).
 // ─────────────────────────────────────────────────────────────────────────────
 
-import fairdrop_multisig_v1.aleo;
+import fairdrop_multisig_v2.aleo;
 import token_registry.aleo;
 import fairdrop_config_v3.aleo;
 
@@ -236,7 +236,7 @@ fn twap_update(pool: PoolState, current_height: u32) -> PoolState {
 program fairswap_dex_v3.aleo {
 
     // Upgrade governance: 3-of-5 multisig must approve with contract_key = 12field.
-    @checksum(mapping="fairdrop_multisig_v1.aleo::approved_upgrades", key="12field")
+    @checksum(mapping="fairdrop_multisig_v2.aleo::approved_upgrades", key="12field")
     constructor() {}
 
     // =========================================================================
@@ -1139,7 +1139,7 @@ program fairswap_dex_v3.aleo {
             token_registry.aleo::transfer_public(token_id, recipient, amount);
 
         return final {
-            assert(fairdrop_multisig_v1.aleo::approved_ops.get_or_use(op_hash, false));
+            assert(fairdrop_multisig_v2.aleo::approved_ops.get_or_use(op_hash, false));
             assert(!consumed_ops.get_or_use(op_hash, false));
             consumed_ops.set(op_hash, true);
 
@@ -1200,7 +1200,7 @@ program fairswap_dex_v3.aleo {
         });
 
         return final {
-            assert(fairdrop_multisig_v1.aleo::approved_ops.get_or_use(op_hash, false));
+            assert(fairdrop_multisig_v2.aleo::approved_ops.get_or_use(op_hash, false));
             assert(!consumed_ops.get_or_use(op_hash, false));
             consumed_ops.set(op_hash, true);
 
@@ -1237,7 +1237,7 @@ program fairswap_dex_v3.aleo {
         });
 
         return final {
-            assert(fairdrop_multisig_v1.aleo::approved_ops.get_or_use(op_hash, false));
+            assert(fairdrop_multisig_v2.aleo::approved_ops.get_or_use(op_hash, false));
             assert(!consumed_ops.get_or_use(op_hash, false));
             consumed_ops.set(op_hash, true);
 
@@ -1264,7 +1264,7 @@ program fairswap_dex_v3.aleo {
         });
 
         return final {
-            assert(fairdrop_multisig_v1.aleo::approved_ops.get_or_use(op_hash, false));
+            assert(fairdrop_multisig_v2.aleo::approved_ops.get_or_use(op_hash, false));
             assert(!consumed_ops.get_or_use(op_hash, false));
             consumed_ops.set(op_hash, true);
 

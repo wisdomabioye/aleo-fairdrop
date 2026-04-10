@@ -6,7 +6,7 @@
   "leo": "4.0.0",
   "dependencies": [
     {
-      "name": "fairdrop_multisig_v1.aleo",
+      "name": "fairdrop_multisig_v2.aleo",
       "location": "local",
       "path": "../multisig"
     }

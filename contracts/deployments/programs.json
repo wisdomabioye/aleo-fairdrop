@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "$comment": "Single source of truth for all program IDs, program addresses, deployment salts, and upgrade keys. salt = PROGRAM_SALT constant inside each auction contract (namespaces auction_id hashes to prevent cross-type collision). upgradeKey = the key= value in the @checksum annotation — used as contract_key in fairdrop_multisig_v1.aleo::approve_upgrade.",
+  "$comment": "Single source of truth for all program IDs, program addresses, deployment salts, and upgrade keys. salt = PROGRAM_SALT constant inside each auction contract (namespaces auction_id hashes to prevent cross-type collision). upgradeKey = the key= value in the @checksum annotation — used as contract_key in fairdrop_multisig_v2.aleo::approve_upgrade.",
   "accounts": {
     "defaultAdminAddress": "aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r",
     "protocolTreasury": "aleo128wz89c78ur4mx378056yd9q7kqmphr07k0kfsmnwvqnv7g9syyqkg263r",
@@ -9,7 +9,7 @@
   },
   "programs": {
     "multisig": {
-      "programId":      "fairdrop_multisig_v1.aleo",
+      "programId":      "fairdrop_multisig_v2.aleo",
       "programAddress": null,
       "contractPath":   "contracts/utilities/multisig",
       "upgradeKey":     "0field"

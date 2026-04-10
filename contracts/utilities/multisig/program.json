@@ -1,5 +1,5 @@
 {
-  "program": "fairdrop_multisig_v1.aleo",
+  "program": "fairdrop_multisig_v2.aleo",
   "version": "0.1.0",
   "description": "3-of-5 multi-sig governance root for the Fairdrop protocol",
   "license": "MIT",

@@ -1,5 +1,5 @@
 /**
- * Off-chain signing preparation for fairdrop_multisig_v1.aleo.
+ * Off-chain signing preparation for fairdrop_multisig_v2.aleo.
  *
  * Each `prepare*` function computes the exact field value that 3 admins
  * must sign (using their Aleo private key) before the corresponding

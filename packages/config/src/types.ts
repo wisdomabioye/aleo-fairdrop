@@ -3,7 +3,7 @@ export type Network = 'testnet' | 'mainnet';
 export interface ProgramEntry {
   programId:      string;
   programAddress: string | null;  // aleo1... address derived from programId — fill in programs.json
-  upgradeKey:     string;  // contract_key in fairdrop_multisig_v1.aleo::approve_upgrade
+  upgradeKey:     string;  // contract_key in fairdrop_multisig_v2.aleo::approve_upgrade
   salt?:          string;  // present for auction programs; absent for utilities
 }
 

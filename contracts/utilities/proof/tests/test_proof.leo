@@ -15,7 +15,7 @@ import fairdrop_proof_v2.aleo;
 //   ✓ update_reputation — D12 caller guard rejects the test program.
 //
 // ── Integration-test only (require prior multisig approve_op on-chain) ─────────
-//   - set_allowed_caller happy path: requires prior fairdrop_multisig_v1.aleo::approve_op
+//   - set_allowed_caller happy path: requires prior fairdrop_multisig_v2.aleo::approve_op
 //       to write approved_ops[op_hash] = true. Only testable on real chain state.
 //   - issue_receipt happy path: requires allowed_callers pre-set via multisig.
 //     Verify: participated mapping set, receipt record issued to bidder.
@@ -37,7 +37,7 @@ program test_proof.aleo {
     // -------------------------------------------------------------------------
     // No multisig approval exists in test state.
     // finalize reads approved_ops.get_or_use(op_hash, false) → false → assert fails.
-    // Happy path requires a prior fairdrop_multisig_v1.aleo::approve_op on-chain.
+    // Happy path requires a prior fairdrop_multisig_v2.aleo::approve_op on-chain.
 
     @test
     @should_fail

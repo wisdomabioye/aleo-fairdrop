@@ -11,7 +11,7 @@
       "path": "../config"
     },
     {
-      "name": "fairdrop_multisig_v1.aleo",
+      "name": "fairdrop_multisig_v2.aleo",
       "location": "local",
       "path": "../multisig"
     },
