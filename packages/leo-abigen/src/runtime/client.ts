@@ -7,7 +7,7 @@ import { createRecordScanner }     from './records';
 
 type ExecFn = (spec: TransactionOptions) => Promise<{ transactionId: string } | undefined>;
 
-interface ClientConfig {
+export interface ClientConfig {
   fetchMapping?:       MappingFetcher;
   executeTransaction?: ExecFn;
   fee?:                number;
