@@ -1,5 +1,5 @@
 {
-  "program": "fairdrop_dutch_v2.aleo",
+  "program": "fairdrop_dutch_v3.aleo",
   "version": "0.1.0",
   "description": "Privacy-preserving descending-price Dutch auction with uniform clearing price",
   "license": "MIT",

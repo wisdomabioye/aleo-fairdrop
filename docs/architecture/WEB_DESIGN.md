@@ -139,7 +139,7 @@ Rule: **no program ID string literals anywhere in app code**. All program refere
 ```ts
 // packages/config/src/types.ts
 interface ProgramEntry {
-  programId:      string;   // e.g. "fairdrop_dutch_v2.aleo"
+  programId:      string;   // e.g. "fairdrop_dutch_v3.aleo"
   programAddress: string;   // e.g. "aleo1..."  — deterministic, filled in programs.json
   salt?:          string;
 }

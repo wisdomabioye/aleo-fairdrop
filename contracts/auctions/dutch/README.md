@@ -1,4 +1,4 @@
-# fairdrop_dutch_v2.aleo
+# fairdrop_dutch_v3.aleo
 
 Descending-price Dutch auction with **uniform clearing price**. Price decays linearly from `start_price` to `floor_price` over `price_decay_blocks`. All winning bids pay the same clearing price regardless of when they bid.
 

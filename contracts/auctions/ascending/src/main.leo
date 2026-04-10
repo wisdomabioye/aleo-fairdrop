@@ -29,7 +29,7 @@
 //
 // Auction ID derivation:
 //   auction_id = BHP256(AuctionKey { creator, nonce, PROGRAM_SALT = 2field })
-//   Distinct PROGRAM_SALT prevents cross-type ID collision with fairdrop_dutch_v2.aleo.
+//   Distinct PROGRAM_SALT prevents cross-type ID collision with fairdrop_dutch_v3.aleo.
 //
 // Privacy model:
 //   - Bid payment amount : public (unavoidable — on-chain escrow accounting).

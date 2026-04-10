@@ -52,7 +52,7 @@
       "upgradeKey":     "6field"
     },
     "dutch": {
-      "programId":      "fairdrop_dutch_v2.aleo",
+      "programId":      "fairdrop_dutch_v3.aleo",
       "programAddress": "aleo13n9u7zf7x0zpfqqeew2e9eyk5h8wfmssk8h5fwas0xmmp4z7s5zs6avmye",
       "contractPath":   "contracts/auctions/dutch",
       "salt":           "1field",

@@ -1,5 +1,5 @@
 /**
- * fairdrop_dutch_v2.aleo — TypeScript types.
+ * fairdrop_dutch_v3.aleo — TypeScript types.
  *
  * Descending-price Dutch auction with uniform clearing price.
  * All fields mirror the Leo structs 1:1; no runtime logic here.

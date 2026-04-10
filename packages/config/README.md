@@ -11,7 +11,7 @@ Two independent exports:
 ```ts
 import { PROGRAMS } from '@fairdrop/config'
 
-PROGRAMS.dutch.programId   // 'fairdrop_dutch_v2.aleo'
+PROGRAMS.dutch.programId   // 'fairdrop_dutch_v3.aleo'
 PROGRAMS.raise.programId   // 'fairdrop_raise_v2.aleo'
 ```
 

@@ -59,7 +59,7 @@ After each deployment, fill in the `programAddress` (the `aleo1...` address deri
 
 ```json
 "dutch": {
-  "programId":      "fairdrop_dutch_v2.aleo",
+  "programId":      "fairdrop_dutch_v3.aleo",
   "programAddress": "aleo1...",    // ← fill this in after deploying
   "salt": "1field"
 }

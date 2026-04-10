@@ -1,4 +1,4 @@
-// fairdrop_dutch_v2.aleo — Privacy-preserving descending-price Dutch auction.
+// fairdrop_dutch_v3.aleo — Privacy-preserving descending-price Dutch auction.
 // Leo 4.0 migration: fn/Final/final/:: — no behavioural changes.
 //
 // Mechanism: price descends from start_price toward floor_price in discrete steps.
@@ -9,7 +9,7 @@
 //                 re-minted at claim/claim_vested. Net supply change = 0.
 //
 // Roles required:
-//   fairdrop_dutch_v2.aleo — SUPPLY_MANAGER_ROLE on sale token (burn + mint).
+//   fairdrop_dutch_v3.aleo — SUPPLY_MANAGER_ROLE on sale token (burn + mint).
 //   fairdrop_vest_v2.aleo  — SUPPLY_MANAGER_ROLE on sale token (mint at release),
 //                         required only when vest_enabled = true.
 //
@@ -292,7 +292,7 @@ final fn record_bid(
 // Leo 4.0: program {} contains only entry-point fn, records, and mappings.
 // =============================================================================
 
-program fairdrop_dutch_v2.aleo {
+program fairdrop_dutch_v3.aleo {
     // Upgrade governance: 3-of-5 multi-sig must call fairdrop_multisig_v1.aleo::approve_upgrade
     // with contract_key=7field and this program's compiled checksum before deployment.
     @checksum(mapping="fairdrop_multisig_v1.aleo::approved_upgrades", key="7field")
@@ -495,7 +495,7 @@ program fairdrop_dutch_v2.aleo {
 
             // Verify SUPPLY_MANAGER_ROLE on sale token.
             let dutch_role_key: field = BHP256::hash_to_field(TokenOwner {
-                account:  fairdrop_dutch_v2.aleo,
+                account:  fairdrop_dutch_v3.aleo,
                 token_id: config.sale_token_id,
             });
             assert_eq(

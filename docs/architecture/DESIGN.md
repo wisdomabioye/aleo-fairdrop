@@ -27,14 +27,14 @@ A token launch platform on Aleo. Three auction modes, one shared infrastructure 
 
 **The core claim:** the only token launch platform where bid quantities are sealed during the auction. This is structurally impossible on transparent chains — Aleo's ZK model makes it native.
 
-**Current live product:** `fairdrop_dutch_v2.aleo` (was `fairdrop_v4.aleo`) — a Dutch descending-price auction with uniform clearing price, dual private/public bid paths, and full `token_registry.aleo` + `credits.aleo` CPI integration. Working on Aleo Testnet Beta.
+**Current live product:** `fairdrop_dutch_v3.aleo` (was `fairdrop_v4.aleo`) — a Dutch descending-price auction with uniform clearing price, dual private/public bid paths, and full `token_registry.aleo` + `credits.aleo` CPI integration. Working on Aleo Testnet Beta.
 
 ---
 
 ## 2. Contract Architecture
 
 ```
-fairdrop_dutch_v2.aleo      ← live. Dutch descending-price auction.
+fairdrop_dutch_v3.aleo      ← live. Dutch descending-price auction.
 fairdrop_sealed_v2.aleo     ← build next. Sealed-bid commit-reveal, uniform clearing price.
 fairdrop_raise_v2.aleo      ← fixed-price sealed allocation, pro-rata by payment.
 fairdrop_ascending_v3.aleo  ← ascending-price auction, pay-what-you-bid, early = cheapest.
@@ -51,7 +51,7 @@ fairdrop_vest_v2.aleo       ← post-claim token vesting
 
 **PROGRAM_SALT constants (assigned before any deployment — changing breaks all existing IDs):**
 ```
-fairdrop_dutch_v2.aleo      PROGRAM_SALT = 1field
+fairdrop_dutch_v3.aleo      PROGRAM_SALT = 1field
 fairdrop_ascending_v3.aleo  PROGRAM_SALT = 2field
 fairdrop_sealed_v2.aleo     PROGRAM_SALT = 3field
 fairdrop_raise_v2.aleo      PROGRAM_SALT = 4field
@@ -68,7 +68,7 @@ fairdrop_quadratic_v2.aleo  PROGRAM_SALT = 6field
 
 **CPI direction:** auction contracts import and call utility contracts. Utility contracts never call auction contracts. One-way dependency.
 
-**Record ownership:** records belong to their defining program. `fairdrop_dutch_v2.aleo/Bid` cannot be consumed by `fairdrop_sealed_v2.aleo`. Each auction type defines its own record types. Utility contracts define their own records (e.g. `fairdrop_proof_v2.aleo/ParticipationReceipt`).
+**Record ownership:** records belong to their defining program. `fairdrop_dutch_v3.aleo/Bid` cannot be consumed by `fairdrop_sealed_v2.aleo`. Each auction type defines its own record types. Utility contracts define their own records (e.g. `fairdrop_proof_v2.aleo/ParticipationReceipt`).
 
 **Leo contract mutability (important):** Leo contracts deployed on-chain are upgradeable within these rules:
 - **Allowed:** add new `import` statements, add new transitions, add new finalize functions, modify existing finalize/transition logic, add new mappings, add new records, add new structs.
@@ -99,7 +99,7 @@ Aleo `finalize` functions (on-chain execution) only accept **public** inputs. An
 
 ## 4. Auction Types
 
-### 4a. Dutch Auction (`fairdrop_dutch_v2.aleo`)
+### 4a. Dutch Auction (`fairdrop_dutch_v3.aleo`)
 **Status:** live on testnet.
 
 Price descends block-by-block from `start_price` to `floor_price` on a fixed decay schedule. Bids are accepted at the current price. When `total_committed >= supply`, the auction closes and the price at that block becomes the uniform clearing price. All winners pay the same price regardless of when they bid.
@@ -290,7 +290,7 @@ At claim: actual_quantity = payment * supply / total_payments  (pro-rata)
 
 **Why no commit-reveal:** total_payments accumulates publicly. Quantity is never specified until claim and computed privately there. Allocation is always pro-rata — first-come-first-served doesn't apply.
 
-**Both bid paths (M3 fix):** like `fairdrop_dutch_v2.aleo`, the raise supports:
+**Both bid paths (M3 fix):** like `fairdrop_dutch_v3.aleo`, the raise supports:
 - `bid_private` — consume credits UTXO. Source address is hidden. `payment_amount` still reaches finalize publicly (required to update `total_payments`).
 - `bid_public` — deduct from public credits balance. Both source and amount are public.
 
@@ -887,7 +887,7 @@ creator_revenue  = total_payments - protocol_fee
 
 ## 9. What Is Live
 
-`fairdrop_v4.aleo` on Aleo Testnet Beta. Renamed to `fairdrop_dutch_v2.aleo` in the new architecture.
+`fairdrop_v4.aleo` on Aleo Testnet Beta. Renamed to `fairdrop_dutch_v3.aleo` in the new architecture.
 
 **Working transitions:**
 - `create_auction` — burn deposit, store config, initialize escrow
@@ -923,7 +923,7 @@ PHASE 1a  fairdrop_gate_v2.aleo + fairdrop_proof_v2.aleo
           ─ proof: issue_receipt (commitment_hash, not blinded), update_reputation
           ─ deploy both before writing any auction contract code
 
-PHASE 1b  fairdrop_dutch_v2.aleo — NEW deployment (not an update to live v4)
+PHASE 1b  fairdrop_dutch_v3.aleo — NEW deployment (not an update to live v4)
           ─ imports fairdrop_gate_v2.aleo + fairdrop_proof_v2.aleo from day one
           ─ protocol fee + closer reward in close_auction
           ─ cancel_auction + claim_voided transitions (G4)
@@ -1076,7 +1076,7 @@ The indexer polls the Aleo node, parses finalize executions for all Fairdrop pro
 
 **Programs to watch:**
 ```
-fairdrop_dutch_v2.aleo
+fairdrop_dutch_v3.aleo
 fairdrop_sealed_v2.aleo
 fairdrop_raise_v2.aleo
 fairdrop_ascending_v3.aleo
@@ -1125,7 +1125,7 @@ fairdrop_ref_v2.aleo        (for referral activity)
 -- Core auction record (one row per create_auction)
 CREATE TABLE auctions (
     auction_id       TEXT PRIMARY KEY,   -- field as hex string
-    program_id       TEXT NOT NULL,      -- "fairdrop_dutch_v2.aleo" etc.
+    program_id       TEXT NOT NULL,      -- "fairdrop_dutch_v3.aleo" etc.
     creator          TEXT NOT NULL,      -- creator address
     metadata_hash    TEXT,               -- field as hex — links to metadata table
     config           JSONB NOT NULL,     -- full AuctionConfig fields
@@ -1220,7 +1220,7 @@ REST API consumed by the frontend. Stateless — all data served from the databa
 
 ```
 GET  /auctions
-     ?program=fairdrop_dutch_v2.aleo   (filter by type)
+     ?program=fairdrop_dutch_v3.aleo   (filter by type)
      ?creator=aleo1...              (filter by creator)
      ?status=live                   (filter by status)
      ?page=1&limit=20
