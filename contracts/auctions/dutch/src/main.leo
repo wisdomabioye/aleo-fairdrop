@@ -1296,21 +1296,34 @@ program fairdrop_dutch_v3.aleo {
     // =========================================================================
     //
     // After close_auction (cleared), creator seeds fairswap_dex_v3.aleo with
-    // liquidity in a single atomic transaction. No intermediate withdrawals.
+    // liquidity in a single atomic transaction. The auction's own escrowed
+    // credits.aleo are wrapped in-flight and deposited to the DEX — the creator
+    // does NOT need to pre-hold any wrapped CREDITS_RESERVED_TOKEN_ID.
     //
     // Token flow (all within one final {} — fully atomic):
-    //   f_refund : auction credits.aleo → creator          (mirrors withdraw_payments)
-    //   f_cred   : creator CREDITS_RESERVED_TOKEN_ID → DEX (via transfer_public_as_signer)
-    //   f_sale   : mint unsold sale tokens → DEX            (via mint_public)
-    //   f_cpi    : DEX add_liquidity_cpi — pool create (if new) + reserves + LP mint
+    //   f_credits_to_private : auction credits.aleo escrow → in-flight private credits
+    //                          record (owner = signer); debits self.caller (= this auction)
+    //   f_wrap               : credits record → wrapped CREDITS_RESERVED_TOKEN_ID Token record
+    //                          (via wrapped_credits.aleo::deposit_credits_private — the only
+    //                          on-chain path that mints CREDITS_RESERVED, since wrapped_credits.aleo
+    //                          is the SUPPLY_MANAGER for that token in token_registry)
+    //   f_sale               : mint unsold sale tokens as private Token record (owner = signer)
+    //                          via token_registry::mint_private
+    //   f_cpi                : DEX add_liquidity_cpi_private_in — consumes both records via
+    //                          transfer_private_to_public, creates pool if new, updates
+    //                          reserves, mints LP to lp_recipient
     //
     // Credits bridge: auction holds credits.aleo; DEX needs CREDITS_RESERVED_TOKEN_ID.
-    // Two simultaneous movements (refund + signer transfer) bridge atomically.
-    // Creator must pre-hold amount_credits of CREDITS_RESERVED_TOKEN_ID.
+    // The two ledgers are bridged in-flight via wrapped_credits.aleo. The signer (creator)
+    // briefly owns the in-flight records; this satisfies the snarkVM rule that every
+    // record consumed across CPI must have owner == self.signer. The records never land
+    // on-chain — they are produced and consumed atomically in the same transaction.
     //
     // Accounting mirrors existing transitions exactly:
     //   credits    — same checks as withdraw_payments (creator_withdrawn + escrow_payments)
     //   sale tokens — same checks as withdraw_unsold   (unsold_withdrawn + escrow_sales)
+    // The escrow_payments decrement reflects credits leaving escrow into the wrap pipeline,
+    // not a refund to the creator.
     //
     // Pause: NOT exempt — protected by both global and local pause.
     // D11 param: sale_token_id (caller reads config.sale_token_id off-chain).
@@ -1328,21 +1341,27 @@ program fairdrop_dutch_v3.aleo {
         assert_neq(lp_recipient, ZERO_ADDRESS);
         let creator: address = self.signer;
 
-        let f_refund: Final =
-            credits.aleo::transfer_public(creator, amount_credits as u64);
+        // Step 1: convert auction's escrowed credits.aleo into a private credits record
+        // owned by signer (creator). transfer_public_to_private debits self.caller (= this
+        // auction) and produces an in-flight signer-owned record. snarkVM record-owner rule
+        // (record.owner == self.signer at every CPI consumption point) is satisfied because
+        // we set the record's owner to self.signer here.
+        let (priv_credits, f_credits_to_private): (credits.aleo::credits, Final) =
+            credits.aleo::transfer_public_to_private(self.signer, amount_credits as u64);
 
-        // Two-step: pull signer's CREDITS_RESERVED into this contract's public balance,
-        // then convert to a private record owned by the signer (creator). transfer_public_to_private
-        // uses self.caller (this contract) as sender, so f_signer_to_auction must run
-        // before f_to_private in final {}. The record is in-flight and consumed atomically by
-        // add_liquidity_cpi_private_in below; signer-ownership satisfies the snarkVM rule that
-        // every record consumed across CPI must have owner == self.signer.
-        let f_signer_to_auction: Final =
-            token_registry.aleo::transfer_public_as_signer(CREDITS_RESERVED_TOKEN_ID, self.address, amount_credits);
-        let (record_credits, f_to_private): (token_registry.aleo::Token, Final) =
-            token_registry.aleo::transfer_public_to_private(CREDITS_RESERVED_TOKEN_ID, self.signer, amount_credits, false);
+        // Step 2: wrap the private credits record into a wrapped CREDITS_RESERVED_TOKEN_ID
+        // Token record (owner = signer). wrapped_credits.aleo is the SUPPLY_MANAGER for
+        // CREDITS_RESERVED_TOKEN_ID — its nested mint_private CPI is the only on-chain path
+        // that creates wrapped balance from credits.aleo.
+        // Returns: (residual credits dust record, wrapped Token record, finalize handle).
+        // credits_dust is provably 0-microcredit (we wrap exactly priv_credits.microcredits);
+        // Leo drops the unused binding from the transition's outputs (same pattern as
+        // fairswap_dex_v3::add_liquidity_cpi_private_in's dust_a/dust_b Token records).
+        let (credits_dust, record_credits, f_wrap):
+            (credits.aleo::credits, token_registry.aleo::Token, Final) =
+            wrapped_credits.aleo::deposit_credits_private(priv_credits, amount_credits as u64);
 
-        // Mint unsold sale tokens as a private record owned by the signer (creator).
+        // Step 3: mint unsold sale tokens as a private record owned by signer (creator).
         // Same in-flight pattern: record is consumed atomically by add_liquidity_cpi_private_in.
         let (record_sale, f_sale): (token_registry.aleo::Token, Final) =
             token_registry.aleo::mint_private(sale_token_id, self.signer, amount_sale_token, false, 4294967295u32);
@@ -1383,11 +1402,10 @@ program fairdrop_dutch_v3.aleo {
             assert(amount_sale_token <= escrow_s);
             escrow_sales.set(auction_id, escrow_s - amount_sale_token);
 
-            f_refund.run();
-            f_signer_to_auction.run();
-            f_to_private.run();
-            f_sale.run();
-            f_cpi.run();
+            f_credits_to_private.run();   // debits dutch's credits.aleo escrow
+            f_wrap.run();                  // credits wrapped_credits.aleo + mints CREDITS_RESERVED supply
+            f_sale.run();                  // mints sale_token supply
+            f_cpi.run();                   // DEX deposits + LP mint
         };
     }
 }
