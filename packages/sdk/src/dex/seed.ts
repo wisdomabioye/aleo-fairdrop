@@ -85,11 +85,19 @@ export interface SeedLiquidityValidation {
 /**
  * Pre-flight check before calling buildSeedLiquidity.
  *
- * Fetches current on-chain state to compute available amounts and verifies the
- * creator holds enough CREDITS_RESERVED_TOKEN_ID to fund the credits side.
+ * Fetches current on-chain state to compute available amounts. Returns
+ * structured errors rather than throwing — use `.error` in the UI to show
+ * actionable messages before the user submits.
  *
- * Returns structured errors rather than throwing — use `.error` in the UI to
- * show actionable messages before the user submits.
+ * TODO(remove creatorBalance check): As of the wrapped_credits in-flight fix
+ * (open_issues.md Issue 23), the auction contracts no longer require the
+ * creator to pre-hold CREDITS_RESERVED_TOKEN_ID — seed_liquidity wraps the
+ * auction's own escrowed credits.aleo via wrapped_credits.aleo::deposit_credits_private
+ * inside the same transaction. The `creatorBalance < input.amountCredits` check
+ * below (and the `creatorBalance` field on SeedLiquidityValidation) can be
+ * removed once the v3 contracts are deployed and the frontend is updated to
+ * stop surfacing "you must wrap credits first" as a precondition. Keep the
+ * mapping read for now so callers can transition without an SDK breaking change.
  */
 export async function validateSeedLiquidity(
   auction:        AuctionView,
@@ -133,6 +141,11 @@ export async function validateSeedLiquidity(
   if (input.amountCredits > maxCredits) {
     return { valid: false, error: `amountCredits exceeds available revenue (max ${maxCredits})`, maxSaleToken, maxCredits, creatorBalance };
   }
+  // TODO(remove): Obsolete after Issue 23 fix — auction now wraps its own escrowed
+  // credits.aleo via wrapped_credits.aleo::deposit_credits_private inside seed_liquidity,
+  // so the creator no longer needs to pre-hold CREDITS_RESERVED_TOKEN_ID. Remove this
+  // block (and the creatorBalance field above) after v3 contracts are deployed and the
+  // frontend's "wrap credits first" UX is dropped.
   if (creatorBalance < input.amountCredits) {
     return { valid: false, error: `Creator holds ${creatorBalance} CREDITS_RESERVED_TOKEN_ID; need ${input.amountCredits}`, maxSaleToken, maxCredits, creatorBalance };
   }

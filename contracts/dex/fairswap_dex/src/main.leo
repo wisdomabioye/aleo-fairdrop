@@ -565,12 +565,43 @@ program fairswap_dex_v3.aleo {
     // IDs are read directly from the records — ZK record ownership proves the
     // deposit is valid. No prior transfer CPI or allowlist needed; permissionless.
     //
-    // Callers with PUBLIC token balances use the in-flight record pattern:
-    //   1. token_registry::transfer_public_to_private(dex_address, amount, false)
-    //      → creates a Token record owned by dex_address (not yet on-chain)
-    //   2. Pass that record as record_a or record_b to this transition
-    //   Both records are created and consumed atomically in the same transaction —
-    //   they never persist as unspent outputs on-chain.
+    // ── IMPORTANT — record ownership rule ────────────────────────────────────
+    // Both record_a and record_b MUST be owned by self.signer (the original
+    // tx wallet). Aleo's snarkVM enforces that every record consumed in any
+    // transition (including across CPI hops) must satisfy:
+    //     record.owner == self.signer of the outermost tx
+    // self.signer propagates unchanged through the entire CPI call graph.
+    // Records owned by program addresses (e.g. fairswap_dex_v3.aleo) cannot
+    // be consumed here — process_deployment will reject the calling contract
+    // with: Input record 'token_registry.aleo/Token' must belong to the signer.
+    //
+    // ── Constructing signer-owned in-flight records ──────────────────────────
+    // For arbitrary token_registry tokens (sale tokens, project tokens, etc.):
+    //
+    //     let (rec, f): (token_registry.aleo::Token, Final) =
+    //         token_registry.aleo::transfer_public_to_private(
+    //             token_id, self.signer, amount, false);
+    //     // rec.owner == self.signer; pass `rec` directly to add_liquidity_cpi_private_in.
+    //
+    // For credits.aleo (the DEX expects CREDITS_RESERVED_TOKEN_ID in
+    // token_registry, NOT raw credits.aleo — wrap via wrapped_credits.aleo):
+    //
+    //     let (priv_c, f1): (credits.aleo::credits, Final) =
+    //         credits.aleo::transfer_public_to_private(self.signer, amount as u64);
+    //     let (dust, rec, f2):
+    //         (credits.aleo::credits, token_registry.aleo::Token, Final) =
+    //         wrapped_credits.aleo::deposit_credits_private(priv_c, amount as u64);
+    //     // rec.owner == self.signer; pass `rec` as the credits-side record.
+    //
+    // Minting newly-issued sale tokens (auction CPI case where the caller is
+    // the SUPPLY_MANAGER for the sale token, e.g. minting unsold supply):
+    //
+    //     let (rec, f): (token_registry.aleo::Token, Final) =
+    //         token_registry.aleo::mint_private(
+    //             token_id, self.signer, amount, false, 4294967295u32);
+    //
+    // All records are created and consumed atomically in the same transaction —
+    // they never persist as unspent outputs on-chain.
     //
     // 0-amount remainder records (dust) are emitted as implicit outputs.
     //
@@ -579,6 +610,7 @@ program fairswap_dex_v3.aleo {
     //
     // Pause check intentionally omitted: seeding is post-auction settlement,
     // not a live trade. A paused DEX should not block auction finalization.
+    // (Pool creation is still pause-gated — see Issue 6.)
 
     fn add_liquidity_cpi_private_in(
         record_a:         token_registry.aleo::Token,
@@ -903,11 +935,34 @@ program fairswap_dex_v3.aleo {
     // DEX's public balance via transfer_private_to_public. Record ownership is proven
     // by ZK — no prior transfer CPI needed; permissionless.
     //
-    // Callers with PUBLIC token balances use the in-flight record pattern:
-    //   1. token_registry::transfer_public_to_private(dex_address, amount_in, false)
-    //      → creates a Token record owned by dex_address (not yet on-chain)
-    //   2. Pass that record as token_in to this transition
-    //   The record is created and consumed atomically — it never persists on-chain.
+    // ── IMPORTANT — record ownership rule ────────────────────────────────────
+    // token_in MUST be owned by self.signer (the original tx wallet). Aleo's
+    // snarkVM enforces that every record consumed in any transition (including
+    // across CPI hops) must satisfy:
+    //     record.owner == self.signer of the outermost tx
+    // self.signer propagates unchanged through the entire CPI call graph.
+    // Records owned by program addresses (e.g. fairswap_dex_v3.aleo) cannot
+    // be consumed here — process_deployment will reject the calling contract
+    // with: Input record 'token_registry.aleo/Token' must belong to the signer.
+    //
+    // ── Constructing a signer-owned in-flight record ─────────────────────────
+    // For arbitrary token_registry tokens:
+    //
+    //     let (rec, f): (token_registry.aleo::Token, Final) =
+    //         token_registry.aleo::transfer_public_to_private(
+    //             token_in_id, self.signer, amount_in, false);
+    //     // rec.owner == self.signer; pass `rec` as token_in.
+    //
+    // For credits.aleo (must be wrapped as CREDITS_RESERVED_TOKEN_ID first):
+    //
+    //     let (priv_c, f1): (credits.aleo::credits, Final) =
+    //         credits.aleo::transfer_public_to_private(self.signer, amount_in as u64);
+    //     let (dust, rec, f2):
+    //         (credits.aleo::credits, token_registry.aleo::Token, Final) =
+    //         wrapped_credits.aleo::deposit_credits_private(priv_c, amount_in as u64);
+    //     // rec.owner == self.signer; pass `rec` as token_in.
+    //
+    // The record is created and consumed atomically — it never persists on-chain.
     //
     // token_out is sent to recipient via transfer_public (from DEX's public balance).
     // A 0-amount remainder record (dust) is emitted as an implicit output.
