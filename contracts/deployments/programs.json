@@ -10,85 +10,85 @@
   "programs": {
     "multisig": {
       "programId":      "fairdrop_multisig_v2.aleo",
-      "programAddress": null,
+      "programAddress": "aleo1fdkmw346hevncs00ta49zfqdxxgqg46tcq33h4gzm2sx54p35q8syqy9q7",
       "contractPath":   "contracts/utilities/multisig",
       "upgradeKey":     "0field"
     },
     "config": {
       "programId":      "fairdrop_config_v3.aleo",
-      "programAddress": "aleo1337ysdtfvpx6h4we0crz8xuygl0ue7sc9vzqwy6grewmntqe3vyq00ep0g",
+      "programAddress": "aleo1em2kyf5rmdmwgkslunjr958xz9d5sfjurxc405qwdzyhdefjpyzqwdpsce",
       "contractPath":   "contracts/utilities/config",
       "upgradeKey":     "1field"
     },
     "gate": {
       "programId":      "fairdrop_gate_v3.aleo",
-      "programAddress": "aleo1e4vwv078d7fhra9lp07633zdpn0ln3fedt8lseal0dh9fdr5vvqqeae9hv",
+      "programAddress": "aleo1sfj38jt3fcvydsqn2rs6wqw2z7z5jfr57862lkahf0msztqkpgzs064hjw",
       "contractPath":   "contracts/utilities/gate",
       "upgradeKey":     "2field"
     },
     "proof": {
       "programId":      "fairdrop_proof_v3.aleo",
-      "programAddress": "aleo1txlfp23827kt592s6lgwrpv990k3ge5798d2jn8047mh4fv0w5ysfg98nt",
+      "programAddress": "aleo1lh7zzsj6auwxjy0vwc2xh85pcjlwu6sdtny3p3a9uzhvsx4jwc9s9n3akh",
       "contractPath":   "contracts/utilities/proof",
       "upgradeKey":     "3field"
     },
     "ref": {
       "programId":      "fairdrop_ref_v3.aleo",
-      "programAddress": "aleo13xddttavncqn2edx2r6d8ny03wnuc6dmpc9pfr8ytc3m0s06mgyquf7x6t",
+      "programAddress": "aleo19pklueaf5xaq83h38zrtt0gptqtq58f54pv4lgjfy5neaehtwvpsuq8m92",
       "contractPath":   "contracts/utilities/ref",
       "upgradeKey":     "4field"
     },
     "vest": {
       "programId":      "fairdrop_vest_v3.aleo",
-      "programAddress": "aleo10r67ky003vgpcu4kvwnhfvrsaaq2gd62j026sylpjgclxl3q4ugs8y34dp",
+      "programAddress": "aleo1t3fx0mmdt3hk8tt68x458pk6p56a960mugd5vl66u4q2kpuxhcxskp7a07",
       "contractPath":   "contracts/utilities/vest",
       "upgradeKey":     "5field"
     },
     "ascending": {
       "programId":      "fairdrop_ascending_v3.aleo",
-      "programAddress": "aleo1kf0rw9ml6de66hgglxtdah255dz885uczeffgku7lavjy3qqcs9q4pzvwh",
+      "programAddress": "aleo1a745mv07xu8ndsgwreltu8get037kezcjahmn8rg7c8lmuy3kvrsrttu8l",
       "contractPath":   "contracts/auctions/ascending",
       "salt":           "2field",
       "upgradeKey":     "6field"
     },
     "dutch": {
       "programId":      "fairdrop_dutch_v3.aleo",
-      "programAddress": "aleo13n9u7zf7x0zpfqqeew2e9eyk5h8wfmssk8h5fwas0xmmp4z7s5zs6avmye",
+      "programAddress": "aleo15mxgtmff46rt448wh33p25cptmedytzczeya3fvcs99s46wmwvps9zupek",
       "contractPath":   "contracts/auctions/dutch",
       "salt":           "1field",
       "upgradeKey":     "7field"
     },
     "lbp": {
       "programId":      "fairdrop_lbp_v3.aleo",
-      "programAddress": null,
+      "programAddress": "aleo1kn3dgm4jr5vyu6dkvf2s3xwp9lpltj8v8nd8lthlwyxgvg26dgzs4q3jxk",
       "contractPath":   "contracts/auctions/lbp",
       "salt":           "5field",
       "upgradeKey":     "8field"
     },
     "quadratic": {
       "programId":      "fairdrop_quadratic_v3.aleo",
-      "programAddress": null,
+      "programAddress": "aleo1fhcclhp9yfv69s5enusdzt6t3fhptg4t40vz435m2um7nqa7vcxsq802kt",
       "contractPath":   "contracts/auctions/quadratic",
       "salt":           "6field",
       "upgradeKey":     "9field"
     },
     "raise": {
       "programId":      "fairdrop_raise_v3.aleo",
-      "programAddress": "aleo1uhd5pytlnk3sfsn2x3q6hh4aks56t2l36zknp3m96feynvgqrq9sg4ah0t",
+      "programAddress": "aleo1jef43r3xsrjen37rfwgar7yeg8yuxe9gwl3pt0g73kf2dz0wwgqs33lvx4",
       "contractPath":   "contracts/auctions/raise",
       "salt":           "4field",
       "upgradeKey":     "10field"
     },
     "sealed": {
       "programId":      "fairdrop_sealed_v3.aleo",
-      "programAddress": "aleo1wnkyc5qez7d2z68w35jelp549k9zxuad05t5pflya0gnzh3wzurszsdne5",
+      "programAddress": "aleo1h4jsxgdlvy654cptyxuamctnpua2c39d3nt7n0cpnrfamgxz4u8s56kdse",
       "contractPath":   "contracts/auctions/sealed",
       "salt":           "3field",
       "upgradeKey":     "11field"
     },
     "fairswap": {
       "programId":      "fairswap_dex_v3.aleo",
-      "programAddress": "aleo1rnkyc5qez7d2z68w35jeep549k9zxuad05t5pflya0gnz23wzuxszsdwe2",
+      "programAddress": "aleo1x6h4necpvp0zwvg50nm96xuwvqa4rzph7l0yc6kx85njwac89gqslntk4s",
       "contractPath":   "contracts/dex/fairswap_dex",
       "salt":           "",
       "upgradeKey":     "12field"
