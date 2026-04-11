@@ -61,6 +61,7 @@ import fairdrop_proof_v3.aleo;
 import fairdrop_ref_v3.aleo;
 import fairdrop_vest_v3.aleo;
 import credits.aleo;
+import wrapped_credits.aleo;
 import token_registry.aleo;
 import fairswap_dex_v3.aleo;
 
@@ -1331,17 +1332,20 @@ program fairdrop_dutch_v3.aleo {
             credits.aleo::transfer_public(creator, amount_credits as u64);
 
         // Two-step: pull signer's CREDITS_RESERVED into this contract's public balance,
-        // then convert to a private record owned by the DEX. transfer_public_to_private
+        // then convert to a private record owned by the signer (creator). transfer_public_to_private
         // uses self.caller (this contract) as sender, so f_signer_to_auction must run
-        // before f_to_private in final {}.
+        // before f_to_private in final {}. The record is in-flight and consumed atomically by
+        // add_liquidity_cpi_private_in below; signer-ownership satisfies the snarkVM rule that
+        // every record consumed across CPI must have owner == self.signer.
         let f_signer_to_auction: Final =
             token_registry.aleo::transfer_public_as_signer(CREDITS_RESERVED_TOKEN_ID, self.address, amount_credits);
         let (record_credits, f_to_private): (token_registry.aleo::Token, Final) =
-            token_registry.aleo::transfer_public_to_private(CREDITS_RESERVED_TOKEN_ID, fairswap_dex_v3.aleo, amount_credits, false);
+            token_registry.aleo::transfer_public_to_private(CREDITS_RESERVED_TOKEN_ID, self.signer, amount_credits, false);
 
-        // Mint unsold sale tokens as a private record owned by the DEX.
+        // Mint unsold sale tokens as a private record owned by the signer (creator).
+        // Same in-flight pattern: record is consumed atomically by add_liquidity_cpi_private_in.
         let (record_sale, f_sale): (token_registry.aleo::Token, Final) =
-            token_registry.aleo::mint_private(sale_token_id, fairswap_dex_v3.aleo, amount_sale_token, false, 4294967295u32);
+            token_registry.aleo::mint_private(sale_token_id, self.signer, amount_sale_token, false, 4294967295u32);
 
         let f_cpi: Final = fairswap_dex_v3.aleo::add_liquidity_cpi_private_in(
             record_credits,

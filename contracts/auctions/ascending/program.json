@@ -45,6 +45,10 @@
       "location": "network"
     },
     {
+      "name": "wrapped_credits.aleo",
+      "location": "network"
+    },
+    {
       "name": "token_registry.aleo",
       "location": "network"
     }

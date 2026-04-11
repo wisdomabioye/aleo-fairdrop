@@ -660,6 +660,218 @@ assert_eq(pool.token_a, ca);   // ← add this
 
 ---
 
+## Issue 23: `seed_liquidity` requires creator to pre-hold wrapped credits — does not actually use auction proceeds for the credits side
+
+**Severity:** High (deployment-blocking under snarkVM signer rule; misleading API; doubles creator's pre-funding requirement)
+**Component:** `fairdrop_dutch_v3.aleo`, `fairdrop_ascending_v3.aleo`, `fairdrop_lbp_v3.aleo`, `fairdrop_quadratic_v3.aleo`, `fairdrop_raise_v3.aleo`, `fairdrop_sealed_v3.aleo` — `seed_liquidity` (dutch L1317–1391, same shape in the other 5)
+**Status:** Open
+
+### Description
+
+`seed_liquidity` is documented and named as if it deposits the auction's escrowed credits.aleo into the DEX. In reality the current implementation is a creator-mediated swap: the auction refunds its escrowed credits.aleo to the creator's wallet, then pulls an equivalent amount of `CREDITS_RESERVED_TOKEN_ID` from the creator's separate `token_registry` balance and forwards that to the DEX. The credits in the DEX reserve come from the **creator's pre-existing wrapped balance**, not from auction proceeds.
+
+This has three practical problems:
+
+1. **The creator must pre-wrap.** To call `seed_liquidity` with `amount_credits = A`, the creator must already hold `≥ A` of `CREDITS_RESERVED_TOKEN_ID` in `token_registry.aleo/authorized_balances`. The SDK enforces this off-chain (`validateSeedLiquidity` → `creatorBalance < input.amountCredits → error`). Without it the on-chain `transfer_public_as_signer` reverts at finalize with insufficient balance.
+
+2. **2× pre-funding burden.** The auction holds `creator_revenue` worth of credits.aleo from bidder payments. To seed `A` of liquidity, the creator must *separately* hold `A` of wrapped credits — total `2A` of value across two ledgers — even though after seeding their net wealth is unchanged (`+A credits.aleo` refund, `−A` wrapped consumed).
+
+3. **API/comment disagree with behavior.** The header comment block (dutch L1294–1316) says *"After close_auction (cleared), creator seeds fairswap_dex_v3.aleo with liquidity"*. The token-flow lines list `f_refund: auction credits.aleo → creator` and `f_cred: creator CREDITS_RESERVED_TOKEN_ID → DEX (via transfer_public_as_signer)` — admitting the swap pattern in the comment, but the function name and API surface still suggest direct deposit of auction proceeds.
+
+The function is also currently the trigger for the snarkVM **"Input record must belong to the signer"** deployment failure (see commits applying signer-ownership fix to dutch L1340/1344). Even with that fix, the underlying creator-mediated-swap design remains.
+
+### Current implementation (dutch, lines 1330–1352)
+
+```leo
+let f_refund: Final =
+    credits.aleo::transfer_public(creator, amount_credits as u64);
+
+// Two-step: pull signer's CREDITS_RESERVED into this contract's public balance,
+// then convert to a private record owned by the signer (creator). transfer_public_to_private
+// uses self.caller (this contract) as sender, so f_signer_to_auction must run
+// before f_to_private in final {}. The record is in-flight and consumed atomically by
+// add_liquidity_cpi_private_in below; signer-ownership satisfies the snarkVM rule that
+// every record consumed across CPI must have owner == self.signer.
+let f_signer_to_auction: Final =
+    token_registry.aleo::transfer_public_as_signer(CREDITS_RESERVED_TOKEN_ID, self.address, amount_credits);
+let (record_credits, f_to_private): (token_registry.aleo::Token, Final) =
+    token_registry.aleo::transfer_public_to_private(CREDITS_RESERVED_TOKEN_ID, self.signer, amount_credits, false);
+
+// Mint unsold sale tokens as a private record owned by the signer (creator).
+// Same in-flight pattern: record is consumed atomically by add_liquidity_cpi_private_in.
+let (record_sale, f_sale): (token_registry.aleo::Token, Final) =
+    token_registry.aleo::mint_private(sale_token_id, self.signer, amount_sale_token, false, 4294967295u32);
+
+let f_cpi: Final = fairswap_dex_v3.aleo::add_liquidity_cpi_private_in(
+    record_credits,
+    record_sale,
+    fee_bps,
+    min_lp,
+    lp_recipient,
+);
+```
+
+And in `final {}` (lines 1385–1389):
+
+```leo
+f_refund.run();
+f_signer_to_auction.run();
+f_to_private.run();
+f_sale.run();
+f_cpi.run();
+```
+
+### Why this is structurally broken
+
+**Trace through the value flow:**
+
+| Step | Effect on dutch | Effect on creator |
+|---|---|---|
+| `credits.aleo::transfer_public(creator, A)` | `−A` credits.aleo | `+A` credits.aleo |
+| `token_registry::transfer_public_as_signer(CREDITS_RESERVED, self.address, A)` | `+A` wrapped | `−A` wrapped (debits **signer's** balance, per token_registry bytecode L104–148) |
+| `token_registry::transfer_public_to_private(CREDITS_RESERVED, self.signer, A, false)` | `−A` wrapped (transient) | (record output, owner = signer) |
+| `add_liquidity_cpi_private_in(record_credits, …)` | — | record consumed → DEX wrapped reserve `+A` |
+
+Net:
+- Dutch: `−A` credits.aleo (escrow consumed)
+- Creator: net 0 (`+A` credits, `−A` wrapped, both 1:1)
+- DEX: `+A` wrapped credits (sourced **from the creator's pre-existing wrapped balance**, not from escrow)
+
+The auction's credits.aleo escrow is simply refunded to the creator. The DEX deposit physically comes from the creator's separately-wrapped balance, mediated through dutch as a transient pass-through. This is not what the API name implies.
+
+### Root cause
+
+The auction holds **credits.aleo** (raw native credits). The DEX requires **`CREDITS_RESERVED_TOKEN_ID`** in `token_registry.aleo` (the wrapped form). These are separate ledgers in separate programs. The bridge between them is `wrapped_credits.aleo`, which is the SUPPLY_MANAGER for `CREDITS_RESERVED_TOKEN_ID` (per `token_registry.aleo` `registered_tokens` initialization, admin = `wrapped_credits.aleo`).
+
+The current `seed_liquidity` does **not** import `wrapped_credits.aleo`. Without it, dutch has no path to convert its own escrowed credits.aleo into a wrapped Token record. The author worked around this by pushing the wrapping responsibility to the creator off-chain — the creator pre-wraps, then `seed_liquidity` does an atomic swap.
+
+### Resolution
+
+Import `wrapped_credits.aleo` and use its `deposit_credits_private` entry point to wrap the auction's own escrowed credits.aleo into a wrapped Token record in-flight, with no creator pre-wrap step.
+
+`wrapped_credits.aleo::deposit_credits_private` (compiled bytecode L41–50, source at `aleo-standard-programs/wrapped_credits/src/main.leo` L30–43):
+
+```aleo
+function deposit_credits_private:
+    input r0 as credits.aleo/credits.record;     // private credits record
+    input r1 as u64.private;                     // amount
+    call credits.aleo/transfer_private_to_public r0 wrapped_credits.aleo r1 into r2 r3;
+    cast r1 into r4 as u128;
+    call token_registry.aleo/mint_private 3443843...field r0.owner r4 false 4294967295u32 into r5 r6;
+    async deposit_credits_private r3 r6 into r7;
+    output r2 as credits.aleo/credits.record;    // residual/dust credits record
+    output r5 as token_registry.aleo/Token.record;  // wrapped Token record (owner = r0.owner)
+    output r7 as wrapped_credits.aleo/deposit_credits_private.future;
+```
+
+It consumes a private credits record and produces a private wrapped Token record owned by the same address. We synthesize the input record from the auction's own escrow via `credits.aleo::transfer_public_to_private(self.signer, …)`, which debits `self.caller` (= the auction) and emits a record owned by the signer (so the snarkVM owner check at every nested CPI consumption point passes).
+
+#### Replacement code block — add to top of file
+
+```leo
+import wrapped_credits.aleo;
+```
+
+#### Replacement code block — replace the proof-context portion of `seed_liquidity` (dutch lines 1330–1344)
+
+```leo
+// Step 1: convert auction's escrowed credits.aleo into a private credits record
+// owned by signer (creator). transfer_public_to_private debits self.caller (= this
+// auction) and produces an in-flight signer-owned record. snarkVM record-owner rule
+// (record.owner == self.signer at every CPI consumption point) is satisfied because
+// we set the record's owner to self.signer here.
+let (priv_credits, f_credits_to_private): (credits.aleo::credits, Final) =
+    credits.aleo::transfer_public_to_private(self.signer, amount_credits as u64);
+
+// Step 2: wrap the private credits record into a wrapped CREDITS_RESERVED_TOKEN_ID
+// Token record (owner = signer). wrapped_credits.aleo is the SUPPLY_MANAGER for
+// CREDITS_RESERVED_TOKEN_ID — its nested mint_private CPI is the only on-chain path
+// that creates wrapped balance from credits.aleo.
+// Returns: (residual credits dust record, wrapped Token record, finalize handle).
+let (_credits_dust, record_credits, f_wrap):
+    (credits.aleo::credits, token_registry.aleo::Token, Final) =
+    wrapped_credits.aleo::deposit_credits_private(priv_credits, amount_credits as u64);
+
+// Step 3: mint unsold sale tokens as a private record owned by signer (creator).
+// Same in-flight pattern: record is consumed atomically by add_liquidity_cpi_private_in.
+let (record_sale, f_sale): (token_registry.aleo::Token, Final) =
+    token_registry.aleo::mint_private(sale_token_id, self.signer, amount_sale_token, false, 4294967295u32);
+
+// Step 4: deposit both records to the DEX via CPI. DEX consumes them via
+// transfer_private_to_public, which checks record.owner == self.signer (= creator).
+let f_cpi: Final = fairswap_dex_v3.aleo::add_liquidity_cpi_private_in(
+    record_credits,
+    record_sale,
+    fee_bps,
+    min_lp,
+    lp_recipient,
+);
+```
+
+#### Replacement code block — replace the finalize run order (dutch lines 1385–1389)
+
+```leo
+f_credits_to_private.run();   // debits dutch's credits.aleo escrow
+f_wrap.run();                  // credits wrapped_credits.aleo + mints CREDITS_RESERVED supply
+f_sale.run();                  // mints sale_token supply
+f_cpi.run();                   // DEX deposits + LP mint
+```
+
+#### What gets removed
+
+- `let f_refund: Final = credits.aleo::transfer_public(creator, amount_credits as u64);` — no more refund; auction consumes its own credits directly
+- `let f_signer_to_auction: Final = token_registry::transfer_public_as_signer(CREDITS_RESERVED, self.address, amount_credits);` — no more creator pre-wrap pull
+- `let (record_credits, f_to_private) = token_registry::transfer_public_to_private(CREDITS_RESERVED, self.signer, amount_credits, false);` — replaced by the wrap CPI
+- `f_refund.run(); f_signer_to_auction.run(); f_to_private.run();` from finalize
+
+#### What stays the same
+
+- Function signature, parameters, return type
+- All accounting in finalize (`assert(amount_credits <= escrow); escrow_payments -= amount_credits; creator_withdrawn += amount_credits` and the parallel `escrow_sales` / `unsold_withdrawn` block) — still correct, the auction's credits really are being consumed (just into the wrap pipeline instead of refunded to the creator)
+- `mint_private` for sale tokens
+- `add_liquidity_cpi_private_in` CPI call shape
+- `fairswap_dex_v3.aleo` — completely unchanged
+
+### CPI signer-rule trace (verification)
+
+| CPI level | Caller | Call | Signer at this level | Record owner | Check |
+|---|---|---|---|---|---|
+| 1 | wallet | `dutch.seed_liquidity(…)` | wallet | — (no record input) | ✓ |
+| 2 | dutch | `credits.aleo::transfer_public_to_private(self.signer, A)` | wallet | output owner = wallet | ✓ |
+| 3 | dutch | `wrapped_credits::deposit_credits_private(priv_credits, A)` | wallet | input owner = wallet | ✓ |
+| 3a | wrapped_credits | `credits.aleo::transfer_private_to_public(priv_credits, wrapped_credits.aleo, A)` | wallet | input owner = wallet | ✓ |
+| 3b | wrapped_credits | `token_registry::mint_private(CREDITS_RESERVED, priv_credits.owner, A, …)` | wallet | (no record input; output owner = wallet) | ✓ caller = wrapped_credits.aleo IS SUPPLY_MANAGER for CREDITS_RESERVED |
+| 4 | dutch | `token_registry::mint_private(sale_token_id, self.signer, …)` | wallet | output owner = wallet | ✓ caller = dutch IS SUPPLY_MANAGER for sale_token_id |
+| 5 | dutch | `fairswap_dex_v3::add_liquidity_cpi_private_in(record_credits, record_sale, …)` | wallet | both record owners = wallet | ✓ |
+| 5a | fairswap_dex_v3 | `token_registry::transfer_private_to_public(self.address, A, record_credits)` | wallet | record_credits.owner = wallet | ✓ |
+| 5b | fairswap_dex_v3 | `token_registry::transfer_private_to_public(self.address, sale_amt, record_sale)` | wallet | record_sale.owner = wallet | ✓ |
+
+Every CPI hop satisfies the snarkVM rule. No deployment-time validation failure.
+
+### Net effect after the fix
+
+| | Before | After |
+|---|---|---|
+| Auction's credits.aleo balance | `−A` (refunded to creator) | `−A` (consumed in wrap) |
+| Auction's wrapped balance | net 0 (transient) | unchanged (never touches wrapped) |
+| Creator's credits.aleo balance | `+A` (refund received) | unchanged |
+| Creator's wrapped balance | `−A` (consumed) | unchanged |
+| Creator pre-wrap requirement | `≥ amount_credits` | none |
+| `wrapped_credits.aleo` credits.aleo balance | unchanged | `+A` (the wrap deposit) |
+| `CREDITS_RESERVED` total supply | unchanged | `+A` (newly minted via wrap) |
+| DEX wrapped reserve | `+A` | `+A` (now actually from auction proceeds) |
+
+Conservation holds. The auction's escrowed credits.aleo end up in `wrapped_credits.aleo` (as the bridge backing), and an equivalent amount of `CREDITS_RESERVED_TOKEN_ID` is freshly minted into the DEX's reserve via the in-flight record.
+
+### Knock-on changes
+
+- **SDK**: `validateSeedLiquidity` (`packages/sdk/src/dex/seed.ts`) can drop the `creatorBalance < input.amountCredits` check entirely — no creator pre-wrap is needed. The other validations (`maxSaleToken`, `maxCredits` against `creator_revenue`, auction in cleared state) remain.
+- **Frontend**: `SeedLiquidityPanel` no longer needs to surface "you must wrap credits first" as a pre-condition error.
+- **Other 5 auction contracts** (`ascending`, `lbp`, `quadratic`, `raise`, `sealed`): each has the same `seed_liquidity` shape and needs the same edit. Apply after dutch is verified end-to-end.
+- **Test environment**: `wrapped_credits.aleo` must be deployable / fetchable in the local Leo build. It's a standard Aleo system program (admin of `CREDITS_RESERVED_TOKEN_ID` per token_registry bytecode L273), so `leo build` should resolve it from the network endpoint configured in `.env`. If not, copy the compiled `.aleo` file from `aleo-standard-programs/token_disbursement/build/imports/wrapped_credits.aleo` into each auction's `build/imports/`.
+
+---
+
 ## Issue 22: TWAP not updated on liquidity operations — oracle accuracy gap vs Uniswap V2
 
 **Severity:** Low (no fund risk; oracle reliability gap for future integrators)

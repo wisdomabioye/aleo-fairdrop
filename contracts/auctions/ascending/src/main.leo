@@ -62,6 +62,7 @@
 
 import fairdrop_multisig_v2.aleo;
 import credits.aleo;
+import wrapped_credits.aleo;
 import token_registry.aleo;
 import fairdrop_config_v3.aleo;
 import fairdrop_gate_v3.aleo;
