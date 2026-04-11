@@ -872,6 +872,190 @@ Conservation holds. The auction's escrowed credits.aleo end up in `wrapped_credi
 
 ---
 
+## Issue 24: `swap_cpi_private_in` and `add_liquidity_cpi_private_in` header comments instruct callers to use a pattern that violates the snarkVM signer rule
+
+**Severity:** High (latent — silent deployment failure for any contract that follows the documented pattern; bug surfaces only at process_deployment time, not at compile time)
+**Component:** `fairswap_dex_v3.aleo` — `add_liquidity_cpi_private_in` header comment (L568–573), `swap_cpi_private_in` header comment (L906–910)
+**Status:** Open
+
+### Description
+
+Both CPI entry points in `fairswap_dex_v3.aleo` carry header comments that instruct callers to construct in-flight Token records owned by `dex_address` (the DEX program address). This is the pattern:
+
+```leo
+// Callers with PUBLIC token balances use the in-flight record pattern:
+//   1. token_registry::transfer_public_to_private(dex_address, amount_in, false)
+//      → creates a Token record owned by dex_address (not yet on-chain)
+//   2. Pass that record as token_in / record_a / record_b to this transition
+```
+
+The pattern is **wrong** under Aleo's snarkVM record model. Aleo enforces a global rule: every record consumed inside any transition (including across CPI levels) must satisfy `record.owner == self.signer` of the outermost transaction signer, which propagates unchanged through the entire CPI call stack.
+
+When the caller follows this guidance:
+
+1. The caller's transition produces a Token record with `owner = fairswap_dex_v3.aleo` (the DEX program address).
+2. The caller passes that record to `add_liquidity_cpi_private_in` / `swap_cpi_private_in`.
+3. Inside the DEX, the function calls `token_registry::transfer_private_to_public(self.address, amount, record)`.
+4. snarkVM checks: `record.owner == self.signer`? `fairswap_dex_v3.aleo != wallet_signer` → **FAIL**.
+
+The error surfaces at `leo deploy` time as:
+
+```
+Process deployment failed: Instruction (call fairswap_dex_v3.aleo/add_liquidity_cpi_private_in ...) failed:
+  Substack execution failed: Instruction (call token_registry.aleo/transfer_private_to_public ...) failed:
+  Failed to execute: Call failed: Input record 'token_registry.aleo/Token' must belong to the signer
+```
+
+This is exactly the error that blocked deployment of all 6 auction contracts (Issue 23) before they were rewritten to use signer-owned in-flight records via `wrapped_credits.aleo::deposit_credits_private` for the credits side and `token_registry::mint_private(token_id, self.signer, …)` for the sale-token side.
+
+### Why Issue 23's fix doesn't cover this
+
+Issue 23 fixed the **callers** (the 6 auction contracts) by changing how they construct in-flight records. The DEX itself was not changed because the function bodies of `add_liquidity_cpi_private_in` and `swap_cpi_private_in` are correct — they work with signer-owned records.
+
+The remaining problem is that the DEX's **header comments still actively instruct future callers to use the broken pattern**. Issue 23's fix is invisible to anyone reading the DEX source for the first time, so:
+
+- A future contract author reading `swap_cpi_private_in` (no current on-chain callers) would write a router/auto-compounder that constructs `dex_address`-owned records and hit the deployment failure.
+- A future auction template would copy the misleading guidance from `add_liquidity_cpi_private_in` and re-introduce the same bug.
+
+The bug is therefore **latent** — silent at compile time, manifests only at `leo deploy`, with an error message that doesn't immediately point at the comment as the source.
+
+### Confirmed status of `swap_cpi_private_in`
+
+`grep -r swap_cpi_private_in` shows references in:
+- `contracts/dex/fairswap_dex/src/main.leo` — definition only
+- `packages/sdk/src/contracts/fairswap-dex-v3.ts` — auto-generated TS ABI binding
+- `contracts/dex/fairswap_dex/tests/test_fairswap_dex.leo` — listed in scope notes as "integration only — requires private Token records; not exercised"
+- `docs/architecture/feature-backlog/09-amm-seeding.md` — design doc reference
+
+**No on-chain Aleo contract currently calls `swap_cpi_private_in`.** No deployment is currently blocked by it. The function is reachable only through its public ABI, available to any future caller.
+
+### Resolution — comment-only fix (no function body changes)
+
+The function bodies of both transitions are correct and should not change. The fix is to replace the misleading comment blocks with the correct in-flight pattern.
+
+#### Replacement code block — `add_liquidity_cpi_private_in` header (fairswap_dex_v3 L558–581)
+
+```leo
+// =========================================================================
+// 4. add_liquidity_cpi_private_in — CPI path for auction seeding
+// =========================================================================
+//
+// Called by auction contracts from their seed_liquidity transition.
+// Accepts two private Token records and atomically deposits them to the
+// DEX's public balance via transfer_private_to_public. Amounts and token
+// IDs are read directly from the records — ZK record ownership proves the
+// deposit is valid. No prior transfer CPI or allowlist needed; permissionless.
+//
+// IMPORTANT — record ownership rule:
+//   Both record_a and record_b MUST be owned by self.signer (the original
+//   tx wallet). Aleo's snarkVM enforces that every record consumed in any
+//   transition (including across CPI hops) must satisfy:
+//       record.owner == self.signer of the outermost tx
+//   self.signer propagates unchanged through the entire CPI call graph.
+//   Records owned by program addresses (e.g. fairswap_dex_v3.aleo) cannot
+//   be consumed here — process_deployment will reject the calling contract
+//   with "Input record 'token_registry.aleo/Token' must belong to the signer".
+//
+// Constructing signer-owned in-flight records from public balances:
+//
+//   For arbitrary token_registry tokens (sale tokens, project tokens, etc.):
+//     let (rec, f): (token_registry.aleo::Token, Final) =
+//         token_registry::transfer_public_to_private(token_id, self.signer, amount, false);
+//     // rec.owner == self.signer; pass `rec` directly to add_liquidity_cpi_private_in.
+//
+//   For credits.aleo (which the DEX expects as CREDITS_RESERVED_TOKEN_ID
+//   in token_registry, NOT as raw credits.aleo):
+//     let (priv_c, f1): (credits.aleo::credits, Final) =
+//         credits.aleo::transfer_public_to_private(self.signer, amount as u64);
+//     let (dust, rec, f2): (credits.aleo::credits, token_registry.aleo::Token, Final) =
+//         wrapped_credits.aleo::deposit_credits_private(priv_c, amount as u64);
+//     // rec.owner == self.signer; pass `rec` as the credits-side record.
+//
+//   Both records are produced and consumed atomically in the same transaction —
+//   they never persist as unspent outputs on-chain.
+//
+// Minting newly-issued sale tokens (auction CPI case):
+//   If the caller is the SUPPLY_MANAGER for the sale token (e.g. an auction
+//   contract minting unsold supply), use mint_private with self.signer:
+//     let (rec, f): (token_registry.aleo::Token, Final) =
+//         token_registry::mint_private(token_id, self.signer, amount, false, MAX_U32);
+//
+// 0-amount remainder records (dust) are emitted as implicit outputs.
+//
+// Atomic pool creation: if the pool does not exist yet, it is created inline
+// using the provided fee_bps. If the pool already exists, fee_bps is ignored.
+//
+// Pause check is scoped to the pool-creation branch only (Issue 6): existing
+// pools accept liquidity additions during a pause; new pool creation does not.
+```
+
+#### Replacement code block — `swap_cpi_private_in` header (fairswap_dex_v3 L897–916)
+
+```leo
+// =========================================================================
+// 8. swap_cpi_private_in — CPI swap path (private token in)
+// =========================================================================
+//
+// Callable from other contracts (router, auction post-close, auto-compound, etc.).
+// Accepts a private Token record for token_in and atomically deposits it to the
+// DEX's public balance via transfer_private_to_public. Record ownership is proven
+// by ZK — no prior transfer CPI needed; permissionless.
+//
+// IMPORTANT — record ownership rule:
+//   token_in MUST be owned by self.signer (the original tx wallet). Aleo's
+//   snarkVM enforces that every record consumed in any transition (including
+//   across CPI hops) must satisfy:
+//       record.owner == self.signer of the outermost tx
+//   self.signer propagates unchanged through the entire CPI call graph.
+//   Records owned by program addresses (e.g. fairswap_dex_v3.aleo) cannot
+//   be consumed here — process_deployment will reject the calling contract
+//   with "Input record 'token_registry.aleo/Token' must belong to the signer".
+//
+// Constructing a signer-owned in-flight record from a public balance:
+//
+//   For arbitrary token_registry tokens:
+//     let (rec, f): (token_registry.aleo::Token, Final) =
+//         token_registry::transfer_public_to_private(token_in_id, self.signer, amount_in, false);
+//     // rec.owner == self.signer; pass `rec` as token_in.
+//
+//   For credits.aleo (must be wrapped as CREDITS_RESERVED_TOKEN_ID first):
+//     let (priv_c, f1): (credits.aleo::credits, Final) =
+//         credits.aleo::transfer_public_to_private(self.signer, amount_in as u64);
+//     let (dust, rec, f2): (credits.aleo::credits, token_registry.aleo::Token, Final) =
+//         wrapped_credits.aleo::deposit_credits_private(priv_c, amount_in as u64);
+//     // rec.owner == self.signer; pass `rec` as token_in.
+//
+//   The record is created and consumed atomically — it never persists on-chain.
+//
+// token_out is sent to recipient via transfer_public (from DEX's public balance).
+// A 0-amount remainder record (dust) is emitted as an implicit output.
+//
+// min_out: slippage guard. DEX pays out exactly min_out; any surplus
+// stays in reserves as a bonus to LPs (same behaviour as swap).
+```
+
+### What changes and what stays the same
+
+| | Change |
+|---|---|
+| `add_liquidity_cpi_private_in` body | **No change** — already correct, works with signer-owned records |
+| `add_liquidity_cpi_private_in` header comment | Replace with the corrected pattern above |
+| `swap_cpi_private_in` body | **No change** — already correct, works with signer-owned records |
+| `swap_cpi_private_in` header comment | Replace with the corrected pattern above |
+| Function signatures | **No change** |
+| All other DEX transitions | **No change** |
+| Auction contracts | **No change** — already fixed in Issue 23 |
+| SDK | The TS binding is unchanged (signature-only); the SDK guidance for callers should reference the corrected pattern in the contract header |
+| Frontend | No change |
+
+### Verification
+
+After applying the fix, the build remains identical (comments are stripped from compiled bytecode). The fix is purely documentation-level and prevents the next contract author who reads these headers from re-introducing the snarkVM signer-rule violation.
+
+A future test that exercises `swap_cpi_private_in` from a real CPI caller (when one is added) should follow the corrected pattern and pass process_deployment validation.
+
+---
+
 ## Issue 22: TWAP not updated on liquidity operations — oracle accuracy gap vs Uniswap V2
 
 **Severity:** Low (no fund risk; oracle reliability gap for future integrators)
