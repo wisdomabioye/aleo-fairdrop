@@ -109,10 +109,6 @@ export function LbpBidForm({ auction, protocolConfig, onBidSuccess }: BidFormPro
 
   return (
     <div className="space-y-3">
-      <p className="text-xs text-muted-foreground">
-        Price shifts dynamically with token weight. Earlier participation typically yields better prices.
-      </p>
-
       <BidModeToggle
         mode={mode}
         onChange={(m) => { setMode(m); setRecordTouched(false); if (m === 'public') setSelectedRecordId(''); }}
