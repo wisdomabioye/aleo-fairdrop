@@ -3,7 +3,7 @@ import { env } from '../env.js';
 
 export function corsMiddleware() {
   return cors({
-    origin:         env.corsOrigin,
+    origin:         env.corsOrigins,
     allowMethods:   ['GET', 'POST', 'OPTIONS'],
     allowHeaders:   ['Content-Type'],
     exposeHeaders:  [],

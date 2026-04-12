@@ -17,8 +17,13 @@ function requireInt(name: string, fallback: number): number {
 export const env = {
   databaseUrl: requireEnv('DATABASE_URL'),
   port:        requireInt('PORT', 3001),
-  /** Defaults to '*' in development; set explicitly in production. */
-  corsOrigin:  process.env['CORS_ORIGIN']?.trim() || '*',
+  /** Comma-separated origins. Defaults to '*' in development. e.g. "https://app.example.com,https://admin.example.com" */
+  corsOrigins: (() => {
+    const raw = process.env['CORS_ORIGIN']?.trim();
+    if (!raw) return '*' as const;
+    const origins = raw.split(',').map(s => s.trim()).filter(Boolean);
+    return origins.length === 1 ? origins[0]! : origins;
+  })(),
   aleoRpcUrl:  requireEnv('ALEO_RPC_URL'),
   pinataJwt:   requireEnv('PINATA_JWT'),
 } as const;
