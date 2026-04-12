@@ -192,16 +192,21 @@ function ParamRow({ def, current, onSuccess }: ParamRowProps) {
 
           {error && <p className="text-xs text-destructive">{error.message}</p>}
 
-          <Button
-            size="sm"
-            className="w-full"
-            disabled={!canSubmit}
-            onClick={() => void advance()}
-          >
-            {busy || isWaiting
-              ? <><Spinner className="mr-1.5 h-3 w-3" />{currentStep === 0 ? 'Submitting approval…' : 'Executing…'}</>
-              : currentStep === 0 ? 'Submit Approval' : `Set ${def.label}`}
-          </Button>
+          <div className="space-y-1.5">
+            <p className="text-[11px] text-muted-foreground">
+              Step 1: Register approval in multisig — Step 2: Config consumes the approval
+            </p>
+            <Button
+              size="sm"
+              className="w-full"
+              disabled={!canSubmit}
+              onClick={() => void advance()}
+            >
+              {busy || isWaiting
+                ? <><Spinner className="mr-1.5 h-3 w-3" />{currentStep === 0 ? 'Step 1/2 — Registering in multisig…' : `Step 2/2 — Setting ${def.label}…`}</>
+                : currentStep === 0 ? `Approve & set ${def.label}` : `Set ${def.label}`}
+            </Button>
+          </div>
         </div>
       )}
     </div>

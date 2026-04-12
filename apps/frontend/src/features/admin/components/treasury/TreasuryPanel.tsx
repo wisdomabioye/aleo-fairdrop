@@ -100,11 +100,16 @@ function TreasuryRow({ label, programId, balance, onSuccess }: TreasuryRowProps)
           {trackedIds.length > 0 && <WizardTxStatus trackedIds={trackedIds} />}
           {error && <p className="text-xs text-destructive">{error.message}</p>}
 
-          <Button size="sm" className="w-full" disabled={!canSubmit} onClick={() => void advance()}>
-            {busy || isWaiting
-              ? <><Spinner className="mr-1.5 h-3 w-3" />{currentStep === 0 ? 'Submitting approval…' : 'Withdrawing…'}</>
-              : currentStep === 0 ? 'Submit Approval' : 'Withdraw fees'}
-          </Button>
+          <div className="space-y-1.5">
+            <p className="text-[11px] text-muted-foreground">
+              Step 1: Register approval in multisig — Step 2: Auction contract releases funds
+            </p>
+            <Button size="sm" className="w-full" disabled={!canSubmit} onClick={() => void advance()}>
+              {busy || isWaiting
+                ? <><Spinner className="mr-1.5 h-3 w-3" />{currentStep === 0 ? 'Step 1/2 — Registering in multisig…' : 'Step 2/2 — Withdrawing fees…'}</>
+                : currentStep === 0 ? 'Approve & withdraw' : 'Withdraw fees'}
+            </Button>
+          </div>
         </div>
       )}
     </div>

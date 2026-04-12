@@ -1,4 +1,4 @@
-import { useState }                     from 'react';
+import { useState, useMemo }             from 'react';
 import { useQueryClient }                from '@tanstack/react-query';
 import { useWallet }                     from '@provablehq/aleo-wallet-adaptor-react';
 import { Button, Input, Label, Spinner } from '@/components';
@@ -57,29 +57,28 @@ function UpgradeRow({ entry, onSuccess }: UpgradeRowProps) {
   const [sigs, setSigs]          = useState<ThreeSigs>(EMPTY_SIGS);
   const [requestId]              = useState<bigint>(() => generateNonce());
 
-  const checksum = parseChecksumInput(checksumIn);
-  const { msgHash } = checksum
-    ? prepareApproveUpgrade(entry.key, checksum, requestId)
-    : { msgHash: '' };
+  const checksum = useMemo(() => parseChecksumInput(checksumIn), [checksumIn]);
+  const msgHash = useMemo(
+    () => checksum ? prepareApproveUpgrade(entry.key, checksum, requestId).msgHash : '',
+    [checksum, entry.key, requestId],
+  );
 
-  const steps = [
-    {
-      label: `Approve upgrade: ${entry.name}`,
-      execute: async () => {
-        if (!checksum) throw new Error('Invalid checksum');
-        const spec = submitApproveUpgrade(
-          entry.key,
-          checksum,
-          sigs[0].sig, sigs[0].admin,
-          sigs[1].sig, sigs[1].admin,
-          sigs[2].sig, sigs[2].admin,
-          requestId,
-        );
-        const result = await executeTransaction({ ...spec, inputs: spec.inputs as string[] });
-        return result?.transactionId;
-      },
+  const steps = useMemo(() => [{
+    label: `Approve upgrade: ${entry.name}`,
+    execute: async () => {
+      if (!checksum) throw new Error('Invalid checksum');
+      const spec = submitApproveUpgrade(
+        entry.key,
+        checksum,
+        sigs[0].sig, sigs[0].admin,
+        sigs[1].sig, sigs[1].admin,
+        sigs[2].sig, sigs[2].admin,
+        requestId,
+      );
+      const result = await executeTransaction({ ...spec, inputs: spec.inputs as string[] });
+      return result?.transactionId;
     },
-  ];
+  }], [checksum, entry.key, entry.name, sigs, requestId, executeTransaction]);
 
   const { busy, isWaiting, done, error, trackedIds, advance, reset } =
     useConfirmedSequentialTx(steps);
@@ -133,11 +132,16 @@ function UpgradeRow({ entry, onSuccess }: UpgradeRowProps) {
           {trackedIds.length > 0 && <WizardTxStatus trackedIds={trackedIds} />}
           {error && <p className="text-xs text-destructive">{error.message}</p>}
 
-          <Button size="sm" className="w-full" disabled={!canSubmit} onClick={() => void advance()}>
-            {busy || isWaiting
-              ? <><Spinner className="mr-1.5 h-3 w-3" />Approving…</>
-              : 'Submit upgrade approval'}
-          </Button>
+          <div className="space-y-1.5">
+            <p className="text-[11px] text-muted-foreground">
+              Writes the approved checksum to the multisig. The new contract reads it at deploy time.
+            </p>
+            <Button size="sm" className="w-full" disabled={!canSubmit} onClick={() => void advance()}>
+              {busy || isWaiting
+                ? <><Spinner className="mr-1.5 h-3 w-3" />Submitting upgrade approval to multisig…</>
+                : 'Approve upgrade'}
+            </Button>
+          </div>
         </div>
       )}
     </div>

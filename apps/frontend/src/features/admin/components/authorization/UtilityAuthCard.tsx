@@ -1,13 +1,11 @@
-import { useState, useMemo, useEffect } from 'react';
-import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
+import { useState, useCallback } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { Button, Spinner } from '@/components';
 import { WizardTxStatus } from '@/shared/components/WizardTxStatus';
-import { submitApproveOp } from '@fairdrop/sdk/multisig';
 import { cn } from '@/lib/utils';
 import { SignaturePanel, sigsComplete } from '../shared/SignaturePanel';
 import { MsgHashPanel } from '../shared/MsgHashPanel';
-import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
+import { useTwoPhaseOp } from '../shared/useTwoPhaseOp';
 import { SET_CALLER_BUILDERS } from './constants';
 import type { ThreeSigs } from '../../types';
 import type { UtilityKey } from '../../hooks/useCallerStatus';
@@ -15,7 +13,6 @@ import type { UtilityKey } from '../../hooks/useCallerStatus';
 interface UtilityAuthCardProps {
   utilityKey:     UtilityKey;
   label:          string;
-  msgHash:        string;
   opHash:         string;
   requestId:      bigint;
   opNonce:        bigint;
@@ -26,48 +23,25 @@ interface UtilityAuthCardProps {
 }
 
 export function UtilityAuthCard({
-  utilityKey, label, msgHash, opHash, requestId, opNonce,
+  utilityKey, label, opHash, requestId, opNonce,
   auctionAddress, sigs, onChange, onSuccess,
 }: UtilityAuthCardProps) {
-  const { executeTransaction } = useWallet();
   const [expanded, setExpanded] = useState(false);
   const ready = sigsComplete(sigs);
 
-  const steps = useMemo(() => [
-    {
-      label: `Approve ${label}`,
-      execute: async () => {
-        const spec = submitApproveOp(
-          opHash,
-          sigs[0].sig, sigs[0].admin,
-          sigs[1].sig, sigs[1].admin,
-          sigs[2].sig, sigs[2].admin,
-          requestId,
-        );
-        const result = await executeTransaction({ ...spec, inputs: spec.inputs as string[] });
-        return result?.transactionId;
-      },
-    },
-    {
-      label: `Set ${label} caller`,
-      execute: async () => {
-        const spec = SET_CALLER_BUILDERS[utilityKey](auctionAddress, true, opNonce);
-        const result = await executeTransaction({ ...spec, inputs: spec.inputs as string[] });
-        return result?.transactionId;
-      },
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [opHash, requestId, opNonce, auctionAddress, sigs, utilityKey, label]);
+  const buildPhase2 = useCallback(
+    () => SET_CALLER_BUILDERS[utilityKey](auctionAddress, true, opNonce),
+    [utilityKey, auctionAddress, opNonce],
+  );
 
-  const { busy, isWaiting, done, error, trackedIds, advance, reset, currentStep } =
-    useConfirmedSequentialTx(steps);
-
-  // Auto-fire step 2 after step 1 (approve_op) confirms on-chain.
-  useEffect(() => {
-    if (currentStep === 1 && !busy && !isWaiting && !done && !error) {
-      void advance();
-    }
-  }, [currentStep, busy, isWaiting, done, error, advance]);
+  const { msgHash, currentStep, busy, isWaiting, done, error, trackedIds, advance, reset } =
+    useTwoPhaseOp({
+      opHash,
+      requestId,
+      sigs,
+      phase2Label: `Set ${label} caller`,
+      buildPhase2,
+    });
 
   if (done) {
     onSuccess();

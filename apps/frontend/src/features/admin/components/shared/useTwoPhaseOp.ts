@@ -1,4 +1,4 @@
-import { useMemo }   from 'react';
+import { useMemo, useEffect } from 'react';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { prepareApproveOp, submitApproveOp } from '@fairdrop/sdk/multisig';
 import { type TxSpec }                       from '@fairdrop/sdk/transactions';
@@ -66,6 +66,13 @@ export function useTwoPhaseOp({
   ], [opHash, requestId, sigs, phase2Label, buildPhase2]);
 
   const seqTx = useConfirmedSequentialTx(steps);
+
+  // Auto-fire phase 2 after phase 1 (approve_op) confirms on-chain.
+  useEffect(() => {
+    if (seqTx.currentStep === 1 && !seqTx.busy && !seqTx.isWaiting && !seqTx.done && !seqTx.error) {
+      void seqTx.advance();
+    }
+  }, [seqTx.currentStep, seqTx.busy, seqTx.isWaiting, seqTx.done, seqTx.error, seqTx.advance]);
 
   return { msgHash, ...seqTx };
 }

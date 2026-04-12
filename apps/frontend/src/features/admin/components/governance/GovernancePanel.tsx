@@ -1,4 +1,4 @@
-import { useState }                     from 'react';
+import { useState, useMemo }             from 'react';
 import { useQuery }                      from '@tanstack/react-query';
 import { useWallet }                     from '@provablehq/aleo-wallet-adaptor-react';
 import { Button, Input, Label, Spinner } from '@/components';
@@ -61,11 +61,12 @@ function UpdateAdminSection() {
   const [requestId] = useState<bigint>(() => generateNonce());
 
   const valid = oldAdmin.startsWith('aleo1') && newAdmin.startsWith('aleo1') && oldAdmin !== newAdmin;
-  const { msgHash } = valid
-    ? prepareUpdateAdmin(oldAdmin, newAdmin, requestId)
-    : { msgHash: '' };
+  const msgHash = useMemo(
+    () => valid ? prepareUpdateAdmin(oldAdmin, newAdmin, requestId).msgHash : '',
+    [valid, oldAdmin, newAdmin, requestId],
+  );
 
-  const steps = [{
+  const steps = useMemo(() => [{
     label: 'Rotate admin',
     execute: async () => {
       if (!valid) throw new Error('Invalid admin addresses');
@@ -79,7 +80,7 @@ function UpdateAdminSection() {
       const result = await executeTransaction({ ...spec, inputs: spec.inputs as string[] });
       return result?.transactionId;
     },
-  }];
+  }], [valid, oldAdmin, newAdmin, sigs, requestId, executeTransaction]);
 
   const { busy, isWaiting, done, error, trackedIds, advance, reset } =
     useConfirmedSequentialTx(steps);
@@ -126,11 +127,16 @@ function UpdateAdminSection() {
       {trackedIds.length > 0 && <WizardTxStatus trackedIds={trackedIds} />}
       {error && <p className="text-xs text-destructive">{error.message}</p>}
 
-      <Button size="sm" className="w-full" disabled={!canSubmit} onClick={() => void advance()}>
-        {busy || isWaiting
-          ? <><Spinner className="mr-1.5 h-3 w-3" />Rotating…</>
-          : 'Rotate admin'}
-      </Button>
+      <div className="space-y-1.5">
+        <p className="text-[11px] text-muted-foreground">
+          Submits a single multisig transaction to swap one admin address for another.
+        </p>
+        <Button size="sm" className="w-full" disabled={!canSubmit} onClick={() => void advance()}>
+          {busy || isWaiting
+            ? <><Spinner className="mr-1.5 h-3 w-3" />Submitting admin rotation to multisig…</>
+            : 'Rotate admin'}
+        </Button>
+      </div>
     </div>
   );
 }

@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Button } from '@/components';
 import { computeAllowedCallerOpHash } from '@fairdrop/sdk/hash';
-import { prepareApproveOp } from '@fairdrop/sdk/multisig';
 import { UtilityAuthCard } from './UtilityAuthCard';
 import { useAuthSession } from './useAuthSession';
 import { UTILITIES } from './constants';
@@ -17,7 +16,6 @@ interface AuctionRowProps {
 interface OpEntry {
   utility:   (typeof UTILITIES)[number];
   opHash:    string;
-  msgHash:   string;
   opNonce:   bigint;
   requestId: bigint;
 }
@@ -38,8 +36,7 @@ export function AuctionRow({ auctionLabel, auctionAddress, status, onSuccess }: 
       const n = nonces[u.key];
       if (!n) return null;
       const opHash = computeAllowedCallerOpHash(auctionAddress, true, n.opNonce);
-      const { msgHash } = prepareApproveOp(opHash, n.requestId);
-      return { utility: u, opHash, msgHash, opNonce: n.opNonce, requestId: n.requestId };
+      return { utility: u, opHash, opNonce: n.opNonce, requestId: n.requestId };
     }).filter((e): e is OpEntry => e !== null);
   }, [open, missing, nonces, auctionAddress]);
 
@@ -80,7 +77,6 @@ export function AuctionRow({ auctionLabel, auctionAddress, status, onSuccess }: 
                 key={entry.utility.key}
                 utilityKey={entry.utility.key}
                 label={entry.utility.label}
-                msgHash={entry.msgHash}
                 opHash={entry.opHash}
                 requestId={entry.requestId}
                 opNonce={entry.opNonce}
