@@ -49,16 +49,21 @@ export function SealedProgressPanel({ auction }: ProgressPanelProps) {
         </p>
       )}
 
-      {isRevealPhase && (
+      {isRevealPhase && blockHeight <= endBlock && (
         <div className="rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2 text-[11px] text-destructive space-y-0.5">
           <p className="font-medium">Reveal window is open</p>
           <p>
             You must reveal your commitment before block {endBlock.toLocaleString()}.{' '}
-            {blocksLeft > 0
-              ? <><strong>{blocksLeft.toLocaleString()} blocks remaining.</strong></>
-              : 'The window has closed.'}
+            <strong>{blocksLeft.toLocaleString()} blocks remaining.</strong>
             {' '}Failure to reveal results in complete forfeiture of your collateral — there is no recovery path.
           </p>
+        </div>
+      )}
+
+      {isRevealPhase && blockHeight > endBlock && (
+        <div className="rounded-lg border border-amber-500/20 bg-amber-500/8 px-3 py-2 text-[11px] text-amber-700 dark:text-amber-400">
+          <p className="font-medium">Reveal window closed</p>
+          <p>The reveal period ended at block {endBlock.toLocaleString()}. Unrevealed commitments are forfeited.</p>
         </div>
       )}
     </div>
