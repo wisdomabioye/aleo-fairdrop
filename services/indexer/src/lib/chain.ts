@@ -10,7 +10,7 @@
 import { AleoRpcClient } from '../client/rpc.js';
 import {
   parseStruct,
-  parseField,
+  stripVisibility,
   parseAddress,
   parseU8,
   parseU16,
@@ -58,10 +58,10 @@ function parseFlatConfig(raw: string): FlatAuctionConfig {
 
   return {
     // Common — same pattern as parseBaseAuctionConfig in the SDK
-    auction_id:        asField(parseField(p['auction_id'] ?? '0field')),
+    auction_id:        asField(stripVisibility(p['auction_id'] ?? '0field')),
     creator:           asAddress(parseAddress(p['creator'] ?? '')),
-    sale_token_id:     asField(parseField(p['sale_token_id'] ?? '0field')),
-    payment_token_id:  asField(parseField(p['payment_token_id'] ?? '0field')),
+    sale_token_id:     asField(stripVisibility(p['sale_token_id'] ?? '0field')),
+    payment_token_id:  asField(stripVisibility(p['payment_token_id'] ?? '0field')),
     supply:            u128('supply'),
     start_block:       parseU32(p['start_block'] ?? '0u32'),
     end_block:         parseU32(p['end_block'] ?? '0u32'),
@@ -75,7 +75,7 @@ function parseFlatConfig(raw: string): FlatAuctionConfig {
     fee_bps:           parseU16(p['fee_bps'] ?? '0u16'),
     closer_reward:     u128('closer_reward'),
     referral_pool_bps: parseU16(p['referral_pool_bps'] ?? '0u16'),
-    metadata_hash:     asField(parseField(p['metadata_hash'] ?? '0field')),
+    metadata_hash:     asField(stripVisibility(p['metadata_hash'] ?? '0field')),
     fill_min_bps:      p['fill_min_bps'] ? parseU16(p['fill_min_bps']) : undefined,
     // Type-specific
     start_price:        u128opt('start_price'),
