@@ -143,16 +143,15 @@ export function CreateAuctionPage() {
 
       // Fetch current creator nonce (0 if no prior auctions)
       const nonce = await fetchCreatorNonce(address, programEntry.programId);
-
       // Upload metadata to IPFS right before submitting — no junk uploads on navigation
       const { hash, ipfsCid } = await metadataService.upload({
-        name:           form.metadataName.trim(),
-        description:    form.metadataDescription.trim(),
-        website:        form.metadataWebsite.trim()       || undefined,
-        twitter:        form.metadataTwitter.trim()       || undefined,
-        discord:        form.metadataDiscord.trim()       || undefined,
-        logoIpfs:       form.metadataLogoIpfs             || undefined,
-        credentialUrl:  form.credentialServiceUrl.trim()  || undefined,
+        name:           form.metadataName?.trim() ?? '',
+        description:    form.metadataDescription?.trim() ?? '',
+        website:        form.metadataWebsite?.trim() ?? '' ,
+        twitter:        form.metadataTwitter?.trim() ?? '' ,
+        discord:        form.metadataDiscord?.trim() ?? '' ,
+        logoIpfs:       form.metadataLogoIpfs ?? '',
+        credentialUrl:  form.credentialServiceUrl?.trim() ?? '',
       });
 
       const tx = buildCreateAuctionInputs(

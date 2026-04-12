@@ -94,8 +94,13 @@ export function useDraftAuction(): DraftAuction {
   const isRestored = useRef(isMeaningful(persisted)).current;
 
   // Live layer — full form, initialized from the persisted snapshot.
+  // Merge with DEFAULT_FORM so fields added after the draft was saved fall
+  // back to their defaults instead of being undefined.
   // tokenRecord will be null on restore (as intended).
-  const [liveForm, setLiveForm] = useState<WizardForm>(() => persisted.form);
+  const [liveForm, setLiveForm] = useState<WizardForm>(() => ({
+    ...DEFAULT_FORM,
+    ...persisted.form,
+  }));
   const [liveStep, setLiveStepState] = useState<number>(() => persisted.step);
 
   // Refs so update/setStep can read current values without stale closures.

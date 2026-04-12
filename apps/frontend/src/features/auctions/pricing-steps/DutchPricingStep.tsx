@@ -28,6 +28,7 @@ export function PricingReviewRows({ pricing }: { pricing: DutchPricingValues }) 
 
 export function buildWizardInputs(pricing: AnyPricingValues, base: CreateBase): TxSpec {
   if (pricing.type !== AuctionType.Dutch) throw new Error(`buildWizardInputs[dutch]: got ${pricing.type}`);
+  console.log(base, pricing)
   return buildCreateAuction({
     ...base, type: AuctionType.Dutch,
     startPrice:       mic(pricing.startPrice),
