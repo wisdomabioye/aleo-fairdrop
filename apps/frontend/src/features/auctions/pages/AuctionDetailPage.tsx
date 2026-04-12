@@ -225,6 +225,14 @@ function AuctionDetailContent({ id }: { id: string }) {
                   </GateGuard>
                 ) : isPostAuction ? (
                   <DefaultPostAuctionPanel auction={auction} />
+                ) : auction.status === AuctionStatus.Upcoming && indexerData?.indexedBlock ? (
+                  <div className="rounded-lg border border-border/70 bg-background/70 px-4 py-4 text-center">
+                    <p className="text-sm text-muted-foreground">Auction starts in</p>
+                    <p className="text-2xl font-bold text-foreground tabular-nums">
+                      {(auction.startBlock - indexerData.indexedBlock).toLocaleString()}
+                    </p>
+                    <p className="text-sm text-muted-foreground">block{auction.startBlock - indexerData.indexedBlock !== 1 ? 's' : ''}</p>
+                  </div>
                 ) : (
                   <div className="rounded-lg border border-border/70 bg-background/70 px-3 py-2 text-xs text-muted-foreground">
                     Bidding is currently unavailable for this auction.
