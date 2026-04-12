@@ -75,7 +75,7 @@ export function SealedCommitForm({ auction, protocolConfig, onBidSuccess }: Prop
   const [showReferral,     setShowReferral]     = useState(Boolean(searchParams.get('ref')));
 
   const { creditRecords, loading: creditsLoading } = useCreditRecords();
-  const { commitmentRecords } = useCommitmentRecords(auction.programId, { auctionId: auction.id });
+  const { commitmentRecords, fetchRecords } = useCommitmentRecords(auction.programId, { auctionId: auction.id });
   const existingCommit = commitmentRecords.find((c) => !c.spent);
   const unspentRecords = useMemo(() => creditRecords.filter((r) => !r.spent), [creditRecords]);
   const selectedRecord = unspentRecords.find((r) => r.id === selectedRecordId) ?? null;
@@ -130,6 +130,7 @@ export function SealedCommitForm({ auction, protocolConfig, onBidSuccess }: Prop
     if (!bidDone) return;
     setQtyInput(''); setPayInput(''); setPayTouched(false); setRecordTouched(false);
     onBidSuccess?.(); resetBid();
+    setTimeout(() => void fetchRecords(), 6_000);
   }, [bidDone]);
 
   const formBlocker = useMemo(() => {

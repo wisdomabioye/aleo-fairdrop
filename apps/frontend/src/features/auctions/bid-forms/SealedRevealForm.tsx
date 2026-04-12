@@ -18,7 +18,7 @@ export function SealedRevealForm({ auction, onBidSuccess }: Props) {
   const { connected, executeTransaction } = useWallet();
   const [selectedCommitId, setSelectedCommitId] = useState('');
 
-  const { commitmentRecords, loading } = useCommitmentRecords(auction.programId);
+  const { commitmentRecords, loading, fetchRecords } = useCommitmentRecords(auction.programId);
   const commitments    = commitmentRecords.filter((c) => !c.spent && c.auction_id === auction.id);
   const selectedCommit = commitments.find((c) => c.id === selectedCommitId) ?? null;
 
@@ -44,6 +44,7 @@ export function SealedRevealForm({ auction, onBidSuccess }: Props) {
     setSelectedCommitId('');
     onBidSuccess?.();
     resetBid();
+    setTimeout(() => void fetchRecords(), 6_000);
   }, [bidDone]);
 
   const isDisabled = !connected || bidBusy || bidWaiting;
