@@ -92,8 +92,38 @@ function computeAscendingPrice(row: AuctionRow, currentBlock: number): bigint | 
   return price < ceiling ? price : ceiling;
 }
 
+const LBP_PRECISION = 1_000_000n;
+
+function computeLbpPrice(row: AuctionRow, currentBlock: number): bigint | null {
+  if (row.startPrice == null || row.floorPrice == null) return null;
+
+  const supply         = BigInt(row.supply);
+  const totalCommitted = BigInt(row.totalCommitted);
+  const startPrice     = BigInt(row.startPrice);
+  const floorPrice     = BigInt(row.floorPrice);
+
+  if (supply === 0n) return floorPrice;
+
+  const effectiveBlock = Math.min(currentBlock, row.endBlock);
+  if (effectiveBlock < row.startBlock) return startPrice;
+
+  const remaining      = supply > totalCommitted ? supply - totalCommitted : 0n;
+  const timeRemaining  = BigInt(Math.max(0, row.endBlock - effectiveBlock));
+  const totalDuration  = BigInt(row.endBlock - row.startBlock);
+
+  if (totalDuration === 0n) return floorPrice;
+
+  const supplyFrac   = remaining * LBP_PRECISION / supply;
+  const timeFrac     = timeRemaining * LBP_PRECISION / totalDuration;
+  const priceSpread  = startPrice - floorPrice;
+  const price        = floorPrice + priceSpread * supplyFrac / LBP_PRECISION * timeFrac / LBP_PRECISION;
+
+  return price > floorPrice ? price : floorPrice;
+}
+
 function computeCurrentPrice(row: AuctionRow, currentBlock: number): bigint | null {
   if (row.type === AuctionType.Ascending) return computeAscendingPrice(row, currentBlock);
+  if (row.type === AuctionType.Lbp) return computeLbpPrice(row, currentBlock);
   return computeDutchPrice(row, currentBlock);
 }
 

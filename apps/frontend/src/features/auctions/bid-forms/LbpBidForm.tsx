@@ -33,7 +33,7 @@ export function LbpBidForm({ auction, protocolConfig, onBidSuccess }: BidFormPro
   const { creditRecords, loading: creditsLoading } = useCreditRecords();
 
   const decimals     = auction.saleTokenDecimals;
-  const currentPrice = auction.currentPrice ?? 0n;
+  const currentPrice = BigInt(auction.currentPrice ?? 0n);
 
   const [mode,             setMode]             = useState<'private' | 'public'>('public');
   const [payInput,         setPayInput]         = useState('');
