@@ -90,66 +90,47 @@ const RESOURCES: NavItem[] = [
   { label: 'Guide', to: AppRoutes.guide, icon: BookOpen },
 ];
 
+function NavItemButton({ name, icon: Icon, isActive }: { name: string; icon: LucideIcon; isActive: boolean }) {
+  return (
+    <SidebarMenuButton
+      isActive={isActive}
+      className={cn(
+        'group relative h-8 w-full rounded-lg border border-transparent px-2 transition-[border-color,background-color] duration-200',
+        'hover:border-sky-500/10 hover:bg-sidebar-accent/45',
+        isActive &&
+          'border-sky-500/12 bg-gradient-to-r from-sky-500/14 via-sky-400/8 to-transparent text-sidebar-foreground ring-1 ring-white/5'
+      )}
+    >
+      <span
+        className={cn(
+          'absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-sky-400 transition-opacity',
+          isActive ? 'opacity-100' : 'opacity-0'
+        )}
+      />
+      <Icon className={cn(
+        'size-3.5 shrink-0 transition-colors',
+        isActive ? 'text-sky-300' : 'text-sidebar-foreground/60 group-hover:text-sidebar-foreground/80'
+      )} />
+      <span className="min-w-0 flex-1 truncate text-xs font-medium">{name}</span>
+    </SidebarMenuButton>
+  );
+}
+
 function NavGroup({ label, items }: { label: string; items: NavItem[] }) {
   const { isMobile, setOpenMobile } = useSidebar();
-
-  const handleNavClick = () => {
-    if (isMobile) setOpenMobile(false);
-  };
+  const handleNavClick = () => { if (isMobile) setOpenMobile(false); };
 
   return (
-    <SidebarGroup className="px-2 py-1">
-      <SidebarGroupLabel className="px-2 pb-2 text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground/75">
+    <SidebarGroup className="px-2 py-0.5">
+      <SidebarGroupLabel className="px-2 pb-1.5 text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground/75">
         {label}
       </SidebarGroupLabel>
-
       <SidebarGroupContent>
-        <SidebarMenu className="gap-1">
-          {items.map(({ label: name, to, icon: Icon, end }) => (
+        <SidebarMenu className="gap-0.5">
+          {items.map(({ label: name, to, icon, end }) => (
             <SidebarMenuItem key={to}>
               <NavLink to={to} end={end} className="block w-full" onClick={handleNavClick}>
-                {({ isActive }) => (
-                  <SidebarMenuButton
-                    isActive={isActive}
-                    className={cn(
-                      'group relative h-11 w-full rounded-xl border border-transparent px-2.5 transition-[border-color,background-color,box-shadow,transform] duration-200',
-                      'hover:border-sky-500/10 hover:bg-sidebar-accent/45 hover:shadow-xs',
-                      isActive &&
-                        'border-sky-500/12 bg-gradient-to-r from-sky-500/14 via-sky-400/8 to-transparent text-sidebar-foreground shadow-xs ring-1 ring-white/5'
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        'absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-sky-400 transition-opacity',
-                        isActive ? 'opacity-100' : 'opacity-0'
-                      )}
-                    />
-
-                    <span
-                      className={cn(
-                        'flex size-7 shrink-0 items-center justify-center rounded-lg border transition-[border-color,background-color,color]',
-                        isActive
-                          ? 'border-sky-500/14 bg-sky-500/10 text-sky-300'
-                          : 'border-sidebar-border/60 bg-sidebar-accent/25 text-sidebar-foreground/70 group-hover:border-sky-500/10 group-hover:bg-sky-500/6'
-                      )}
-                    >
-                      <Icon className="size-4 shrink-0" />
-                    </span>
-
-                    <span className="min-w-0 flex-1 truncate text-sm font-medium">
-                      {name}
-                    </span>
-
-                    <ChevronRight
-                      className={cn(
-                        'size-4 shrink-0 text-muted-foreground/60 transition-all duration-200',
-                        isActive
-                          ? 'translate-x-0 text-sky-300/90 opacity-100'
-                          : 'translate-x-[-2px] opacity-0 group-hover:translate-x-0 group-hover:opacity-100'
-                      )}
-                    />
-                  </SidebarMenuButton>
-                )}
+                {({ isActive }) => <NavItemButton name={name} icon={icon} isActive={isActive} />}
               </NavLink>
             </SidebarMenuItem>
           ))}
@@ -190,18 +171,18 @@ function NavGroupCollapsible({
 
   return (
     <Collapsible open={open} onOpenChange={toggle}>
-      <SidebarGroup className="px-2 py-1">
+      <SidebarGroup className="px-2 py-0.5">
         <CollapsibleTrigger asChild>
           <button
             type="button"
-            className="group flex w-full items-center justify-between px-2 pb-2"
+            className="group flex w-full items-center justify-between px-2 pb-1.5"
           >
             <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground/75 transition-colors group-hover:text-muted-foreground">
               {label}
             </span>
             <ChevronRight
               className={cn(
-                'size-3 text-muted-foreground/50 transition-transform duration-200',
+                'size-3 text-muted-foreground/50 transition-transform duration-150 ease-out',
                 open ? 'rotate-90' : 'rotate-0',
               )}
             />
@@ -209,49 +190,11 @@ function NavGroupCollapsible({
         </CollapsibleTrigger>
         <CollapsibleContent>
           <SidebarGroupContent>
-            <SidebarMenu className="gap-1">
-              {items.map(({ label: name, to, icon: Icon, end }) => (
+            <SidebarMenu className="gap-0.5">
+              {items.map(({ label: name, to, icon, end }) => (
                 <SidebarMenuItem key={to}>
                   <NavLink to={to} end={end} className="block w-full" onClick={handleNavClick}>
-                    {({ isActive }) => (
-                      <SidebarMenuButton
-                        isActive={isActive}
-                        className={cn(
-                          'group relative h-11 w-full rounded-xl border border-transparent px-2.5 transition-[border-color,background-color,box-shadow,transform] duration-200',
-                          'hover:border-sky-500/10 hover:bg-sidebar-accent/45 hover:shadow-xs',
-                          isActive &&
-                            'border-sky-500/12 bg-gradient-to-r from-sky-500/14 via-sky-400/8 to-transparent text-sidebar-foreground shadow-xs ring-1 ring-white/5'
-                        )}
-                      >
-                        <span
-                          className={cn(
-                            'absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-sky-400 transition-opacity',
-                            isActive ? 'opacity-100' : 'opacity-0'
-                          )}
-                        />
-                        <span
-                          className={cn(
-                            'flex size-7 shrink-0 items-center justify-center rounded-lg border transition-[border-color,background-color,color]',
-                            isActive
-                              ? 'border-sky-500/14 bg-sky-500/10 text-sky-300'
-                              : 'border-sidebar-border/60 bg-sidebar-accent/25 text-sidebar-foreground/70 group-hover:border-sky-500/10 group-hover:bg-sky-500/6'
-                          )}
-                        >
-                          <Icon className="size-4 shrink-0" />
-                        </span>
-                        <span className="min-w-0 flex-1 truncate text-sm font-medium">
-                          {name}
-                        </span>
-                        <ChevronRight
-                          className={cn(
-                            'size-4 shrink-0 text-muted-foreground/60 transition-all duration-200',
-                            isActive
-                              ? 'translate-x-0 text-sky-300/90 opacity-100'
-                              : 'translate-x-[-2px] opacity-0 group-hover:translate-x-0 group-hover:opacity-100'
-                          )}
-                        />
-                      </SidebarMenuButton>
-                    )}
+                    {({ isActive }) => <NavItemButton name={name} icon={icon} isActive={isActive} />}
                   </NavLink>
                 </SidebarMenuItem>
               ))}
@@ -359,11 +302,11 @@ export function AppSidebar() {
         <SidebarSeparator className="mx-3 bg-sky-500/8" />
         <NavGroupCollapsible label="Auctions"  items={AUCTIONS}  defaultOpen />
         <SidebarSeparator className="mx-3 bg-sky-500/8" />
-        <NavGroupCollapsible label="Finance"   items={FINANCE}   defaultOpen />
-        <SidebarSeparator className="mx-3 bg-sky-500/8" />
         <NavGroupCollapsible label="Exchange"  items={EXCHANGE}  defaultOpen />
         <SidebarSeparator className="mx-3 bg-sky-500/8" />
-        <NavGroupCollapsible label="Tools"     items={TOOLS}     defaultOpen />
+        <NavGroupCollapsible label="Finance"   items={FINANCE}   defaultOpen={false} />
+        <SidebarSeparator className="mx-3 bg-sky-500/8" />
+        <NavGroupCollapsible label="Tools"     items={TOOLS}     defaultOpen={false} />
       </SidebarContent>
 
       <SidebarFooter className="space-y-2 px-3 pb-4">
