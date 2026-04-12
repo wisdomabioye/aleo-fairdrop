@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components';
-import { useTokenInfo } from '@/shared/hooks/useTokenInfo';
+import { useTokenMetadata } from '@/shared/hooks/useTokenMetadata';
 import { usePool } from '../hooks/usePool';
 import { SlippageSettings } from '../components/SlippageSettings';
 import { TokenPairDisplay } from '../components/TokenPairDisplay';
@@ -17,8 +17,8 @@ export function CreatePoolPage() {
   const tokenBId = tokenB?.tokenId ?? null;
 
   const { data: pool, isLoading: poolLoading } = usePool(tokenAId, tokenBId);
-  const { data: tokenAMeta } = useTokenInfo(tokenAId);
-  const { data: tokenBMeta } = useTokenInfo(tokenBId);
+  const { data: tokenAMeta } = useTokenMetadata(tokenAId);
+  const { data: tokenBMeta } = useTokenMetadata(tokenBId);
 
   const existingPool = !poolLoading && pool !== null && pool !== undefined;
 

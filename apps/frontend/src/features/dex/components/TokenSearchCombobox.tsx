@@ -16,9 +16,9 @@ import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { useTokenRecords } from '@/shared/hooks/useTokenRecords';
 import { useTokenSearch } from '../hooks/useTokenSearch';
 import { useVerifiedTokens } from '../hooks/useVerifiedTokens';
-import { useTokenInfo } from '@/shared/hooks/useTokenInfo';
 import { TokenChip } from './TokenChip';
 import type { TokenDisplay } from '@/config/well-known-tokens';
+import { useTokenMetadata } from '@/shared/hooks/useTokenMetadata';
 
 interface TokenSearchComboboxProps {
   token:     TokenDisplay | null;
@@ -48,7 +48,7 @@ export function TokenSearchCombobox({
 
   // Field ID escape hatch — resolve on selection
   const isFieldQuery = FIELD_ID_RE.test(query.trim());
-  const { data: fieldLookup } = useTokenInfo(isFieldQuery ? query.trim() : undefined);
+  const { data: fieldLookup } = useTokenMetadata(isFieldQuery ? query.trim() : undefined);
 
   // Deduplicate wallet token records by token_id, only unspent
   const walletTokens = connected
@@ -164,7 +164,7 @@ export function TokenSearchCombobox({
 }
 
 /**
- * Renders a wallet token record — resolves metadata via useTokenInfo.
+ * Renders a wallet token record — resolves metadata via useTokenMetadata.
  * Falls back to truncated token_id if metadata hasn't loaded yet.
  */
 function WalletTokenItem({
@@ -174,7 +174,7 @@ function WalletTokenItem({
   tokenId:  string;
   onSelect: (t: TokenDisplay) => void;
 }) {
-  const { data: meta, isLoading } = useTokenInfo(tokenId);
+  const { data: meta, isLoading } = useTokenMetadata(tokenId);
 
   const display: TokenDisplay | null = meta ?? null;
 

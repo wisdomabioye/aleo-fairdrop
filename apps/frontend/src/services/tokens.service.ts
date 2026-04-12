@@ -6,5 +6,5 @@ export const tokensService = {
     apiFetch(`/tokens?${toQueryString(params as Record<string, unknown>)}`),
 
   get: (tokenId: string): Promise<TokenDetailResponse> =>
-    apiFetch(`/tokens/${tokenId}/metadata`),
+    apiFetch(`/tokens/${tokenId}`),
 };

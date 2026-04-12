@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { Card, CardContent, Tabs, TabsList, TabsTrigger, TabsContent } from '@/components';
-import { useTokenInfo } from '@/shared/hooks/useTokenInfo';
+import { useTokenMetadata } from '@/shared/hooks/useTokenMetadata';
 import { usePool } from '../hooks/usePool';
 import { SlippageSettings } from '../components/SlippageSettings';
 import { TokenPairDisplay } from '../components/TokenPairDisplay';
@@ -22,8 +22,8 @@ export function LiquidityPage() {
   const tokenBId = tokenB?.tokenId ?? null;
 
   const { data: pool, isLoading: poolLoading } = usePool(tokenAId, tokenBId);
-  const { data: tokenAMeta } = useTokenInfo(tokenAId);
-  const { data: tokenBMeta } = useTokenInfo(tokenBId);
+  const { data: tokenAMeta } = useTokenMetadata(tokenAId);
+  const { data: tokenBMeta } = useTokenMetadata(tokenBId);
 
   return (
     <div className="mx-auto max-w-lg space-y-4">

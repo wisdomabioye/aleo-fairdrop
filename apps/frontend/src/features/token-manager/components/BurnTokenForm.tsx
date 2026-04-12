@@ -6,7 +6,7 @@ import { parseTokenAmount } from '@fairdrop/sdk/format';
 import { burnPrivate }      from '@fairdrop/sdk/token-registry';
 import { WizardTxStatus } from '@/shared/components/WizardTxStatus';
 import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
-import { useTokenInfo }    from '@/shared/hooks/useTokenInfo';
+import { useTokenMetadata }    from '@/shared/hooks/useTokenMetadata';
 import { useTokenRecords } from '@/shared/hooks/useTokenRecords';
 import { parseExecutionError } from '@/shared/utils/errors';
 import type { WalletTokenRecord } from '@fairdrop/types/primitives';
@@ -20,7 +20,7 @@ export function BurnTokenForm() {
   const [amount,      setAmount]      = useState('');
   const [fetchError,  setFetchError]  = useState<string | null>(null);
 
-  const { data: tokenInfo } = useTokenInfo(tokenId.endsWith('field') ? tokenId : null);
+  const { data: tokenInfo } = useTokenMetadata(tokenId.endsWith('field') ? tokenId : null);
   const decimals  = tokenInfo?.decimals ?? 0;
   const filtered  = tokenRecords.filter((r) => r.token_id === tokenId && !r.spent);
   const recAmount = selectedRec?.amount ?? 0n;

@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components';
-import { useTokenInfo } from '@/shared/hooks/useTokenInfo';
+import { useTokenMetadata } from '@/shared/hooks/useTokenMetadata';
 import { usePool } from '../hooks/usePool';
 import { SlippageSettings } from '../components/SlippageSettings';
 import { TokenSearchCombobox } from '../components/TokenSearchCombobox';
@@ -22,9 +22,9 @@ export function SwapPage() {
   const urlIn  = searchParams.get('in');
   const urlOut = searchParams.get('out');
 
-  // Resolve URL params to TokenDisplay via useTokenInfo
-  const { data: urlInMeta }  = useTokenInfo(urlIn && !initialized ? urlIn : undefined);
-  const { data: urlOutMeta } = useTokenInfo(urlOut && !initialized ? urlOut : undefined);
+  // Resolve URL params to TokenDisplay via useTokenMetadata
+  const { data: urlInMeta }  = useTokenMetadata(urlIn && !initialized ? urlIn : undefined);
+  const { data: urlOutMeta } = useTokenMetadata(urlOut && !initialized ? urlOut : undefined);
 
   if (!initialized && (urlInMeta || urlOutMeta || (!urlIn && !urlOut))) {
     if (urlInMeta && !tokenIn)  setTokenInRaw(urlInMeta);
@@ -52,8 +52,8 @@ export function SwapPage() {
   const { data: pool, isLoading: poolLoading } = usePool(tokenInId, tokenOutId);
 
   // Token metadata (passed as props to form)
-  const { data: tokenInMeta }  = useTokenInfo(tokenInId);
-  const { data: tokenOutMeta } = useTokenInfo(tokenOutId);
+  const { data: tokenInMeta }  = useTokenMetadata(tokenInId);
+  const { data: tokenOutMeta } = useTokenMetadata(tokenOutId);
 
   return (
     <div className="mx-auto max-w-md space-y-4">
