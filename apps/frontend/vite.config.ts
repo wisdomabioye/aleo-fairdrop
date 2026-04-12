@@ -15,6 +15,9 @@ export default defineConfig({
       "@guide": path.resolve(__dirname, "../../docs/guides/user-guide"),
     },
   },
+  worker: {
+    format: "es",
+  },
   build: {
     target: "esnext",
   },
