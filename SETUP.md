@@ -19,26 +19,30 @@ pnpm install
 
 ## 1. Configure admin addresses
 
-Before deploying, update the deployer/admin addresses in `contracts/deployments/programs.json`:
+Before deploying, replace the 5 hardcoded `ADMIN_0`–`ADMIN_4` constants in the multisig contract with your production admin addresses:
 
-```json
-"accounts": {
-  "defaultAdminAddress": "aleo1...",
-  "protocolTreasury":    "aleo1...",
-  "feeCollector":        "aleo1..."
-}
+```
+contracts/utilities/multisig/src/main.leo
 ```
 
-Then set the same admin address in each utility contract's source where it appears as a constant. These are the addresses that will have admin authority once deployed.
+```leo
+const ADMIN_0: address = aleo1...;
+const ADMIN_1: address = aleo1...;
+const ADMIN_2: address = aleo1...;
+const ADMIN_3: address = aleo1...;
+const ADMIN_4: address = aleo1...;
+```
+
+These 5 addresses form the 3-of-5 multisig that governs all protocol operations (config changes, caller authorization, treasury withdrawals, and contract upgrades). They are baked into the contract at deploy time and cannot be changed without a multisig-approved admin rotation.
 
 ---
 
 ## 2. Deploy contracts
 
-Utilities are co-deployed with the first auction contract. Deploy Dutch first — it references utilities as local dependencies, which triggers their deployment automatically.
+Utilities are co-deployed with the first auction contract. Deploy Ascending first — it references utilities as local dependencies, which triggers their deployment automatically.
 
 ```bash
-# Step 1 — deploys Ascending + all 5 utility contracts in one shot
+# Step 1 — deploys Ascending + all local dependencies (multisig, config, gate, proof, ref, vest, dex)
 cd contracts/auctions/ascending
 leo deploy --network testnet
 
@@ -136,19 +140,37 @@ curl http://localhost:3001/indexer/status | jq
 
 ## 7. Admin setup (one-time, on-chain)
 
-Once the frontend is running, connect the **admin wallet** (the address set in step 1).
+Two one-time steps are required before the protocol is operational: initializing the multisig and authorizing auction callers. Both are done through the Admin panel.
 
-Navigate to `/admin` — you can get there via the user menu in the top-right corner.
+### 7a. Initialize the multisig
 
-From the admin panel, approve each auction contract as a caller in each utility contract. Every auction program must be registered in:
+The multisig contract ships with 5 hardcoded admin addresses (the `ADMIN_0`–`ADMIN_4` constants you set in step 1), but their `admins` mapping is empty until `initialize()` is called.
 
-- `fairdrop_config_v3.aleo`
-- `fairdrop_gate_v3.aleo`
-- `fairdrop_proof_v3.aleo`
-- `fairdrop_ref_v3.aleo`
-- `fairdrop_vest_v3.aleo`
+1. Connect **any** wallet — this call is permissionless.
+2. Open the wallet menu (top-right) → **Admin**.
+3. You will land on the **Governance** tab because the multisig is not yet initialized.
+4. Click **Initialize multisig** and confirm the transaction.
+5. Wait for on-chain confirmation. The 5 admin addresses are now registered.
 
-This is a one-time on-chain operation per auction contract. Until it's done, auction creation will fail.
+After initialization, the Admin page is restricted to registered admins only.
+
+### 7b. Authorize auction callers
+
+Each auction program must be registered as an allowed caller in 4 utility contracts: **Gate**, **Proof**, **Ref**, and **Vest**. This is a multisig-protected operation — it requires 3-of-5 admin signatures.
+
+1. Connect one of the 5 admin wallets.
+2. Open the wallet menu → **Admin** → **Authorization** tab.
+3. The grid shows each auction program (Dutch, Sealed, Raise, Ascending, LBP, Quadratic) and its authorization status per utility (✓ or ✗).
+4. Click **Authorize N missing** on an auction row to expand it.
+5. The panel displays one **message hash** per missing utility. Each of these hashes must be signed off-chain by 3 of the 5 admins using their Aleo private key:
+   ```
+   aleo account sign --private-key <ADMIN_PRIVATE_KEY> --message <MESSAGE_HASH>
+   ```
+6. Paste the 3 resulting `sign1…` signatures and their corresponding `aleo1…` admin addresses into the **Signature Panel**.
+7. Click **Authorize on all N missing utilities**. This submits a sequence of on-chain transactions (one `approve_op` + one `set_allowed_caller` per utility).
+8. Repeat for each auction program until the grid shows all ✓.
+
+Until this is done, auction creation will fail.
 
 ---
 
