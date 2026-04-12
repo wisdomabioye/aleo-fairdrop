@@ -5,7 +5,7 @@ import type { AuctionListParams } from '@fairdrop/types/api';
 import { AuctionType, AuctionStatus, GateMode } from '@fairdrop/types/domain';
 import { listAuctions, getAuction, getBlockContext } from '../queries/auctions.js';
 import { getMetadataByHash, getMetadataByHashes } from '../queries/metadata.js';
-import { getCreatorReputation, getCreatorReputationBatch } from '../queries/creators.js';
+import { getCreatorReputation, getCreatorReputationBatch, getAvgFillRates } from '../queries/creators.js';
 import { toAuctionView, toAuctionListItem } from '../mappers/auction.js';
 import { getToken, getTokensBatch } from '../lib/tokens.js';
 import { parsePagination, buildPage } from '../lib/pagination.js';
@@ -88,11 +88,12 @@ auctionsRouter.get('/:id', async (c) => {
 
   if (!row) throw new HTTPException(404, { message: `Auction ${id} not found` });
 
-  const [metaRow, tokenInfo, creatorRep] = await Promise.all([
+  const [metaRow, tokenInfo, creatorRep, fillRates] = await Promise.all([
     row.metadataHash ? getMetadataByHash(db, row.metadataHash) : Promise.resolve(null),
     getToken(db, env.aleoRpcUrl, row.saleTokenId),
     getCreatorReputation(db, row.creator),
+    getAvgFillRates(db, [row.creator]),
   ]);
 
-  return json(c, toAuctionView(row, ctx, metaRow, tokenInfo, creatorRep));
+  return json(c, toAuctionView(row, ctx, metaRow, tokenInfo, creatorRep, fillRates.get(row.creator)));
 });

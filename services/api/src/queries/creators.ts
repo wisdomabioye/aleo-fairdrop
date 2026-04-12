@@ -27,6 +27,28 @@ export async function getCreatorReputationBatch(
   return new Map(rows.map((r) => [r.address, r]));
 }
 
+/**
+ * Average fill percentage per creator from cleared auctions.
+ * Pure SQL aggregation — no rows loaded into memory.
+ * Uses auctions_creator_idx for an index scan.
+ */
+export async function getAvgFillRates(
+  db:        Db,
+  addresses: string[],
+): Promise<Map<string, number>> {
+  if (addresses.length === 0) return new Map();
+  const rows = await db
+    .select({
+      creator:     auctions.creator,
+      avgFillRate: sql<number>`coalesce(avg(least(cast(${auctions.totalCommitted} as numeric) / nullif(cast(${auctions.supply} as numeric), 0), 1.0)), 0)`.as('avg_fill_rate'),
+    })
+    .from(auctions)
+    .where(inArray(auctions.creator, addresses))
+    .groupBy(auctions.creator);
+
+  return new Map(rows.map(r => [r.creator, Number(r.avgFillRate)]));
+}
+
 export type CreatorSortKey = 'fillRate' | 'volume' | 'auctionsRun' | 'bidCount';
 
 /**

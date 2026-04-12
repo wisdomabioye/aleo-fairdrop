@@ -1,6 +1,9 @@
+import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle, Skeleton } from '@/components';
+import { Check, Copy } from 'lucide-react';
+import { Card, CardContent, Skeleton } from '@/components';
 import { truncateAddress } from '@fairdrop/sdk/format';
+import { formatMicrocredits } from '@fairdrop/sdk/credits';
 import { AppRoutes } from '@/config';
 import { useCreatorReputation } from '@/features/auctions/hooks/useCreatorReputation';
 import { useAuctions } from '@/features/auctions/hooks/useAuctions';
@@ -24,32 +27,61 @@ export function CreatorPage() {
   return <CreatorContent address={address} />;
 }
 
+function StatCard({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="rounded-lg border border-border/60 bg-background/50 px-3 py-2.5 text-center">
+      <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/75">{label}</p>
+      <p className="mt-0.5 text-sm font-semibold text-foreground">{value}</p>
+    </div>
+  );
+}
+
 function CreatorContent({ address }: { address: string }) {
   const { data: rep, isLoading: repLoading, isError: repError, error: repErrorObj } = useCreatorReputation(address);
   const { data: auctionsPage, isLoading: auctionsLoading } = useAuctions({ creator: address, pageSize: 50 });
   const auctions = auctionsPage?.items ?? [];
 
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!copied) return;
+    const t = setTimeout(() => setCopied(false), 1500);
+    return () => clearTimeout(t);
+  }, [copied]);
+
+  const copyAddress = async () => {
+    await navigator.clipboard.writeText(address);
+    setCopied(true);
+  };
+
   return (
     <div className="space-y-4">
-      {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <Link to={AppRoutes.creators} className="hover:text-foreground">Creators</Link>
         <span>/</span>
         <span className="truncate text-foreground">{truncateAddress(address)}</span>
       </div>
 
-      {/* Reputation card */}
-      <Card className="border-sky-500/10 bg-gradient-surface shadow-xs ring-1 ring-white/5">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold">
-            {truncateAddress(address)}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      <Card className="max-w-lg border-sky-500/10 bg-gradient-surface shadow-xs ring-1 ring-white/5">
+        <CardContent className="space-y-2.5 p-2.5">
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={copyAddress}
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <span className="font-medium text-foreground">{truncateAddress(address)}</span>
+              {copied
+                ? <Check className="size-3 text-emerald-500" />
+                : <Copy className="size-3" />}
+            </button>
+            {rep && rep.tier !== 'none' && (
+              <CreatorBadge tier={rep.tier} stats={rep} size="md" />
+            )}
+          </div>
+
           {repLoading ? (
-            <Skeleton className="h-28 w-full rounded-lg" />
+            <Skeleton className="h-20 w-full rounded-lg" />
           ) : repError ? (
-            // Distinguish 404 (no record) from unexpected server errors
             (repErrorObj as Error)?.message?.includes('404') ||
             (repErrorObj as Error)?.message?.includes('No reputation') ? (
               <p className="text-sm text-muted-foreground">
@@ -60,17 +92,22 @@ function CreatorContent({ address }: { address: string }) {
                 Failed to load reputation data.
               </p>
             )
-          ) : rep && rep.tier !== 'none' ? (
-            <CreatorBadge tier={rep.tier} stats={rep} size="lg" />
           ) : rep ? (
-            <p className="text-sm text-muted-foreground">
-              {rep.auctionsRun} auction{rep.auctionsRun !== 1 ? 's' : ''} run, none filled yet.
-            </p>
+            <>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <StatCard label="Auctions" value={rep.auctionsRun} />
+                <StatCard label="Filled" value={rep.filledAuctions} />
+                <StatCard label="Fill rate" value={`${(rep.fillRate * 100).toFixed(0)}%`} />
+                <StatCard
+                  label="Total raised"
+                  value={formatMicrocredits(BigInt(rep.volumeMicrocredits))}
+                />
+              </div>
+            </>
           ) : null}
         </CardContent>
       </Card>
 
-      {/* Auction history */}
       <div>
         <h2 className="mb-3 text-sm font-semibold">Auctions by this creator</h2>
         {auctionsLoading ? (

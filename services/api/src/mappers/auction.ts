@@ -160,14 +160,14 @@ function toRevenueFields(
   };
 }
 
-function toCreatorStats(rep: CreatorReputationRow | null): CreatorReputationResponse | null {
+function toCreatorStats(rep: CreatorReputationRow | null, avgFillRate?: number): CreatorReputationResponse | null {
   if (!rep) return null;
   return {
     address:            rep.address,
     auctionsRun:        rep.auctionsRun,
     filledAuctions:     rep.filledAuctions,
     volumeMicrocredits: rep.volume,
-    fillRate:           rep.auctionsRun > 0 ? rep.filledAuctions / rep.auctionsRun : 0,
+    fillRate:           avgFillRate ?? (rep.auctionsRun > 0 ? rep.filledAuctions / rep.auctionsRun : 0),
     tier:               computeTier(rep.auctionsRun, rep.filledAuctions),
   };
 }
@@ -180,6 +180,7 @@ export function toAuctionView(
   metaRow:    AuctionMetadataRow | null,
   tokenInfo:  TokenInfo | null,
   creatorRep: CreatorReputationRow | null = null,
+  avgFillRate?: number,
 ): AuctionView {
   const isContributionType = row.type === AuctionType.Raise || row.type === AuctionType.Quadratic;
   const raiseTargetStr     = row.raiseTarget ?? '0';
@@ -213,7 +214,7 @@ export function toAuctionView(
     vestCliffBlocks:   row.vestCliffBlocks,
     vestEndBlocks:     row.vestEndBlocks,
     params:            buildAuctionParams(row),
-    creatorReputation: toCreatorStats(creatorRep),
+    creatorReputation: toCreatorStats(creatorRep, avgFillRate),
     bidCount:   row.bidCount,
     sqrtWeight: row.sqrtWeight ?? null,
     ...toTimingFields(row, ctx),

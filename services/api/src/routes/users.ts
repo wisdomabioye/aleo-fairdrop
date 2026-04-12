@@ -7,6 +7,7 @@ import {
   getUserReferralCodes,
   listAuctionsByCreator,
 } from '../queries/users.js';
+import { getAvgFillRates } from '../queries/creators.js';
 import { getBlockContext } from '../queries/auctions.js';
 import { getMetadataByHashes } from '../queries/metadata.js';
 import { getTokensBatch } from '../lib/tokens.js';
@@ -24,9 +25,10 @@ usersRouter.get('/:address', async (c) => {
   const db      = c.get('db');
   const address = c.req.param('address');
 
-  const [rep, filled] = await Promise.all([
+  const [rep, filled, fillRates] = await Promise.all([
     getUserReputation(db, address),
     getFilledAuctionCount(db, address),
+    getAvgFillRates(db, [address]),
   ]);
 
   const totalAuctions = rep?.auctionCount ?? 0;
@@ -35,7 +37,7 @@ usersRouter.get('/:address', async (c) => {
     address,
     totalAuctions,
     filledAuctions: filled,
-    fillRate:       totalAuctions > 0 ? filled / totalAuctions : null,
+    fillRate:       fillRates.get(address) ?? null,
   };
 
   return json(c, profile);
