@@ -33,6 +33,7 @@ export function LbpBidForm({ auction, protocolConfig, onBidSuccess }: BidFormPro
   const { creditRecords, loading: creditsLoading } = useCreditRecords();
 
   const decimals     = auction.saleTokenDecimals;
+  const saleScale    = BigInt(auction.saleScale);
   const currentPrice = BigInt(auction.currentPrice ?? 0n);
 
   const [mode,             setMode]             = useState<'private' | 'public'>('public');
@@ -44,9 +45,9 @@ export function LbpBidForm({ auction, protocolConfig, onBidSuccess }: BidFormPro
 
   const payment = aleoToMicro(payInput) ?? 0n;
 
-  // Derived: expected token quantity at current price (bonding curve approximation).
+  // Contract: payment_amount * sale_scale >= quantity * computed_price
   // max_bid_price uses 5% slippage ceiling — finalize reverts if price moved above it.
-  const quantity    = currentPrice > 0n ? payment / currentPrice : 0n;
+  const quantity    = currentPrice > 0n ? payment * saleScale / currentPrice : 0n;
   const maxBidPrice = currentPrice * 105n / 100n;
 
   const protocolFee = payment * BigInt(protocolConfig.feeBps) / 10_000n;

@@ -6,8 +6,9 @@ import type { AuctionView } from '@fairdrop/types/domain';
 export function LbpSimulator({ auction }: { auction: AuctionView }) {
   const [budget, setBudget] = useState('');
   const currentPrice = BigInt(auction.currentPrice ?? 0n);
+  const saleScale    = BigInt(auction.saleScale);
   const budgetMicro  = BigInt(Math.floor(Number(budget || 0) * 1_000_000));
-  const tokensNow    = currentPrice > 0n ? budgetMicro / currentPrice : 0n;
+  const tokensNow    = currentPrice > 0n ? budgetMicro * saleScale / currentPrice : 0n;
 
   return (
     <div className="space-y-3 text-sm">
