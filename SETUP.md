@@ -38,13 +38,13 @@ Then set the same admin address in each utility contract's source where it appea
 Utilities are co-deployed with the first auction contract. Deploy Dutch first — it references utilities as local dependencies, which triggers their deployment automatically.
 
 ```bash
-# Step 1 — deploys Dutch + all 5 utility contracts in one shot
-cd contracts/auctions/dutch
+# Step 1 — deploys Ascending + all 5 utility contracts in one shot
+cd contracts/auctions/ascending
 leo deploy --network testnet
 
 # Step 2 — remaining auction programs (order doesn't matter)
 # These reference utilities as network (already deployed), not local
-cd contracts/auctions/ascending && leo deploy --network testnet
+cd contracts/auctions/dutch     && leo deploy --network testnet
 cd contracts/auctions/sealed    && leo deploy --network testnet
 cd contracts/auctions/raise     && leo deploy --network testnet
 cd contracts/auctions/lbp       && leo deploy --network testnet

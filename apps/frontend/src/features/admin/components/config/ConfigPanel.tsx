@@ -37,8 +37,6 @@ interface ParamDef {
   description: string;
   fnKey:       string;
   placeholder: string;
-  /** Convert raw string input → Leo-typed value string (for setter) */
-  toTyped:     (raw: string) => string;
   /** Convert raw string input → field literal (for op hash) */
   toField:     (raw: string) => string;
   /** Build the execution TxSpec */
@@ -52,7 +50,6 @@ const PARAMS: ParamDef[] = [
     id: 'feeBps', label: 'Protocol Fee', unit: 'bps', fnKey: CONFIG_OP_KEY.SET_FEE_BPS,
     description: 'Fee rate on total payments at close_auction. Hard cap 1000 bps (10%).',
     placeholder: '250',
-    toTyped:   (r) => `${Number(r)}u16`,
     toField:   (r) => `${Number(r)}field`,
     buildSpec: (r, n) => setFeeBps(Number(r), n),
     currentDisplay: (pc) => `${pc.feeBps} bps`,
@@ -61,7 +58,6 @@ const PARAMS: ParamDef[] = [
     id: 'creationFee', label: 'Creation Fee', unit: 'µcredits', fnKey: CONFIG_OP_KEY.SET_CREATION_FEE,
     description: 'Microcredits charged at create_auction (anti-spam).',
     placeholder: '10000',
-    toTyped:   (r) => `${BigInt(r)}u128`,
     toField:   (r) => `${BigInt(r)}field`,
     buildSpec: (r, n) => setCreationFee(BigInt(r), n),
     currentDisplay: (pc) => formatMicrocredits(BigInt(pc.creationFee)),
@@ -70,7 +66,6 @@ const PARAMS: ParamDef[] = [
     id: 'closerReward', label: 'Closer Reward', unit: 'µcredits', fnKey: CONFIG_OP_KEY.SET_CLOSER_REWARD,
     description: 'Reward paid to the permissionless close_auction caller.',
     placeholder: '10000',
-    toTyped:   (r) => `${BigInt(r)}u128`,
     toField:   (r) => `${BigInt(r)}field`,
     buildSpec: (r, n) => setCloserReward(BigInt(r), n),
     currentDisplay: (pc) => formatMicrocredits(BigInt(pc.closerReward)),
@@ -79,7 +74,6 @@ const PARAMS: ParamDef[] = [
     id: 'slashRewardBps', label: 'Slash Reward', unit: 'bps', fnKey: CONFIG_OP_KEY.SET_SLASH_REWARD_BPS,
     description: "Slasher's share of a forfeited sealed-bid payment. Hard cap 5000 bps.",
     placeholder: '2000',
-    toTyped:   (r) => `${Number(r)}u16`,
     toField:   (r) => `${Number(r)}field`,
     buildSpec: (r, n) => setSlashRewardBps(Number(r), n),
     currentDisplay: (pc) => `${pc.slashRewardBps} bps`,
@@ -88,7 +82,6 @@ const PARAMS: ParamDef[] = [
     id: 'maxReferralBps', label: 'Max Referral Commission', unit: 'bps', fnKey: CONFIG_OP_KEY.SET_MAX_REFERRAL_BPS,
     description: 'Maximum commission_bps a single referral code may claim. Hard cap 5000 bps.',
     placeholder: '2000',
-    toTyped:   (r) => `${Number(r)}u16`,
     toField:   (r) => `${Number(r)}field`,
     buildSpec: (r, n) => setMaxReferralBps(Number(r), n),
     currentDisplay: (pc) => `${pc.maxReferralBps} bps`,
@@ -97,7 +90,6 @@ const PARAMS: ParamDef[] = [
     id: 'referralPoolBps', label: 'Referral Pool', unit: 'bps', fnKey: CONFIG_OP_KEY.SET_REFERRAL_POOL_BPS,
     description: 'Share of protocol fee allocated as referral budget at close_auction. Hard cap 2000 bps.',
     placeholder: '500',
-    toTyped:   (r) => `${Number(r)}u16`,
     toField:   (r) => `${Number(r)}field`,
     buildSpec: (r, n) => setReferralPoolBps(Number(r), n),
     currentDisplay: (pc) => `${pc.referralPoolBps} bps`,
@@ -106,7 +98,6 @@ const PARAMS: ParamDef[] = [
     id: 'minAuctionDuration', label: 'Min Auction Duration', unit: 'blocks', fnKey: CONFIG_OP_KEY.SET_MIN_AUCTION_DURATION,
     description: 'Minimum (end_block − start_block) enforced at create_auction.',
     placeholder: '360',
-    toTyped:   (r) => `${Number(r)}u32`,
     toField:   (r) => `${Number(r)}field`,
     buildSpec: (r, n) => setMinAuctionDuration(Number(r), n),
     currentDisplay: (pc) => `${pc.minAuctionDuration} blocks`,
@@ -115,7 +106,6 @@ const PARAMS: ParamDef[] = [
     id: 'paused', label: 'Protocol Paused', unit: 'bool', fnKey: CONFIG_OP_KEY.SET_PAUSED,
     description: 'Pause or unpause all auction interactions.',
     placeholder: 'true / false',
-    toTyped:   (r) => r,
     toField:   (r) => r === 'true' ? '1field' : '0field',
     buildSpec: (r, n) => setPaused(r === 'true', n),
     currentDisplay: (pc) => pc.paused ? 'Paused' : 'Active',

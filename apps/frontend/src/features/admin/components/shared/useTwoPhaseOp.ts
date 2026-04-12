@@ -37,7 +37,7 @@ export function useTwoPhaseOp({
   buildPhase2,
 }: TwoPhaseOpOptions) {
   const { executeTransaction } = useWallet();
-  const { msgHash } = prepareApproveOp(opHash, requestId);
+  const msgHash = opHash ? prepareApproveOp(opHash, requestId).msgHash : '';
 
   const steps = useMemo<SequentialStep[]>(() => [
     {

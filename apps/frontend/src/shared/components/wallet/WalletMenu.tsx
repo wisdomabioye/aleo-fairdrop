@@ -73,7 +73,7 @@ export function WalletMenu({
   const [copied, setCopied] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [menuStyle, setMenuStyle] = useState<CSSProperties>({})
-  const { isAdmin } = useAdminGate()
+  const { canEnter: showAdminLink } = useAdminGate()
   const menuRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const navigate = useNavigate()
@@ -277,7 +277,7 @@ export function WalletMenu({
                   onClick={() => go(AppRoutes.claim)}
                 />
 
-                {isAdmin && (
+                {showAdminLink && (
                   <MenuItem
                     icon={LockIcon}
                     label="Admin"

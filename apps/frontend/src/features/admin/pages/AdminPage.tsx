@@ -12,16 +12,16 @@ import { GovernancePanel }               from '../components/governance/Governan
 import { useAdminGate }                  from '../hooks/useAdminGate';
 
 export function AdminPage() {
-  const { connected }                   = useWallet();
-  const { isAdmin, isLoading, address } = useAdminGate();
-  const navigate                        = useNavigate();
+  const { connected }                                = useWallet();
+  const { canEnter, isInitialized, isLoading, address } = useAdminGate();
+  const navigate                                     = useNavigate();
 
-  // Redirect non-admins once we know their status.
+  // Redirect connected users who can't enter (not admin AND multisig is initialized).
   useEffect(() => {
-    if (!isLoading && connected && !isAdmin) {
+    if (!isLoading && connected && !canEnter) {
       navigate(AppRoutes.dashboard, { replace: true });
     }
-  }, [isAdmin, isLoading, connected, navigate]);
+  }, [canEnter, isLoading, connected, navigate]);
 
   if (!connected) {
     return (
@@ -36,7 +36,7 @@ export function AdminPage() {
     return <div className="flex justify-center py-16"><Spinner className="h-6 w-6" /></div>;
   }
 
-  if (!isAdmin) return null;
+  if (!canEnter) return null;
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4 space-y-6">
@@ -45,7 +45,7 @@ export function AdminPage() {
         <p className="text-xs text-muted-foreground font-mono mt-1">{address}</p>
       </div>
 
-      <Tabs defaultValue="config">
+      <Tabs defaultValue={isInitialized ? 'config' : 'governance'}>
         <TabsList className="w-full">
           <TabsTrigger value="config"        className="flex-1">Config</TabsTrigger>
           <TabsTrigger value="authorization" className="flex-1">Authorization</TabsTrigger>
