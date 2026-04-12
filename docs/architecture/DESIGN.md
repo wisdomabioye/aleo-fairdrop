@@ -37,7 +37,7 @@ A token launch platform on Aleo. Three auction modes, one shared infrastructure 
 fairdrop_dutch_v3.aleo      ← live. Dutch descending-price auction.
 fairdrop_sealed_v3.aleo     ← build next. Sealed-bid commit-reveal, uniform clearing price.
 fairdrop_raise_v3.aleo      ← fixed-price sealed allocation, pro-rata by payment.
-fairdrop_ascending_v3.aleo  ← ascending-price auction, pay-what-you-bid, early = cheapest.
+fairdrop_ascending_v4.aleo  ← ascending-price auction, pay-what-you-bid, early = cheapest.
 fairdrop_lbp_v3.aleo        ← supply-weighted descending price. Bots can't frontrun.
 fairdrop_quadratic_v3.aleo  ← pro-rata by sqrt(payment). Anti-whale, ZK-native fairness.
 
@@ -52,7 +52,7 @@ fairdrop_vest_v3.aleo       ← post-claim token vesting
 **PROGRAM_SALT constants (assigned before any deployment — changing breaks all existing IDs):**
 ```
 fairdrop_dutch_v3.aleo      PROGRAM_SALT = 1field
-fairdrop_ascending_v3.aleo  PROGRAM_SALT = 2field
+fairdrop_ascending_v4.aleo  PROGRAM_SALT = 2field
 fairdrop_sealed_v3.aleo     PROGRAM_SALT = 3field
 fairdrop_raise_v3.aleo      PROGRAM_SALT = 4field
 fairdrop_lbp_v3.aleo        PROGRAM_SALT = 5field
@@ -302,7 +302,7 @@ The privacy benefit of `bid_private` is hiding the source UTXO (identity), not t
 
 ---
 
-### 4d. Ascending Dutch (`fairdrop_ascending_v3.aleo`)
+### 4d. Ascending Dutch (`fairdrop_ascending_v4.aleo`)
 **Status:** not yet built. Simplest new auction type — invert the Dutch formula.
 
 Price starts at `floor_price` and rises block-by-block to `ceiling_price`. Early bidders pay the least. Supply fills first-come-first-served. Auction closes when `total_committed >= supply` or `block.height >= end_block`.
@@ -938,7 +938,7 @@ PHASE 1c  fairdrop_sealed_v3.aleo
           ─ new mappings: pending_commits, bid_committed
           ─ deploy slasher bot as protocol infrastructure (S5)
 
-PHASE 1d  fairdrop_raise_v3.aleo + fairdrop_ascending_v3.aleo
+PHASE 1d  fairdrop_raise_v3.aleo + fairdrop_ascending_v4.aleo
           ─ raise: bid_private + bid_public, RaiseBid record, pro-rata allocation
           ─ ascending: same structure as Dutch but price formula inverted
             pay-what-you-bid, Bid record carries bid_price, no refund at claim
@@ -1079,7 +1079,7 @@ The indexer polls the Aleo node, parses finalize executions for all Fairdrop pro
 fairdrop_dutch_v3.aleo
 fairdrop_sealed_v3.aleo
 fairdrop_raise_v3.aleo
-fairdrop_ascending_v3.aleo
+fairdrop_ascending_v4.aleo
 fairdrop_lbp_v3.aleo
 fairdrop_quadratic_v3.aleo
 fairdrop_gate_v3.aleo       (for gate registrations)

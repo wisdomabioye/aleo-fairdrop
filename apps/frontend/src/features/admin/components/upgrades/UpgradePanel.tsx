@@ -24,17 +24,18 @@ function checksumToHex(bytes: number[]): string {
  * into number[32] or null if invalid.
  */
 function parseChecksumInput(raw: string): number[] | null {
-  const trimmed = raw.trim();
+  // Strip brackets and whitespace: "[170u8, 218u8, ...]" → "170u8, 218u8, ..."
+  const stripped = raw.trim().replace(/^\[|\]$/g, '').trim();
 
   // Try hex: 64 chars
-  if (/^[0-9a-fA-F]{64}$/.test(trimmed)) {
+  if (/^[0-9a-fA-F]{64}$/.test(stripped)) {
     const bytes: number[] = [];
-    for (let i = 0; i < 64; i += 2) bytes.push(parseInt(trimmed.slice(i, i + 2), 16));
+    for (let i = 0; i < 64; i += 2) bytes.push(parseInt(stripped.slice(i, i + 2), 16));
     return bytes;
   }
 
-  // Try comma-separated decimal bytes
-  const parts = trimmed.split(',').map((s) => s.trim());
+  // Try comma-separated values: "170u8, 218u8, ..." or "170, 218, ..."
+  const parts = stripped.split(',').map((s) => s.trim().replace(/u8$/, ''));
   if (parts.length === 32) {
     const bytes = parts.map(Number);
     if (bytes.every((b) => Number.isInteger(b) && b >= 0 && b <= 255)) return bytes;
@@ -113,10 +114,10 @@ function UpgradeRow({ entry, onSuccess }: UpgradeRowProps) {
       {open && (
         <div className="rounded-lg border border-border/70 bg-muted/20 p-3 space-y-3">
           <div className="space-y-1">
-            <Label className="text-xs">Checksum (64-char hex from <code>leo build</code>)</Label>
+            <Label className="text-xs">Checksum from <code>leo build</code> (hex, Leo bytes, or decimal CSV)</Label>
             <Input
               className="h-7 text-xs font-mono"
-              placeholder="0a1b2c…"
+              placeholder="[170u8, 218u8, …] or aadaa141… or 170,218,…"
               value={checksumIn}
               onChange={(e) => setChecksumIn(e.target.value)}
             />

@@ -1,5 +1,5 @@
 /**
- * fairdrop_ascending_v3.aleo — TypeScript types.
+ * fairdrop_ascending_v4.aleo — TypeScript types.
  *
  * Ascending-price auction: price rises from floor_price toward ceiling_price
  * in discrete steps. Early bidders pay less than late bidders (pay-what-you-bid).

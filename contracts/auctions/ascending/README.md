@@ -1,4 +1,4 @@
-# fairdrop_ascending_v3.aleo
+# fairdrop_ascending_v4.aleo
 
 Privacy-preserving ascending-price auction (pay-what-you-bid).
 
@@ -58,7 +58,7 @@ The tradeoff: bidders cannot reclaim overpayment from integer rounding (at most 
 
 ## Comparison with Dutch
 
-| Property | Dutch (fairdrop_dutch_v3.aleo) | Ascending (fairdrop_ascending_v3.aleo) |
+| Property | Dutch (fairdrop_dutch_v3.aleo) | Ascending (fairdrop_ascending_v4.aleo) |
 |---|---|---|
 | Price direction | Descends start → floor | Rises floor → ceiling |
 | Payment model | Uniform clearing price | Pay-what-you-bid |
