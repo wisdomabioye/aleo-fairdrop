@@ -229,6 +229,9 @@ function ProtocolStatsBadge() {
 
   if (!data) return null;
 
+  const volume = formatMicrocredits(BigInt(data.totalVolume))
+  const avgFillRate = Math.round(data.avgFillRate * 100)
+
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -243,9 +246,9 @@ function ProtocolStatsBadge() {
           {/* Extended (xl+): volume + fill rate */}
           <span className="hidden xl:contents">
             <span className="text-muted-foreground/40">·</span>
-            <span className="text-foreground/90">{formatMicrocredits(BigInt(data.totalVolume))}</span>
+            <span className="text-foreground/90">{volume}</span>
             <span className="text-muted-foreground/40">·</span>
-            <span className="text-foreground/90">{Math.round(data.avgFillRate * 100)}%</span>
+            <span className="text-foreground/90">{avgFillRate}%</span>
             <span className="text-muted-foreground/60">fill</span>
           </span>
         </span>
@@ -256,8 +259,8 @@ function ProtocolStatsBadge() {
         <Row label="Cleared"          value={data.clearedAuctions.toLocaleString()} />
         <Row label="Voided"           value={data.voidedAuctions.toLocaleString()} />
         <Row label="Total bids"       value={data.totalBids.toLocaleString()} />
-        <Row label="Volume cleared"   value={formatMicrocredits(BigInt(data.totalVolume))} />
-        <Row label="Avg fill rate"    value={`${Math.round(data.avgFillRate * 100)}%`} />
+        <Row label="Volume cleared"   value={volume} />
+        <Row label="Avg fill rate"    value={`${avgFillRate}%`} />
       </TooltipContent>
     </Tooltip>
   );
