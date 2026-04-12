@@ -209,7 +209,7 @@ importers:
         specifier: workspace:*
         version: link:../types
       '@provablehq/aleo-types':
-        specifier: '*'
+        specifier: '>=0.3.0-alpha.3'
         version: 0.3.0-alpha.3
     devDependencies:
       tsdown:

@@ -35,8 +35,10 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@fairdrop/types":        "workspace:*",
-    "@provablehq/aleo-types": "*"
+    "@fairdrop/types":        "workspace:*"
+  },
+  "peerDependencies": {
+    "@provablehq/aleo-types": ">=0.3.0-alpha.3"
   },
   "devDependencies": {
     "tsdown":     "^0.21.7",
