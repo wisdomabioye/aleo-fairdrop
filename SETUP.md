@@ -161,14 +161,24 @@ Each auction program must be registered as an allowed caller in 4 utility contra
 1. Connect one of the 5 admin wallets.
 2. Open the wallet menu → **Admin** → **Authorization** tab.
 3. The grid shows each auction program (Dutch, Sealed, Raise, Ascending, LBP, Quadratic) and its authorization status per utility (✓ or ✗).
-4. Click **Authorize N missing** on an auction row to expand it.
-5. The panel displays one **message hash** per missing utility. Each of these hashes must be signed off-chain by 3 of the 5 admins using their Aleo private key:
+4. Click the **N missing** button on an auction row to expand it.
+5. Each utility (Gate, Proof, Ref, Vest) has its own card with a **message hash**. Expand a card to see its hash and signature inputs.
+6. 3 of the 5 admins must sign each message hash off-chain using their Aleo private key. You can sign individually:
+   ```bash
+   leo account sign --private-key <ADMIN_PRIVATE_KEY> --message <MESSAGE_HASH>
    ```
-   aleo account sign --private-key <ADMIN_PRIVATE_KEY> --message <MESSAGE_HASH>
+   Or use the bundled helper script to sign with multiple keys at once:
+   ```bash
+   # One-time setup — copy and fill in 3+ admin private keys
+   cp scripts/admin-keys.example.json scripts/admin-keys.json
+
+   # Sign a message hash from the UI
+   ./scripts/multisig-sign.sh <MESSAGE_HASH>
+   # → outputs address + signature for each key in the file
    ```
-6. Paste the 3 resulting `sign1…` signatures and their corresponding `aleo1…` admin addresses into the **Signature Panel**.
-7. Click **Authorize on all N missing utilities**. This submits a sequence of on-chain transactions (one `approve_op` + one `set_allowed_caller` per utility).
-8. Repeat for each auction program until the grid shows all ✓.
+7. Paste the 3 resulting `sign1…` signatures and their corresponding `aleo1…` admin addresses into the card's **Signature Panel**.
+8. Click **Approve & set \<Utility\> caller**. This is a two-phase operation: step 1 registers the approval in the multisig (`approve_op`), step 2 the utility contract consumes it (`set_allowed_caller`). Step 2 fires automatically after step 1 confirms.
+9. Repeat for each utility card, then for each auction program, until the grid shows all ✓.
 
 Until this is done, auction creation will fail.
 

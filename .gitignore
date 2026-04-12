@@ -23,6 +23,9 @@ out/
 # Production / Build
 build
 
+# Admin keys (private keys — never commit)
+scripts/admin-keys.json
+
 # Environment files
 .env
 .env*

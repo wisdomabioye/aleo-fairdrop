@@ -1,0 +1,17 @@
+[
+  {
+    "label": "Admin 0",
+    "address": "aleo1...",
+    "privateKey": "APrivateKey1..."
+  },
+  {
+    "label": "Admin 1",
+    "address": "aleo1...",
+    "privateKey": "APrivateKey1..."
+  },
+  {
+    "label": "Admin 2",
+    "address": "aleo1...",
+    "privateKey": "APrivateKey1..."
+  }
+]
