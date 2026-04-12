@@ -54,7 +54,7 @@ export function TokenSearchCombobox({
   const walletTokens = connected
     ? Array.from(
         tokenRecords
-          .filter((r) => !r.spent && r.token_id !== exclude)
+          .filter((r) => !r.spent && r.amount > 0n && r.token_id !== exclude)
           .reduce((map, r) => {
             if (!map.has(r.token_id)) map.set(r.token_id, r);
             return map;
