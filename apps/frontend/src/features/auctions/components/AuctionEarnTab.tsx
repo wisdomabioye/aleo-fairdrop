@@ -116,7 +116,7 @@ export function AuctionEarnTab({ auction }: AuctionEarnTabProps) {
     slot?.hasFillThreshold === true &&
     auction.raise != null &&
     auction.raise.fillMinBps > 0 &&
-    auction.totalPayments >= (auction.raise.raiseTarget * BigInt(auction.raise.fillMinBps)) / 10000n;
+    BigInt(auction.totalPayments) >= (BigInt(auction.raise.raiseTarget) * BigInt(auction.raise.fillMinBps)) / 10000n;
 
   const canCloseNow =
     auction.status === AuctionStatus.Ended    ||

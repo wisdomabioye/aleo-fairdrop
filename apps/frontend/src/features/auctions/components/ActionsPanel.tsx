@@ -111,7 +111,7 @@ export function ActionsPanel({ auction, blockHeight }: ActionsPanelProps) {
     slot?.hasFillThreshold === true &&
     auction.raise != null &&
     auction.raise.fillMinBps > 0 &&
-    auction.totalPayments >= (auction.raise.raiseTarget * BigInt(auction.raise.fillMinBps)) / 10000n;
+    BigInt(auction.totalPayments) >= (BigInt(auction.raise.raiseTarget) * BigInt(auction.raise.fillMinBps)) / 10000n;
 
   const canClose =
     auction.status === AuctionStatus.Ended ||
