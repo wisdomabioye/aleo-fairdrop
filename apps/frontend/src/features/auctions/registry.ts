@@ -8,7 +8,6 @@ import type { PricingStepProps, AnyPricingValues } from './pricing-steps/types';
 import type { CreateBase, TxSpec } from '@fairdrop/sdk/transactions';
 
 import { PriceCurveChart }    from './charts/PriceCurveChart';
-import { CurrentPriceDisplay } from './indicators/CurrentPriceDisplay';
 import { NextPriceDropChip }  from './indicators/NextPriceDropChip';
 import { DutchSimulator }     from './simulators/DutchSimulator';
 import { SealedSimulator }    from './simulators/SealedSimulator';
@@ -100,8 +99,6 @@ export interface AuctionTypeSlot {
   chartComponent:     ComponentType<{ auction: AuctionView }> | null;
   /** Collapsible allocation estimator shown on the detail page. */
   simulatorComponent: ComponentType<{ auction: AuctionView }> | null;
-  /** Current price display rendered above the indicator (e.g. Dutch, Ascending). */
-  currentPriceDisplay: ComponentType<{ auction: AuctionView }> | null;
   /** Inline indicator rendered near the bid panel (e.g. next price drop chip). */
   indicatorComponent: ComponentType<{ auction: AuctionView }> | null;
 
@@ -136,7 +133,7 @@ export const AUCTION_REGISTRY: Record<AuctionType, AuctionTypeSlot> = {
     buildWizardInputs:   dutchBuildWizardInputs,
     chartComponent:      PriceCurveChart,
     simulatorComponent:  DutchSimulator,
-    currentPriceDisplay: CurrentPriceDisplay,
+
     indicatorComponent:  NextPriceDropChip,
     isContributionType:  false,
     hasRaiseTarget:      false,
@@ -158,7 +155,7 @@ export const AUCTION_REGISTRY: Record<AuctionType, AuctionTypeSlot> = {
     buildWizardInputs:   sealedBuildWizardInputs,
     chartComponent:      null,
     simulatorComponent:  SealedSimulator,
-    currentPriceDisplay: null,
+
     indicatorComponent:  null,
     isContributionType:  false,
     hasRaiseTarget:      false,
@@ -180,7 +177,7 @@ export const AUCTION_REGISTRY: Record<AuctionType, AuctionTypeSlot> = {
     buildWizardInputs:   raiseBuildWizardInputs,
     chartComponent:      null,
     simulatorComponent:  RaiseSimulator,
-    currentPriceDisplay: null,
+
     indicatorComponent:  null,
     isContributionType:  true,
     hasRaiseTarget:      true,
@@ -202,7 +199,7 @@ export const AUCTION_REGISTRY: Record<AuctionType, AuctionTypeSlot> = {
     buildWizardInputs:   ascendingBuildWizardInputs,
     chartComponent:      PriceCurveChart,
     simulatorComponent:  null,
-    currentPriceDisplay: CurrentPriceDisplay,
+
     indicatorComponent:  null,
     isContributionType:  false,
     hasRaiseTarget:      false,
@@ -224,7 +221,7 @@ export const AUCTION_REGISTRY: Record<AuctionType, AuctionTypeSlot> = {
     buildWizardInputs:   lbpBuildWizardInputs,
     chartComponent:      PriceCurveChart,
     simulatorComponent:  LbpSimulator,
-    currentPriceDisplay: null,
+
     indicatorComponent:  null,
     isContributionType:  false,
     hasRaiseTarget:      false,
@@ -246,7 +243,7 @@ export const AUCTION_REGISTRY: Record<AuctionType, AuctionTypeSlot> = {
     buildWizardInputs:   quadraticBuildWizardInputs,
     chartComponent:      null,
     simulatorComponent:  QuadraticSimulator,
-    currentPriceDisplay: null,
+
     indicatorComponent:  null,
     isContributionType:  true,
     hasRaiseTarget:      true,

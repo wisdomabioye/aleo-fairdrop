@@ -172,7 +172,6 @@ export function DutchBidForm({ auction, protocolConfig, onBidSuccess }: BidFormP
 
       {showSummary && (
         <BidSummaryPanel rows={[
-          currentPrice > 0n               && ['Price',          formatMicrocredits(currentPrice)],
           qtyRaw > 0n                     && ['Amount',         formatAmount(qtyRaw, decimals)],
           payment > 0n                    && ['Total',          formatMicrocredits(payment)],
           payment > 0n                    && [`Fee (${protocolConfig.feeBps / 100}%)`, formatMicrocredits(protocolFee)],

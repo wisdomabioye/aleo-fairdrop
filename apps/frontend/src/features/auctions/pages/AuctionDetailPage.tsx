@@ -99,7 +99,7 @@ function AuctionDetailContent({ id }: { id: string }) {
   }
 
   const slot = getRegistrySlot(auction.type);
-  const { PricePanel, BidForm, ProgressPanel, currentPriceDisplay: PriceDisplay, indicatorComponent: Indicator } = slot ?? {};
+  const { PricePanel, BidForm, ProgressPanel, indicatorComponent: Indicator } = slot ?? {};
 
   const isActive =
     auction.status === AuctionStatus.Active || auction.status === AuctionStatus.Clearing;
@@ -117,10 +117,7 @@ function AuctionDetailContent({ id }: { id: string }) {
                                                'Market & Bid';
 
   const hasOverviewIntro = Boolean(ProgressPanel);
-  // For sealed, only show the price panel once clearing price is set (after close_auction).
-  // During commit/reveal the bid form itself carries price context.
   const showPricePanel = PricePanel
-    && auction.type !== AuctionType.Dutch
     && !(auction.type === AuctionType.Sealed && !auction.clearingPrice);
 
   return (
@@ -204,11 +201,10 @@ function AuctionDetailContent({ id }: { id: string }) {
                 />
               ) : null}
 
-              {PriceDisplay ? <PriceDisplay auction={auction} /> : null}
               {Indicator ? <Indicator auction={auction} /> : null}
 
               <>
-                {(showPricePanel || PriceDisplay || Indicator) ? <Separator /> : null}
+                {(showPricePanel || Indicator) ? <Separator /> : null}
 
                 {isActive && BidForm && protocolConfig ? (
                   <GateGuard auction={auction}>
