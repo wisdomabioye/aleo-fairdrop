@@ -1,8 +1,5 @@
-import { initializeWasm } from '@provablehq/sdk';
 import { buildMerkleTree } from '@fairdrop/sdk/hash';
 import type { MerkleProof } from '@fairdrop/sdk/hash';
-
-await initializeWasm();
 
 export interface MerkleWorkerRequest {
   addresses: string[];
