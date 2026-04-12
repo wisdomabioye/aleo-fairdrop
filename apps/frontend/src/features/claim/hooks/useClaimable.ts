@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import { scanAuctionRecords } from '@fairdrop/sdk/records';
+import { stripVisibility } from '@fairdrop/sdk/parse';
 import type { WalletRecord } from '@fairdrop/types/primitives';
-import { config } from '@/env';
-import { auctionsService } from '@/services/auctions.service';
 import type { AuctionView } from '@fairdrop/types/domain';
+import { auctionsService } from '@/services/auctions.service';
+import { config } from '@/env';
 
 // ── types ─────────────────────────────────────────────────────────────────────
 
@@ -70,7 +71,7 @@ export function useClaimable() {
         }),
       );
 
-      const uniqueIds = [...new Set(allRecords.map((r) => r.auctionId))];
+      const uniqueIds = [...new Set(allRecords.map((r) => stripVisibility(r.auctionId)))];
       const details   = await Promise.all(
         uniqueIds.map((id) => auctionsService.get(id).catch(() => null)),
       );
