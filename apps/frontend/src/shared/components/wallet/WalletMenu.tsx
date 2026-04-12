@@ -14,7 +14,7 @@ import {
   type LucideIcon,
 } from "lucide-react"
 import { truncateAddress } from "@fairdrop/sdk/format"
-import { useProtocolConfig } from "@/shared/hooks/useProtocolConfig"
+import { useAdminGate } from "@/features/admin/hooks/useAdminGate"
 import { AppRoutes } from "@/config"
 import { cn } from "@/lib/utils"
 
@@ -73,7 +73,7 @@ export function WalletMenu({
   const [copied, setCopied] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [menuStyle, setMenuStyle] = useState<CSSProperties>({})
-  const { data: pc } = useProtocolConfig()
+  const { isAdmin } = useAdminGate()
   const menuRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const navigate = useNavigate()
@@ -151,8 +151,6 @@ export function WalletMenu({
     navigate(path)
     setOpen(false)
   }
-
-  const isAdmin = !!pc && pc.protocolAdmin === address
 
   return (
     <div className="relative">
