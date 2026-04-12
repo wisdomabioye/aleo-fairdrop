@@ -248,16 +248,11 @@ export function AuctionHeader({ auction, currentPrice }: AuctionHeaderProps) {
               </Link>
 
               {auction.creatorReputation ? (
-                <>
-                  <CreatorBadge
-                    tier={auction.creatorReputation.tier}
-                    stats={auction.creatorReputation}
-                    size="md"
-                  />
-                  <span className="text-[11px] text-muted-foreground">
-                    {formatMicrocredits(BigInt(auction.creatorReputation.volumeMicrocredits))} raised total
-                  </span>
-                </>
+                <CreatorBadge
+                  tier={auction.creatorReputation.tier}
+                  stats={auction.creatorReputation}
+                  size="md"
+                />
               ) : null}
 
               {website ? (
