@@ -46,14 +46,14 @@
     },
     "ascending": {
       "programId":      "fairdrop_ascending_v4.aleo",
-      "programAddress": "aleo1a745mv07xu8ndsgwreltu8get037kezcjahmn8rg7c8lmuy3kvrsrttu8l",
+      "programAddress": "aleo1y9mfn9ly2jpwf9jjyvgpcfsfa02gazrurxvt5n6pjyjnd3kj6urs2h0wng",
       "contractPath":   "contracts/auctions/ascending",
       "salt":           "2field",
       "upgradeKey":     "6field"
     },
     "dutch": {
       "programId":      "fairdrop_dutch_v4.aleo",
-      "programAddress": "aleo15mxgtmff46rt448wh33p25cptmedytzczeya3fvcs99s46wmwvps9zupek",
+      "programAddress": "aleo1dcp92cqsraccfrvpyh9zswzem3mexfw5e3pf79z6s5gr7uj64gxsztdqge",
       "contractPath":   "contracts/auctions/dutch",
       "salt":           "1field",
       "upgradeKey":     "7field"

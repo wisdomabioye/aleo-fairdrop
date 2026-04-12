@@ -7,31 +7,38 @@
   "dependencies": [
     {
       "name": "fairdrop_multisig_v2.aleo",
-      "location": "network"
+      "location": "local",
+      "path": "../../utilities/multisig"
     },
     {
       "name": "fairdrop_config_v3.aleo",
-      "location": "network"
+      "location": "local",
+      "path": "../../utilities/config"
     },
     {
       "name": "fairdrop_gate_v3.aleo",
-      "location": "network"
+      "location": "local",
+      "path": "../../utilities/gate"
     },
     {
       "name": "fairdrop_proof_v3.aleo",
-      "location": "network"
+      "location": "local",
+      "path": "../../utilities/proof"
     },
     {
       "name": "fairdrop_ref_v3.aleo",
-      "location": "network"
+      "location": "local",
+      "path": "../../utilities/ref"
     },
     {
       "name": "fairdrop_vest_v3.aleo",
-      "location": "network"
+      "location": "local",
+      "path": "../../utilities/vest"
     },
     {
       "name": "fairswap_dex_v3.aleo",
-      "location": "network"
+      "location": "local",
+      "path": "../../dex/fairswap_dex"
     },
     {
       "name": "credits.aleo",

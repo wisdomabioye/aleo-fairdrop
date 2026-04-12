@@ -114,7 +114,7 @@ program fairdrop_config_v3.aleo {
         let op_hash: field = BHP256::hash_to_field(ConfigOp {
             fn_key: OP_SET_FEE_BPS,
             op_value: new_value as field,
-            nonce:  op_nonce,
+            nonce:  op_nonce
         });
         return final {
             assert(fairdrop_multisig_v2.aleo::approved_ops.get_or_use(op_hash, false));
