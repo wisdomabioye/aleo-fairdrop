@@ -1,5 +1,6 @@
 import { useEffect }                    from 'react';
 import { useNavigate }                   from 'react-router-dom';
+import { useQueryClient }                from '@tanstack/react-query';
 import { Spinner, Tabs, TabsList, TabsTrigger, TabsContent } from '@/components';
 import { ConnectWalletPrompt }           from '@/shared/components/wallet/ConnectWalletPrompt';
 import { useWallet }                     from '@provablehq/aleo-wallet-adaptor-react';
@@ -10,11 +11,20 @@ import { TreasuryPanel }                 from '../components/treasury/TreasuryPa
 import { UpgradePanel }                  from '../components/upgrades/UpgradePanel';
 import { GovernancePanel }               from '../components/governance/GovernancePanel';
 import { useAdminGate }                  from '../hooks/useAdminGate';
+import { callerStatusQueryOptions }      from '../hooks/useCallerStatus';
 
 export function AdminPage() {
   const { connected }                                = useWallet();
   const { canEnter, isInitialized, isLoading, address } = useAdminGate();
   const navigate                                     = useNavigate();
+  const queryClient                                  = useQueryClient();
+
+  // Prefetch authorization data so the tab switch is instant.
+  useEffect(() => {
+    if (canEnter && isInitialized) {
+      void queryClient.prefetchQuery(callerStatusQueryOptions);
+    }
+  }, [canEnter, isInitialized, queryClient]);
 
   // Redirect connected users who can't enter (not admin AND multisig is initialized).
   useEffect(() => {

@@ -30,20 +30,22 @@ const UTILITY_FETCHERS: Record<UtilityKey, (address: string) => Promise<boolean>
 
 const UTILITY_KEYS: UtilityKey[] = ['gate', 'ref', 'proof', 'vest'];
 
+export const callerStatusQueryOptions = {
+  queryKey: ['callerStatus'] as const,
+  queryFn:  async (): Promise<CallerStatusGrid> => {
+    const rows = await Promise.all(
+      UTILITY_KEYS.map(async (key) => {
+        const cells = await Promise.all(
+          AUCTION_CALLERS.map(async (a) => [a.address, await UTILITY_FETCHERS[key](a.address)] as const),
+        );
+        return [key, Object.fromEntries(cells)] as const;
+      }),
+    );
+    return Object.fromEntries(rows) as CallerStatusGrid;
+  },
+  staleTime: 30_000,
+};
+
 export function useCallerStatus() {
-  return useQuery({
-    queryKey: ['callerStatus'],
-    queryFn:  async (): Promise<CallerStatusGrid> => {
-      const rows = await Promise.all(
-        UTILITY_KEYS.map(async (key) => {
-          const cells = await Promise.all(
-            AUCTION_CALLERS.map(async (a) => [a.address, await UTILITY_FETCHERS[key](a.address)] as const),
-          );
-          return [key, Object.fromEntries(cells)] as const;
-        }),
-      );
-      return Object.fromEntries(rows) as CallerStatusGrid;
-    },
-    staleTime: 30_000,
-  });
+  return useQuery(callerStatusQueryOptions);
 }

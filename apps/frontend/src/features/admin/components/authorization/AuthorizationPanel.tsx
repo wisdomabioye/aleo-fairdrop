@@ -55,23 +55,24 @@ function AuctionRow({ auctionLabel, auctionAddress, status, onSuccess }: Auction
   const missing = UTILITIES.filter((u) => !status[u.key]);
   const allAuthorized = missing.length === 0;
 
-  // One nonce + requestId pair per missing utility — generated once, stable for this row instance.
+  // Defer nonce generation and WASM hashing until the row is expanded.
   const nonces = useMemo(
-    () => missing.map(() => ({ opNonce: generateNonce(), requestId: generateNonce() })),
+    () => open ? missing.map(() => ({ opNonce: generateNonce(), requestId: generateNonce() })) : [],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [missing.length],
+    [open && missing.length],
   );
 
-  // Pre-compute op hashes and msgHashes for all missing utilities.
   const opEntries = useMemo(
-    () =>
-      missing.map((u, i) => {
+    () => {
+      if (!open) return [];
+      return missing.map((u, i) => {
         const opHash   = computeAllowedCallerOpHash(auctionAddress, true, nonces[i]!.opNonce);
         const { msgHash } = prepareApproveOp(opHash, nonces[i]!.requestId);
         return { utility: u, opHash, msgHash, ...nonces[i]! };
-      }),
+      });
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [missing, nonces, auctionAddress],
+    [open, missing, nonces, auctionAddress],
   );
 
   // Sequential steps: for each missing utility → approve_op then set_allowed_caller.
