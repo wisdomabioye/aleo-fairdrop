@@ -18,6 +18,5 @@ export const protocolConfig = pgTable('protocol_config', {
   referralPoolBps:    integer('referral_pool_bps').notNull(),
   minAuctionDuration: integer('min_auction_duration').notNull(),
   paused:             boolean('paused').notNull().default(false),
-  protocolAdmin:      text('protocol_admin').notNull(),
   updatedAt:          timestamp('updated_at').notNull(),
 });

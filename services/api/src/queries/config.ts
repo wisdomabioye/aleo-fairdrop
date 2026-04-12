@@ -23,7 +23,6 @@ export async function getProtocolConfig(db: Db): Promise<ProtocolConfig | null> 
     referralPoolBps:    row.referralPoolBps,
     minAuctionDuration: row.minAuctionDuration,
     paused:             row.paused,
-    protocolAdmin:      row.protocolAdmin,
     updatedAt:          row.updatedAt.toISOString(),
   };
 }

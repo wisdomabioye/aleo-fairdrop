@@ -23,6 +23,5 @@ export interface ProtocolConfig {
   referralPoolBps:    number;
   minAuctionDuration: number;
   paused:             boolean;
-  protocolAdmin:      string;   // aleo1... address
   updatedAt:          string;   // ISO-8601 — when indexer last synced
 }

@@ -52,23 +52,23 @@ function createProgramHandlerMap(
   };
 
   const base: ProgramHandlerMap = {
-    create_auction:        { getAuctionId: auctionIdFromCreateAuctionTransition, handle: onAuction },
-    close_auction:         { getAuctionId: auctionIdFromTransitionInputZero,     handle: onClose   },
-    cancel_auction:        { getAuctionId: auctionIdFromTransitionInputZero,     handle: onAuction },
-    place_bid_private:     { getAuctionId: auctionIdFromTransitionInputOne,      handle: onBid     },
-    place_bid_public:      { getAuctionId: auctionIdFromTransitionInputZero,     handle: onBid     },
-    place_bid_private_ref: { getAuctionId: auctionIdFromTransitionInputOne,      handle: onBid     },
-    place_bid_public_ref:  { getAuctionId: auctionIdFromTransitionInputZero,     handle: onBid     },
+    create_auction:        { kind: 'auction', getAuctionId: auctionIdFromCreateAuctionTransition, handle: onAuction },
+    close_auction:         { kind: 'auction', getAuctionId: auctionIdFromTransitionInputZero,     handle: onClose   },
+    cancel_auction:        { kind: 'auction', getAuctionId: auctionIdFromTransitionInputZero,     handle: onAuction },
+    place_bid_private:     { kind: 'auction', getAuctionId: auctionIdFromTransitionInputOne,      handle: onBid     },
+    place_bid_public:      { kind: 'auction', getAuctionId: auctionIdFromTransitionInputZero,     handle: onBid     },
+    place_bid_private_ref: { kind: 'auction', getAuctionId: auctionIdFromTransitionInputOne,      handle: onBid     },
+    place_bid_public_ref:  { kind: 'auction', getAuctionId: auctionIdFromTransitionInputZero,     handle: onBid     },
   };
 
   if (auctionType === AuctionType.Sealed) {
     return {
       ...base,
-      commit_bid_private:     { getAuctionId: auctionIdFromTransitionInputOne,  handle: onBid     },
-      commit_bid_public:      { getAuctionId: auctionIdFromTransitionInputZero, handle: onBid     },
-      commit_bid_private_ref: { getAuctionId: auctionIdFromTransitionInputOne,  handle: onBid     },
-      commit_bid_public_ref:  { getAuctionId: auctionIdFromTransitionInputZero, handle: onBid     },
-      reveal_bid:             { getAuctionId: auctionIdFromFinalizeRevealBid,   handle: onAuction },
+      commit_bid_private:     { kind: 'auction', getAuctionId: auctionIdFromTransitionInputOne,  handle: onBid     },
+      commit_bid_public:      { kind: 'auction', getAuctionId: auctionIdFromTransitionInputZero, handle: onBid     },
+      commit_bid_private_ref: { kind: 'auction', getAuctionId: auctionIdFromTransitionInputOne,  handle: onBid     },
+      commit_bid_public_ref:  { kind: 'auction', getAuctionId: auctionIdFromTransitionInputZero, handle: onBid     },
+      reveal_bid:             { kind: 'auction', getAuctionId: auctionIdFromFinalizeRevealBid,   handle: onAuction },
     };
   }
 

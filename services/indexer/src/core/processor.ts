@@ -125,13 +125,17 @@ export class BlockProcessor {
       return;
     }
 
-    const auctionId = entry.getAuctionId(transition, finalizeOps);
-    if (!auctionId) {
-      log.warn(`${programId}::${fnName} — could not resolve auction_id`, { txId, blockHeight });
-    } else {
-      // ctx.db typed as Db | DbTx — DbTx satisfies all query operations needed by handlers.
-      const ctx = { db: db as Db | DbTx, rpc: this.rpc, transition, blockHeight, timestamp, txId };
-      await entry.handle(ctx, auctionId);
+    const ctx = { db: db as Db | DbTx, rpc: this.rpc, transition, blockHeight, timestamp, txId };
+
+    if (entry.kind === 'auction') {
+      const auctionId = entry.getAuctionId(transition, finalizeOps);
+      if (!auctionId) {
+        log.warn(`${programId}::${fnName} — could not resolve auction_id`, { txId, blockHeight });
+      } else {
+        await entry.handle(ctx, auctionId);
+      }
+    } else if (entry.kind === 'config') {
+      await entry.handle(ctx);
     }
 
     await db.insert(indexerTransitions).values({

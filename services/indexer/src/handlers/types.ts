@@ -19,14 +19,23 @@ export type AuctionIdExtractor = (
   finalizeOps: FinalizeOperation[],
 ) => string | null;
 
-/** Executes business logic for a single transition. */
+/** Executes business logic for a single auction transition. */
 export type TransitionHandlerFn = (ctx: TransitionContext, auctionId: string) => Promise<void>;
 
-/** Paired extractor + handler for a single transition name. */
-export interface HandlerEntry {
+/** Auction handler — requires an auction_id to dispatch. */
+export interface AuctionHandlerEntry {
+  kind:         'auction';
   getAuctionId: AuctionIdExtractor;
   handle:       TransitionHandlerFn;
 }
 
-/** Flat map of transition name → handler entry for one program. Processor dispatches blindly. */
+/** Config handler — no entity id needed. */
+export interface ConfigHandlerEntry {
+  kind:   'config';
+  handle: (ctx: TransitionContext) => Promise<void>;
+}
+
+export type HandlerEntry = AuctionHandlerEntry | ConfigHandlerEntry;
+
+/** Flat map of transition name → handler entry for one program. Processor dispatches on kind. */
 export type ProgramHandlerMap = Record<string, HandlerEntry>;

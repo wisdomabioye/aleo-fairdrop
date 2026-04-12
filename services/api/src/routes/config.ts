@@ -12,25 +12,16 @@
 import { Hono } from 'hono';
 import type { Db } from '@fairdrop/database';
 import type { ProtocolConfig } from '@fairdrop/types/domain';
-import { DEFAULT_ACCOUNTS } from '@fairdrop/config';
+import { CONFIG_DEFAULTS } from '@fairdrop/config';
 import { getProtocolConfig } from '../queries/config.js';
 import { getCachedConfig, setCachedConfig } from '../lib/config-cache.js';
 import { json } from '../lib/respond.js';
 
 type Variables = { db: Db };
 
-// Contract defaults — active before any set_* call (mirrors fairdrop_config_v3.aleo constants).
 const CONTRACT_DEFAULTS: ProtocolConfig = {
-  feeBps:             250,
-  creationFee:        '10000',
-  closerReward:       '10000',
-  slashRewardBps:     2000,
-  maxReferralBps:     2000,
-  referralPoolBps:    500,
-  minAuctionDuration: 360,
-  paused:             false,
-  protocolAdmin:      DEFAULT_ACCOUNTS.defaultAdminAddress, 
-  updatedAt:          new Date(0).toISOString(),
+  ...CONFIG_DEFAULTS,
+  updatedAt: new Date(0).toISOString(),
 };
 
 export const configRouter = new Hono<{ Variables: Variables }>();

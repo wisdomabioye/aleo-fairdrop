@@ -1,0 +1,1 @@
+ALTER TABLE "protocol_config" DROP COLUMN "protocol_admin";

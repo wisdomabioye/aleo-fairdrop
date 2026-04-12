@@ -4,9 +4,8 @@
  * Registered in the handler registry for PROGRAMS.config.programId so the
  * processor dispatches set_* transitions here automatically.
  *
- * Write rule: if ANY mapping returns null (not yet set by admin), skip.
- * The DB row only exists when every field has been explicitly set on-chain.
- * The API serves contract defaults when the row is absent.
+ * Write rule: mappings not yet set on-chain fall back to CONFIG_DEFAULTS
+ * (mirroring the contract's get_or_use values). The DB row is always written.
  *
  * To decouple from the indexer: remove this file, drop the config table,
  * and point GET /config at the chain directly.
@@ -14,12 +13,13 @@
 import { eq }               from 'drizzle-orm';
 import { protocolConfig }   from '@fairdrop/database';
 import {
-  parseBool, parseU16, parseU32, parseU128, parseAddress,
+  parseBool, parseU16, parseU32, parseU128,
 } from '@fairdrop/sdk/parse';
-import { PROGRAMS }         from '@fairdrop/config';
+import { PROGRAMS, CONFIG_DEFAULTS } from '@fairdrop/config';
+import { _abi as configAbi } from '@fairdrop/sdk/contracts/config';
 import type { Db }          from '@fairdrop/database';
 import type { AleoRpcClient } from '../client/rpc.js';
-import type { HandlerEntry, ProgramHandlerMap, TransitionContext } from './types.js';
+import type { ConfigHandlerEntry, ProgramHandlerMap, TransitionContext } from './types.js';
 import { createLogger }     from '../logger.js';
 
 const log        = createLogger('config');
@@ -27,57 +27,35 @@ const CONFIG_ID  = 1;
 const CONFIG_KEY = '0field';
 
 // Mappings to read, in declaration order.
-const MAPPING_NAMES = [
-  'fee_bps',
-  'creation_fee',
-  'closer_reward',
-  'slash_reward_bps',
-  'max_referral_bps',
-  'referral_pool_bps',
-  'min_auction_duration',
-  'paused',
-  'protocol_admin',
-] as const;
+// Derived from the ABI — stays in sync when leo-abigen regenerates.
+const MAPPING_NAMES = (configAbi.mappings as Array<{ name: string }>)
+  .filter(m => m.name !== 'consumed_ops')
+  .map(m => m.name);
 
-// Transitions that mutate config state — all trigger the same full re-read.
-const SET_TRANSITIONS = [
-  'set_fee_bps',
-  'set_protocol_admin',
-  'set_creation_fee',
-  'set_closer_reward',
-  'set_slash_reward_bps',
-  'set_max_referral_bps',
-  'set_referral_pool_bps',
-  'set_min_auction_duration',
-  'set_paused',
-] as const;
+const SET_TRANSITIONS = (configAbi.functions as Array<{ name: string }>)
+  .filter(f => f.name.startsWith('set_'))
+  .map(f => f.name);
 
 // ── Chain reader ──────────────────────────────────────────────────────────────
 
 async function readConfigFromChain(rpc: AleoRpcClient) {
   const pid     = PROGRAMS.config.programId;
-  const results = await Promise.all(
-    MAPPING_NAMES.map(m => rpc.getMappingValue(pid, m, CONFIG_KEY)),
+  const entries = await Promise.all(
+    MAPPING_NAMES.map(async name =>
+      [name, await rpc.getMappingValue(pid, name, CONFIG_KEY)] as const,
+    ),
   );
-
-  if (results.some(v => v == null)) return null;
-
-  const [
-    feeBpsRaw, creationFeeRaw, closerRewardRaw,
-    slashBpsRaw, maxRefBpsRaw, refPoolBpsRaw,
-    minDurationRaw, pausedRaw, adminRaw,
-  ] = results as string[];
+  const raw = Object.fromEntries(entries) as Record<string, string | null>;
 
   return {
-    feeBps:             parseU16(feeBpsRaw),
-    creationFee:        parseU128(creationFeeRaw),
-    closerReward:       parseU128(closerRewardRaw),
-    slashRewardBps:     parseU16(slashBpsRaw),
-    maxReferralBps:     parseU16(maxRefBpsRaw),
-    referralPoolBps:    parseU16(refPoolBpsRaw),
-    minAuctionDuration: parseU32(minDurationRaw),
-    paused:             parseBool(pausedRaw),
-    protocolAdmin:      parseAddress(adminRaw),
+    feeBps:             raw.fee_bps              ? parseU16(raw.fee_bps)              : CONFIG_DEFAULTS.feeBps,
+    creationFee:        raw.creation_fee         ? parseU128(raw.creation_fee)        : CONFIG_DEFAULTS.creationFee,
+    closerReward:       raw.closer_reward        ? parseU128(raw.closer_reward)       : CONFIG_DEFAULTS.closerReward,
+    slashRewardBps:     raw.slash_reward_bps     ? parseU16(raw.slash_reward_bps)     : CONFIG_DEFAULTS.slashRewardBps,
+    maxReferralBps:     raw.max_referral_bps     ? parseU16(raw.max_referral_bps)     : CONFIG_DEFAULTS.maxReferralBps,
+    referralPoolBps:    raw.referral_pool_bps    ? parseU16(raw.referral_pool_bps)    : CONFIG_DEFAULTS.referralPoolBps,
+    minAuctionDuration: raw.min_auction_duration ? parseU32(raw.min_auction_duration) : CONFIG_DEFAULTS.minAuctionDuration,
+    paused:             raw.paused               ? parseBool(raw.paused)              : CONFIG_DEFAULTS.paused,
     updatedAt:          new Date(),
   };
 }
@@ -86,7 +64,7 @@ async function readConfigFromChain(rpc: AleoRpcClient) {
 
 async function upsertConfig(
   db:   Db,
-  data: NonNullable<Awaited<ReturnType<typeof readConfigFromChain>>>,
+  data: Awaited<ReturnType<typeof readConfigFromChain>>,
 ) {
   await db
     .insert(protocolConfig)
@@ -98,26 +76,19 @@ async function upsertConfig(
 
 async function handleConfigTransition(ctx: TransitionContext): Promise<void> {
   const data = await readConfigFromChain(ctx.rpc);
-  if (!data) {
-    log.debug('config: mapping(s) not yet set on-chain — skipping write');
-    return;
-  }
   await upsertConfig(ctx.db as Db, data);
   log.info('config: protocol_config updated', { blockHeight: ctx.blockHeight });
 }
-
-// Config transitions have no auction_id. Return a fixed sentinel so the
-// processor records the transition without a "could not resolve auction_id" warn.
-const configIdExtractor = () => 'protocol_config' as string | null;
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /** Register all set_* transitions for fairdrop_config_v3.aleo. */
 export function buildConfigHandlerMap(): ProgramHandlerMap {
-  const entry: HandlerEntry = {
-    getAuctionId: configIdExtractor,
-    handle:       (ctx) => handleConfigTransition(ctx),
+  const entry: ConfigHandlerEntry = {
+    kind:   'config',
+    handle: (ctx) => handleConfigTransition(ctx),
   };
+  
   return Object.fromEntries(SET_TRANSITIONS.map(name => [name, entry]));
 }
 
@@ -135,11 +106,6 @@ export async function bootstrapProtocolConfig(db: Db, rpc: AleoRpcClient): Promi
   if (existing.length > 0) return;
 
   const data = await readConfigFromChain(rpc);
-  if (!data) {
-    log.info('config: chain mappings not yet set — table stays empty (API will serve defaults)');
-    return;
-  }
-
   await upsertConfig(db, data);
   log.info('config: protocol_config seeded from chain');
 }

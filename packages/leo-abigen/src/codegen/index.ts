@@ -58,7 +58,7 @@ export function generateTypes(abi: Abi): string {
 
   // Embedded ABI — consumers never import abi.json manually.
   // Typed as Parameters<typeof createAbigen>[0] (i.e. Abi) to avoid an extra import.
-  sections.push(`const _abi = JSON.parse('${JSON.stringify(abi).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}') as Parameters<typeof createAbigen>[0];`);
+  sections.push(`export const _abi = JSON.parse('${JSON.stringify(abi).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}') as Parameters<typeof createAbigen>[0];`);
   sections.push('');
 
   // Body
