@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   CheckCircle2,
   ChevronDown,
@@ -139,55 +139,54 @@ export function TxStatusStepper() {
   const { transactions, removeEntry, clearCompleted } = useTransactionTracker();
   const [collapsed, setCollapsed] = useState(false);
 
-  if (transactions.length === 0) return null;
-
   const activeCount = transactions.filter((t) => t.status === 'signing' || t.status === 'pending').length;
   const completedCount = transactions.filter((t) => TERMINAL.has(t.status)).length;
 
+  useEffect(() => {
+    if (activeCount === 0 && transactions.length > 0) setCollapsed(true);
+    if (activeCount > 0) setCollapsed(false);
+  }, [activeCount, transactions.length]);
+
+  if (transactions.length === 0) return null;
+
   return (
     <div className="fixed right-2 bottom-2 z-[70] w-[min(22rem,calc(100vw-1rem))] overflow-hidden rounded-xl border border-sky-500/12 bg-gradient-surface text-popover-foreground shadow-brand ring-1 ring-white/6 backdrop-blur-xl sm:right-4 sm:bottom-4">
-      <div className="border-b border-sky-500/10 px-3 py-2.5">
-        <div className="flex items-center gap-2">
-          {activeCount > 0 && collapsed ? <Spinner className="size-3.5 text-sky-500" /> : <CheckCircle2 className="size-3.5 text-emerald-500" />}
-          <p className="min-w-0 flex-1 text-sm font-semibold tracking-tight text-foreground">
-            Transactions
-          </p>
+      <button
+        type="button"
+        onClick={() => setCollapsed((c) => !c)}
+        className="flex w-full items-center gap-2 border-b border-sky-500/10 px-3 py-2 transition-colors hover:bg-muted/30"
+      >
+        {activeCount > 0 ? <Spinner className="size-3.5 text-sky-500" /> : <CheckCircle2 className="size-3.5 text-emerald-500" />}
+        <span className="min-w-0 flex-1 text-left text-xs font-semibold tracking-tight text-foreground">
+          Transactions
+        </span>
 
-          {activeCount > 0 ? (
-            <Badge
-              variant="outline"
-              className="h-5 rounded-full border-sky-500/16 bg-sky-500/10 px-1.5 text-[10px] font-medium text-sky-700 dark:text-sky-300"
-            >
-              {activeCount}
-            </Badge>
-          ) : null}
-
-          {completedCount > 0 ? (
-            <button
-              type="button"
-              onClick={clearCompleted}
-              className="rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground"
-              aria-label="Clear completed transactions"
-              title="Clear completed"
-            >
-              <Trash2 className="size-3.5" />
-            </button>
-          ) : null}
-
-          <button
-            type="button"
-            onClick={() => setCollapsed((c) => !c)}
-            className="rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground"
-            aria-label={collapsed ? 'Expand' : 'Collapse'}
-            title={collapsed ? 'Expand' : 'Collapse'}
+        {activeCount > 0 ? (
+          <Badge
+            variant="outline"
+            className="h-5 rounded-full border-sky-500/16 bg-sky-500/10 px-1.5 text-[10px] font-medium text-sky-700 dark:text-sky-300"
           >
-            {collapsed ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
-          </button>
-        </div>
-      </div>
+            {activeCount}
+          </Badge>
+        ) : null}
+
+        {completedCount > 0 ? (
+          <span
+            role="button"
+            onClick={(e) => { e.stopPropagation(); clearCompleted(); }}
+            className="rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground"
+            aria-label="Clear completed transactions"
+            title="Clear completed"
+          >
+            <Trash2 className="size-3.5" />
+          </span>
+        ) : null}
+
+        {collapsed ? <ChevronUp className="size-3.5 text-muted-foreground" /> : <ChevronDown className="size-3.5 text-muted-foreground" />}
+      </button>
 
       {!collapsed ? (
-        <div className="max-h-[18rem] space-y-1.5 overflow-y-auto p-2">
+        <div className="max-h-[10rem] space-y-1.5 overflow-y-auto p-2">
           {[...transactions].reverse().map((tx) => (
             <TxRow key={tx.id} tx={tx} onDismiss={() => removeEntry(tx.id)} />
           ))}
