@@ -83,8 +83,8 @@ export class AleoRpcClient {
    * Returns blocks in ascending height order.
    * Verify the query param names against the live node if the endpoint changes.
    */
-  getBlockRange(start: number, end: number): Promise<{blocks: AleoBlock[]}> {
-    return this.get<{blocks: AleoBlock[]}>(`/blocks?start=${start}&end=${end}`);
+  getBlockRange(start: number, end: number): Promise<AleoBlock[]> {
+    return this.get<AleoBlock[]>(`/blocks?start=${start}&end=${end}`);
   }
 
   /**

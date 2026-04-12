@@ -77,7 +77,7 @@ export class PollLoop {
 
     const blocks = await this.rpc.getBlockRange(fromHeight, toHeight);
 
-    for (const block of blocks.blocks) {
+    for (const block of blocks) {
       if (!this.running) break;
       await this.processor.processBlock(block, tipHeight);
     }
