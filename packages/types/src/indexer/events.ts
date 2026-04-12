@@ -4,7 +4,7 @@
  * MappingUpdateEvents. Services subscribe to these to update derived state.
  */
 
-/** All fairdrop_dutch_v3.aleo transition names. Extend as new auction types land. */
+/** All fairdrop_dutch_v4.aleo transition names. Extend as new auction types land. */
 export enum DutchTransition {
   CreateAuction       = 'create_auction',
   PlaceBidPrivate     = 'place_bid_private',

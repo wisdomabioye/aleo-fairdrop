@@ -4,7 +4,7 @@ Privacy-preserving ascending-price auction (pay-what-you-bid).
 
 Price rises from `floor_price` toward `ceiling_price` in discrete steps over the auction window. Early bidders pay less than late bidders. There is no uniform clearing price — each bidder pays the price that was current at the moment they bid.
 
-This is the directional inverse of `fairdrop_dutch_v3.aleo`.
+This is the directional inverse of `fairdrop_dutch_v4.aleo`.
 
 ## Status
 
@@ -58,7 +58,7 @@ The tradeoff: bidders cannot reclaim overpayment from integer rounding (at most 
 
 ## Comparison with Dutch
 
-| Property | Dutch (fairdrop_dutch_v3.aleo) | Ascending (fairdrop_ascending_v4.aleo) |
+| Property | Dutch (fairdrop_dutch_v4.aleo) | Ascending (fairdrop_ascending_v4.aleo) |
 |---|---|---|
 | Price direction | Descends start → floor | Rises floor → ceiling |
 | Payment model | Uniform clearing price | Pay-what-you-bid |

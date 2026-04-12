@@ -663,7 +663,7 @@ assert_eq(pool.token_a, ca);   // ← add this
 ## Issue 23: `seed_liquidity` requires creator to pre-hold wrapped credits — does not actually use auction proceeds for the credits side
 
 **Severity:** High (deployment-blocking under snarkVM signer rule; misleading API; doubles creator's pre-funding requirement)
-**Component:** `fairdrop_dutch_v3.aleo`, `fairdrop_ascending_v4.aleo`, `fairdrop_lbp_v3.aleo`, `fairdrop_quadratic_v3.aleo`, `fairdrop_raise_v3.aleo`, `fairdrop_sealed_v3.aleo` — `seed_liquidity` (dutch L1317–1391, same shape in the other 5)
+**Component:** `fairdrop_dutch_v4.aleo`, `fairdrop_ascending_v4.aleo`, `fairdrop_lbp_v3.aleo`, `fairdrop_quadratic_v3.aleo`, `fairdrop_raise_v3.aleo`, `fairdrop_sealed_v3.aleo` — `seed_liquidity` (dutch L1317–1391, same shape in the other 5)
 **Status:** Open
 
 ### Description

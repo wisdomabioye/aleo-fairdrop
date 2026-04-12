@@ -43,7 +43,7 @@ export interface AleoTransaction {
 export interface AleoTransition {
   /** Transition ID (as1...). Used for idempotency. */
   id:       string;
-  /** Program ID, e.g. "fairdrop_dutch_v3.aleo" */
+  /** Program ID, e.g. "fairdrop_dutch_v4.aleo" */
   program:  string;
   /** Function name, e.g. "create_auction" */
   function: string;

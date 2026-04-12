@@ -21,7 +21,7 @@ function isWalletRecord(value: unknown): value is WalletRecord {
  * Base primitive: fetches all decrypted records for one program.
  * Build domain-specific hooks (useTokenRecords, useBidRecords, …) on top of this.
  *
- * @param programId - Program to fetch records from (e.g. "fairdrop_dutch_v3.aleo")
+ * @param programId - Program to fetch records from (e.g. "fairdrop_dutch_v4.aleo")
  * @param opts.fetchOnMount - Fetch automatically when wallet connects (default: true)
  * @param opts.pollInterval - Re-fetch every N ms (optional)
  */
