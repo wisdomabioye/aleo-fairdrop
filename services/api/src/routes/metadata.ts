@@ -68,7 +68,6 @@ metadataRouter.post('/', async (c) => {
   let body: MetadataCreateRequest;
   try {
     body = await c.req.json<MetadataCreateRequest>();
-    console.log(body)
   } catch {
     throw new HTTPException(400, { message: 'Invalid JSON body' });
   }
