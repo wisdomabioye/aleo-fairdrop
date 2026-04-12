@@ -19,12 +19,18 @@ export function QuadraticSimulator({ auction }: { auction: AuctionView }) {
   const commitMicro   = BigInt(Math.floor(Number(contribution || 0) * 1_000_000));
   const totalWeight   = BigInt(auction.sqrtWeight);
   const myWeight      = isqrt(commitMicro);
-  const supply        = BigInt(auction.supply);
+  const fullSupply    = BigInt(auction.supply);
+
+  const raiseTarget   = BigInt(auction.raise?.raiseTarget ?? 0n);
+  const totalPayments = BigInt(auction.totalPayments) + commitMicro;
+  const effectiveSupply = raiseTarget > 0n && totalPayments < raiseTarget
+    ? fullSupply * totalPayments / raiseTarget
+    : fullSupply;
 
   const optimistic   = totalWeight + myWeight > 0n
-    ? supply * myWeight / (totalWeight + myWeight) : 0n;
+    ? effectiveSupply * myWeight / (totalWeight + myWeight) : 0n;
   const conservative = (totalWeight * 3n / 2n) + myWeight > 0n
-    ? supply * myWeight / ((totalWeight * 3n / 2n) + myWeight) : 0n;
+    ? effectiveSupply * myWeight / ((totalWeight * 3n / 2n) + myWeight) : 0n;
 
   return (
     <div className="space-y-3 text-sm">

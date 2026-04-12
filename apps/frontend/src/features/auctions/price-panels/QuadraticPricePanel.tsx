@@ -26,7 +26,7 @@ export function QuadraticPricePanel({ auction }: PricePanelProps) {
           {target > 0n ? formatMicrocredits(target) : '—'}
         </span>
       </div>
-      {target > 0n && (
+      {/* {target > 0n && (
         <>
           <Progress value={raisePct} className="h-2" />
           <div className="flex justify-between text-xs text-muted-foreground">
@@ -40,7 +40,7 @@ export function QuadraticPricePanel({ auction }: PricePanelProps) {
             </div>
           )}
         </>
-      )}
+      )} */}
       <p className="text-xs text-muted-foreground">{description}</p>
     </div>
   );

@@ -122,11 +122,6 @@ export function QuadraticBidForm({ auction, protocolConfig, onBidSuccess }: BidF
         onChange={(m) => { setMode(m); setRecordTouched(false); if (m === 'public') setSelectedRecordId(''); }}
       />
 
-      <p className="text-[11px] text-muted-foreground">
-        {mode === 'private' ? 'Contribution is submitted privately.' : 'Contribution is submitted publicly.'}
-        {' '}Allocation weight = √payment — larger contributions have diminishing influence.
-      </p>
-
       <div className="space-y-1.5">
         <Label htmlFor="quad-pay">Amount (ALEO)</Label>
         <Input
