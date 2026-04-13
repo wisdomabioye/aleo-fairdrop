@@ -13,12 +13,15 @@ export function AuctionSearch() {
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev);
-          if (value.trim()) {
-            next.set('q', value.trim());
+          const prevQ = prev.get('q') ?? '';
+          const nextQ = value.trim();
+          if (prevQ === nextQ) return prev;   // no-op — don't touch other params
+          if (nextQ) {
+            next.set('q', nextQ);
           } else {
             next.delete('q');
           }
-          next.delete('page');
+          next.delete('page');                // reset page only when query changes
           return next;
         },
         { replace: true },
