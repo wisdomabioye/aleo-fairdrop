@@ -6,23 +6,20 @@ import { joinTokens }        from '@fairdrop/sdk/token-registry';
 import { formatAmount }      from '@fairdrop/sdk/format';
 import { WizardTxStatus }          from '@/shared/components/WizardTxStatus';
 import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
-import { useTokenRecords }          from '@/shared/hooks/useTokenRecords';
-import { useTokenMetadata }         from '@/shared/hooks/useTokenMetadata';
 import { parseExecutionError }      from '@/shared/utils/errors';
 import { RecordPicker }             from './RecordPicker';
 import type { WalletTokenRecord }   from '@fairdrop/types/primitives';
+import type { TokenRecordsCtx }     from '../pages/SplitJoinTokenPage';
 
-export function JoinTokenForm() {
+interface Props { ctx: TokenRecordsCtx }
+
+export function JoinTokenForm({ ctx }: Props) {
+  const { activeRecords, metaMap, loading, fetchRecords } = ctx;
   const { executeTransaction } = useWallet();
 
-  const { tokenRecords, loading, fetchRecords } = useTokenRecords({ fetchOnMount: false });
   const [fetched, setFetched] = useState(false);
   const [rec1, setRec1]       = useState<WalletTokenRecord | null>(null);
   const [rec2, setRec2]       = useState<WalletTokenRecord | null>(null);
-
-  const activeRecords  = useMemo(() => tokenRecords.filter((r) => !r.spent && r.amount > 0n), [tokenRecords]);
-  const uniqueTokenIds = useMemo(() => [...new Set(activeRecords.map((r) => r.token_id))], [activeRecords]);
-  const { dataMap: metaMap } = useTokenMetadata(uniqueTokenIds);
 
   // Second picker: same token as rec1, excluding rec1 by both id and _record content
   const rec2Options = useMemo(
@@ -59,10 +56,11 @@ export function JoinTokenForm() {
 
   const blocked = busy || isWaiting;
 
-  function handleReset() {
+  async function handleReset() {
     reset();
     setRec1(null);
     setRec2(null);
+    await fetchRecords();
   }
 
   if (done) {
@@ -156,7 +154,7 @@ export function JoinTokenForm() {
           {parseExecutionError(error)}
         </div>
       )}
-      
+
       <Button className="w-full" onClick={advance} disabled={!joinValid || blocked}>
         {busy      ? <><Spinner className="mr-2 size-4" /> Waiting for wallet…</>
         : isWaiting ? <><Spinner className="mr-2 size-4" /> Awaiting confirmation…</>

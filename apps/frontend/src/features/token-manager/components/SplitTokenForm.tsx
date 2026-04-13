@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useWallet }         from '@provablehq/aleo-wallet-adaptor-react';
 import { Button, Spinner, TokenAmountInput } from '@/components';
 import { RefreshCw }         from 'lucide-react';
@@ -6,29 +6,26 @@ import { splitToken }        from '@fairdrop/sdk/token-registry';
 import { formatAmount, parseTokenAmount } from '@fairdrop/sdk/format';
 import { WizardTxStatus }          from '@/shared/components/WizardTxStatus';
 import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
-import { useTokenRecords }          from '@/shared/hooks/useTokenRecords';
-import { useTokenMetadata }         from '@/shared/hooks/useTokenMetadata';
 import { parseExecutionError }      from '@/shared/utils/errors';
 import { RecordPicker }             from './RecordPicker';
 import type { WalletTokenRecord }   from '@fairdrop/types/primitives';
+import type { TokenRecordsCtx }     from '../pages/SplitJoinTokenPage';
 
-export function SplitTokenForm() {
+interface Props { ctx: TokenRecordsCtx }
+
+export function SplitTokenForm({ ctx }: Props) {
+  const { activeRecords, metaMap, loading, fetchRecords } = ctx;
   const { executeTransaction } = useWallet();
 
-  const { tokenRecords, loading, fetchRecords } = useTokenRecords({ fetchOnMount: false });
   const [fetched,      setFetched]      = useState(false);
   const [selected,     setSelected]     = useState<WalletTokenRecord | null>(null);
   const [splitAmount,  setSplitAmount]  = useState('');
-
-  const activeRecords  = useMemo(() => tokenRecords.filter((r) => !r.spent && r.amount > 0n), [tokenRecords]);
-  const uniqueTokenIds = useMemo(() => [...new Set(activeRecords.map((r) => r.token_id))], [activeRecords]);
-  const { dataMap: metaMap } = useTokenMetadata(uniqueTokenIds);
 
   const meta      = metaMap.get(selected?.token_id ?? '');
   const decimals  = meta?.decimals ?? 0;
   const rawAmount = parseTokenAmount(splitAmount, decimals);
   const remainder = (selected?.amount ?? 0n) - rawAmount;
-  const splitValid = !!selected && rawAmount > 0n && rawAmount <= (selected.amount ?? 0n);
+  const splitValid = !!selected && rawAmount > 0n && rawAmount < (selected.amount ?? 0n);
 
   async function handleFetch() {
     setSelected(null);
@@ -52,10 +49,11 @@ export function SplitTokenForm() {
 
   const blocked = busy || isWaiting;
 
-  function handleReset() {
+  async function handleReset() {
     reset();
     setSelected(null);
     setSplitAmount('');
+    await fetchRecords();
   }
 
   if (done) {
@@ -107,13 +105,17 @@ export function SplitTokenForm() {
           max={selected.amount - 1n > 0n ? selected.amount - 1n : undefined}
           maxLabel="Leave 1"
           placeholder="0"
-          error={rawAmount > (selected.amount ?? 0n) ? 'Exceeds record amount' : undefined}
+          error={
+            rawAmount >= (selected.amount ?? 0n) && rawAmount > 0n
+              ? 'Both records must have a positive balance'
+              : undefined
+          }
           hint="The remainder stays in a second record."
         />
       )}
 
       {/* Preview */}
-      {selected && rawAmount > 0n && rawAmount <= (selected.amount ?? 0n) && (
+      {selected && splitValid && (
         <div className="rounded-lg border border-border/50 bg-muted/20 p-3 space-y-3 text-sm">
           <div className="text-center">
             <p className="text-[11px] text-muted-foreground">Original</p>

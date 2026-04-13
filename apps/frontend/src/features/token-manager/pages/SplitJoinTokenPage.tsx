@@ -1,16 +1,33 @@
-import { Scissors, Link2 } from 'lucide-react';
-import { useWallet }        from '@provablehq/aleo-wallet-adaptor-react';
+import { useMemo }          from 'react';
+import { Scissors, Link2 }  from 'lucide-react';
+import { useWallet }         from '@provablehq/aleo-wallet-adaptor-react';
 import {
   Card, CardContent, CardHeader, CardTitle, CardDescription,
   Tabs, TabsList, TabsTrigger, TabsContent,
   PageHeader,
 } from '@/components';
-import { ConnectWalletPrompt } from '@/shared/components/wallet/ConnectWalletPrompt';
-import { SplitTokenForm } from '../components/SplitTokenForm';
-import { JoinTokenForm }  from '../components/JoinTokenForm';
+import { ConnectWalletPrompt }  from '@/shared/components/wallet/ConnectWalletPrompt';
+import { useTokenRecords }      from '@/shared/hooks/useTokenRecords';
+import { useTokenMetadata }     from '@/shared/hooks/useTokenMetadata';
+import { SplitTokenForm }       from '../components/SplitTokenForm';
+import { JoinTokenForm }        from '../components/JoinTokenForm';
+import type { WalletTokenRecord } from '@fairdrop/types/primitives';
+import type { TokenMetadata }     from '@fairdrop/types/domain';
+
+export interface TokenRecordsCtx {
+  activeRecords: WalletTokenRecord[];
+  metaMap:       Map<string, TokenMetadata>;
+  loading:       boolean;
+  fetchRecords:  () => Promise<void>;
+}
 
 export function SplitJoinTokenPage() {
   const { connected } = useWallet();
+
+  const { tokenRecords, loading, fetchRecords } = useTokenRecords({ fetchOnMount: false });
+  const activeRecords  = useMemo(() => tokenRecords.filter((r) => !r.spent && r.amount > 0n), [tokenRecords]);
+  const uniqueTokenIds = useMemo(() => [...new Set(activeRecords.map((r) => r.token_id))], [activeRecords]);
+  const { dataMap: metaMap } = useTokenMetadata(uniqueTokenIds);
 
   if (!connected) {
     return (
@@ -23,6 +40,8 @@ export function SplitJoinTokenPage() {
       </div>
     );
   }
+
+  const ctx: TokenRecordsCtx = { activeRecords, metaMap, loading, fetchRecords };
 
   return (
     <div className="mx-auto max-w-xl space-y-6 p-6">
@@ -52,7 +71,7 @@ export function SplitJoinTokenPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <SplitTokenForm />
+              <SplitTokenForm ctx={ctx} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -66,7 +85,7 @@ export function SplitJoinTokenPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <JoinTokenForm />
+              <JoinTokenForm ctx={ctx} />
             </CardContent>
           </Card>
         </TabsContent>
