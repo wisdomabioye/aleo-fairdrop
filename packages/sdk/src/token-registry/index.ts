@@ -3,6 +3,7 @@ export {
   TOKEN_ROLE,
   registerToken,
   mintPrivate,
+  mintPublic,
   burnPrivate,
   splitToken,
   joinTokens,

@@ -18,7 +18,7 @@ import {
   TokenLaunchSuccess,
 } from '@/features/token-manager/components';
 import { useConfirmedSequentialTx } from '@/shared/hooks/useConfirmedSequentialTx';
-import { registerToken, mintPrivate } from '@fairdrop/sdk/token-registry';
+import { registerToken, mintPrivate, mintPublic } from '@fairdrop/sdk/token-registry';
 import { asciiToU128 }     from '@fairdrop/sdk/parse';
 import { generateTokenId } from '@fairdrop/sdk/hash';
 import { parseTokenAmount } from '@fairdrop/sdk/format';
@@ -40,6 +40,7 @@ export function TokenLaunchPage() {
 
   // ── Step 2 form state ────────────────────────────────────────────────────
   const [mintAmount, setMintAmount] = useState('');
+  const [mintMode,   setMintMode]   = useState<'private' | 'public'>('private');
 
   // ── Derived / validation ─────────────────────────────────────────────────
   const dec    = parseInt(decimals, 10);
@@ -76,15 +77,17 @@ export function TokenLaunchPage() {
       },
     },
     {
-      label:   'Mint Tokens',
+      label:   mintMode === 'private' ? 'Mint Tokens (Private)' : 'Mint Tokens (Public)',
       execute: async () => {
-        const spec   = mintPrivate(tokenId, address!, mintRaw);
+        const spec = mintMode === 'private'
+          ? mintPrivate(tokenId, address!, mintRaw)
+          : mintPublic(tokenId, address!, mintRaw);
         const result = await executeTransaction({ ...spec, inputs: spec.inputs as string[] });
         return result?.transactionId;
       },
     },
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [address, tokenId, nameU128, symbolU128, dec, maxRaw, mintRaw]);
+  ], [address, tokenId, nameU128, symbolU128, dec, maxRaw, mintRaw, mintMode]);
 
   const { currentStep, done, busy, isWaiting, error, /* trackedIds, */ advance } =
     useConfirmedSequentialTx(steps);
@@ -125,6 +128,7 @@ export function TokenLaunchPage() {
           symbol={symbol} decimals={isNaN(dec) ? 0 : dec} maxRaw={maxRaw}
           mintAmount={mintAmount} mintRaw={mintRaw}
           isValid={step2Valid}
+          mintMode={mintMode} onModeChange={setMintMode}
           busy={busy} isWaiting={isWaiting} error={error}
           onChange={setMintAmount}
           onSubmit={advance}

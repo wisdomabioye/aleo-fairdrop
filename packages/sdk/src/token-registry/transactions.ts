@@ -85,6 +85,30 @@ export function mintPrivate(
 }
 
 /**
+ * Mint tokens as a public balance to a recipient.
+ *
+ * @param tokenId      Token field ID.
+ * @param recipient    Recipient address.
+ * @param amount       Amount in raw units (bigint).
+ * @param expiry       Block height after which the balance expires (default: no expiry).
+ */
+export function mintPublic(
+  tokenId:     string,
+  recipient:   string,
+  amount:      bigint,
+  expiry       = NO_EXPIRY,
+  fee          = DEFAULT_TX_FEE,
+): TxSpec {
+  return {
+    program:    TOKEN_REGISTRY,
+    function:   'mint_public',
+    inputs:     [tokenId, recipient, `${amount}u128`, `${expiry}u32`],
+    fee,
+    privateFee: false,
+  };
+}
+
+/**
  * Burn a private token record (partially or fully).
  * Requires the caller to hold BURNER_ROLE or be the token admin.
  *

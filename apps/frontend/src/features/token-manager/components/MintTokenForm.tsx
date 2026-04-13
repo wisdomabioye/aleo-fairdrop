@@ -5,6 +5,7 @@ import {
 import { CheckCircle2 } from 'lucide-react';
 import { formatAmount } from '@fairdrop/sdk/format';
 import { parseExecutionError } from '@/shared/utils/errors';
+import { PrivacyModeToggle } from '@/shared/components/PrivacyModeToggle';
 
 export interface MintTokenFormProps {
   symbol: string;
@@ -14,6 +15,9 @@ export interface MintTokenFormProps {
   mintAmount: string;
   mintRaw: bigint;
   isValid: boolean;
+
+  mintMode: 'private' | 'public';
+  onModeChange: (mode: 'private' | 'public') => void;
 
   busy: boolean;
   isWaiting: boolean;
@@ -26,6 +30,7 @@ export interface MintTokenFormProps {
 export function MintTokenForm({
   symbol, decimals, maxRaw,
   mintAmount, mintRaw, isValid,
+  mintMode, onModeChange,
   busy, isWaiting, error,
   onChange, onSubmit,
 }: MintTokenFormProps) {
@@ -36,17 +41,18 @@ export function MintTokenForm({
       <CardHeader>
         <CardTitle>2 · Mint Initial Supply</CardTitle>
         <CardDescription>
-          Mint tokens to your wallet as a private record. You'll deposit these when creating an auction.
+          Mint tokens to your wallet. Private creates a record; public credits your on-chain balance.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Step 1 confirmed banner */}
         <div className="flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2">
           <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />
           <p className="text-xs text-emerald-600 dark:text-emerald-400">
             Token registered on-chain. Ready to mint.
           </p>
         </div>
+
+        <PrivacyModeToggle mode={mintMode} onChange={onModeChange} />
 
         <TokenAmountInput
           label="Mint Amount"
