@@ -1,7 +1,7 @@
 import { useState }             from 'react';
 import { Button, Label, Spinner, Textarea } from '@/components';
 import { useMerkleBuilder }      from '@/shared/hooks/useMerkleBuilder';
-import type { MerkleWorkerResponse } from '@/workers/merkle-builder.worker';
+import type { MerkleWorkerResponse } from '@/shared/hooks/useMerkleBuilder';
 
 interface Props {
   onRootComputed: (root: string) => void;

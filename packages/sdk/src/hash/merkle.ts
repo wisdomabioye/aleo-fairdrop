@@ -26,12 +26,17 @@ function nodeHash(left: string, right: string): string {
 // empty[0] = BHP256(LeafHash { addr: ZERO_ADDRESS })
 // empty[l] = BHP256(MerkleNode { left: empty[l-1], right: empty[l-1] })
 // All-empty subtrees at any depth share the same hash (constant per level).
+// Cached after first computation — these never change.
+
+let _emptyCache: string[] | null = null;
 
 function buildEmptyHashes(): string[] {
+  if (_emptyCache) return _emptyCache;
   const h: string[] = [leafHash(ZERO_ADDRESS)];
   for (let l = 1; l <= DEPTH; l++) {
     h.push(nodeHash(h[l - 1], h[l - 1]));
   }
+  _emptyCache = h;
   return h;
 }
 

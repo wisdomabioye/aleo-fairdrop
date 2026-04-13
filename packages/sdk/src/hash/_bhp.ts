@@ -4,9 +4,19 @@
  *
  * Manages WASM object lifetimes explicitly — free() must be called on every
  * object created by @provablehq/sdk to avoid memory leaks.
+ *
+ * The BHP256 instance is cached because its constructor precomputes elliptic
+ * curve lookup tables, which is the dominant cost per hash call.
  */
 
 import { BHP256, Plaintext } from '@provablehq/sdk';
+
+let _bhp: BHP256 | null = null;
+
+function getBhp(): BHP256 {
+  if (!_bhp) _bhp = new BHP256();
+  return _bhp;
+}
 
 /**
  * Hash an arbitrary Leo struct literal string to a field element.
@@ -16,11 +26,9 @@ import { BHP256, Plaintext } from '@provablehq/sdk';
 export function hashStruct(leoStructLiteral: string): string {
   const struct = Plaintext.fromString(leoStructLiteral);
   const bits   = struct.toBitsLe();
-  const bhp    = new BHP256();
-  const field  = bhp.hash(bits);
+  const field  = getBhp().hash(bits);
   const result = field.toString();
   field.free();
-  bhp.free();
   struct.free();
   return result;
 }
