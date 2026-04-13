@@ -1,4 +1,4 @@
-import { useState }                   from 'react';
+import { useEffect, useState }        from 'react';
 import { useNavigate }                from 'react-router-dom';
 import { X }                          from 'lucide-react';
 import { useBlockHeight }            from '@/shared/hooks/useBlockHeight';
@@ -170,6 +170,10 @@ export function CreateAuctionPage() {
 
   const submitting = busy || isWaiting;
 
+  // Clear draft as soon as the tx is confirmed — even if the user navigates away
+  // before clicking "Create another", the stale draft won't linger in storage.
+  useEffect(() => { if (done) clearDraft(); }, [done, clearDraft]);
+
   // ── success screen ────────────────────────────────────────────────────────────
 
   if (done) {
@@ -188,7 +192,7 @@ export function CreateAuctionPage() {
           <Button variant="outline" onClick={() => navigate(AppRoutes.auctions)}>
             View auctions
           </Button>
-          <Button onClick={() => { reset(); clearDraft(); setBannerVisible(false); }}>
+          <Button onClick={() => { reset(); setBannerVisible(false); }}>
             Create another
           </Button>
         </div>
