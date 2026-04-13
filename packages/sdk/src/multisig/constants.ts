@@ -23,6 +23,7 @@ export const UPGRADE_KEY = {
   QUADRATIC: PROGRAMS.quadratic.upgradeKey,
   RAISE:     PROGRAMS.raise.upgradeKey,
   SEALED:    PROGRAMS.sealed.upgradeKey,
+  FAIRSWAP:  PROGRAMS.fairswap.upgradeKey,
 } as const;
 
 /**
