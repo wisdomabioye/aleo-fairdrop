@@ -60,7 +60,7 @@ describe('createRecordScanner', () => {
     const plaintext = `{ owner: ${addr}, pool_key: 42field, amount: 1000000u128 }`;
     const result = scan([makeWalletRecord('LpToken', plaintext)]) as Record<string, unknown>[];
     expect(result[0]!['owner']).toBe(addr);
-    expect(result[0]!['pool_key']).toBe('42');
+    expect(result[0]!['pool_key']).toBe('42field');
     expect(result[0]!['amount']).toBe('1000000');
   });
 

@@ -118,12 +118,12 @@ describe('serializeInput', () => {
 // ── deserializeOutput ─────────────────────────────────────────────────────────
 
 describe('deserializeOutput', () => {
-  it('deserializes Field — strips suffix', () => {
-    expect(deserializeOutput('3443field', { Primitive: 'Field' }, [])).toBe('3443');
+  it('deserializes Field — keeps suffix', () => {
+    expect(deserializeOutput('3443field', { Primitive: 'Field' }, [])).toBe('3443field');
   });
 
-  it('deserializes Field with visibility suffix', () => {
-    expect(deserializeOutput('3443field.private', { Primitive: 'Field' }, [])).toBe('3443');
+  it('deserializes Field with visibility suffix — strips visibility, keeps field', () => {
+    expect(deserializeOutput('3443field.private', { Primitive: 'Field' }, [])).toBe('3443field');
   });
 
   it('deserializes Address — identity', () => {

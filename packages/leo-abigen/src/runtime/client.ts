@@ -7,6 +7,10 @@ import { createRecordScanner }     from './records';
 
 type ExecFn = (spec: TransactionOptions) => Promise<{ transactionId: string } | undefined>;
 
+function toCamelCase(s: string): string {
+  return s.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
+}
+
 export interface ClientConfig {
   fetchMapping?:       MappingFetcher;
   executeTransaction?: ExecFn;
@@ -18,7 +22,7 @@ export function createAbigen(abi: Abi, config: ClientConfig): Record<string, unk
   const client: Record<string, unknown> = {};
 
   for (const fn of abi.functions) {
-    client[fn.name] = createTransitionBuilder(abi.program, fn, abi.structs, {
+    client[toCamelCase(fn.name)] = createTransitionBuilder(abi.program, fn, abi.structs, {
       fee:                config.fee        ?? 300_000,
       privateFee:         config.privateFee ?? false,
       executeTransaction: config.executeTransaction,
@@ -27,7 +31,7 @@ export function createAbigen(abi: Abi, config: ClientConfig): Record<string, unk
 
   if (config.fetchMapping) {
     for (const mapping of abi.mappings) {
-      client[mapping.name] = createMappingReader(
+      client[toCamelCase(mapping.name)] = createMappingReader(
         config.fetchMapping, abi.program, mapping, abi.structs,
       );
     }
