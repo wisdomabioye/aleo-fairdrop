@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { parsePlaintext, parseU128, stripVisibility, u128ToBigInt } from '@fairdrop/sdk/parse';
+import { BID_RECORD_NAMES } from '@fairdrop/sdk/records';
 import type { AuctionView } from '@fairdrop/types/domain';
 import { useWalletRecords } from '@/shared/hooks/useWalletRecords';
 import type { ClaimableRecord } from '../../claim/hooks/useClaimable';
@@ -34,7 +35,7 @@ export function useAuctionClaimable(
     const result: ClaimableRecord[] = [];
 
     for (const entry of entries) {
-      const isBid        = entry.recordName === 'Bid';
+      const isBid        = BID_RECORD_NAMES.has(entry.recordName);
       const isCommitment = entry.recordName === 'Commitment';
       if (!isBid && !isCommitment) continue;
 

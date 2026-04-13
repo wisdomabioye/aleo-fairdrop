@@ -72,12 +72,12 @@ export function scanAuctionRecords(
   const bids:        WalletBidRecord[]        = [];
   const commitments: WalletSealedCommitment[] = [];
   for (const entry of entries) {
-    if (entry.recordName === 'Bid') {
-      const bid = parseBidRecord(entry, programId);
-      if (bid) bids.push(bid);
-    } else if (entry.recordName === 'Commitment') {
+    if (entry.recordName === 'Commitment') {
       const commitment = parseCommitmentRecord(entry, programId);
       if (commitment) commitments.push(commitment);
+    } else {
+      const bid = parseBidRecord(entry, programId);
+      if (bid) bids.push(bid);
     }
   }
   return { bids, commitments };

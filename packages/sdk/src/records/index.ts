@@ -7,5 +7,5 @@
  * Wallet-adapter hooks call requestRecords(), then pass the result here.
  */
 
-export { parseBidRecord, parseCommitmentRecord }      from './parse';
+export { parseBidRecord, parseCommitmentRecord, BID_RECORD_NAMES } from './parse';
 export { scanBidRecords, scanCommitmentRecords, scanAuctionRecords } from './scan';

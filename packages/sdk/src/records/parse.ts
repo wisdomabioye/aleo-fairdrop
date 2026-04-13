@@ -16,6 +16,17 @@ import { parsePlaintext, stripVisibility, parseU128, u128ToBigInt } from '../par
 import type { WalletRecord, WalletBidRecord, WalletSealedCommitment } from '@fairdrop/types/primitives';
 
 /**
+ * All record names that represent a bid receipt across auction types.
+ * Dutch/Ascending/Sealed use "Bid"; other types use type-specific names.
+ */
+export const BID_RECORD_NAMES: ReadonlySet<string> = new Set([
+  'Bid',          // Dutch, Ascending, Sealed
+  'RaiseBid',     // Raise
+  'LBPBid',       // LBP
+  'QuadraticBid', // Quadratic
+]);
+
+/**
  * Parse a raw WalletRecord into a WalletBidRecord.
  * Returns null if the record is not a Bid or the plaintext is malformed.
  *
@@ -26,7 +37,7 @@ export function parseBidRecord(
   entry:     WalletRecord,
   programId: string,
 ): WalletBidRecord | null {
-  if (entry.recordName !== 'Bid') return null;
+  if (!BID_RECORD_NAMES.has(entry.recordName)) return null;
   try {
     const fields = parsePlaintext(entry.recordPlaintext);
     return {
